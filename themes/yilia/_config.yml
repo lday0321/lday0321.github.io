@@ -2,15 +2,17 @@
 
 menu:
   主页: /
-  相册: /photos
+  归档: /archives
+  随笔: /tags/hello/
+  # 相册: /photos
 
 # SubNav
 subnav:
-  github: "https://github.com/litten"
-  weibo: "http://weibo.com/litten225"
+  github: "https://github.com/lday0321"
+  weibo: "http://weibo.com/lday"
   rss: /atom.xml
   #douban: "#"
-  #mail: "#"
+  mail: "oneday0321@gmail.com"
   #facebook: "#"
   #google: "#"
   #twitter: "#"
@@ -39,7 +41,7 @@ google_analytics: ''
 favicon: /assets/img/favicon.ico
 
 #你的头像url
-avatar: /assets/blogImg/litten.png
+avatar: /assets/blogImg/donkey.jpg
 
 #是否开启分享
 share_jia: true
@@ -47,7 +49,7 @@ share_addthis: false
 
 #是否开启多说评论，填写你在多说申请的项目名称 duoshuo: duoshuo-key
 #若使用disqus，请在博客config文件中填写disqus_shortname，并关闭多说评论
-duoshuo: "litten-hexo"
+duoshuo: "lday0321"
 
 # 如不需要，将该项置为false
 # 比如
@@ -68,4 +70,4 @@ friends:
   友情链接5: http://localhost:4000/
   友情链接6: http://localhost:4000/
 
-aboutme: Litten，<br>毕业于华科，就职于鹅厂<br><br>热爱大海与冷笑话，<br/>目前是一枚前端<br/><br/>胆小认生，不易相处，<br>年轻无为，卖马为生。
+aboutme: lday<br><br>80后IT码农一枚<br>白羊座，喜热闹<br/>
