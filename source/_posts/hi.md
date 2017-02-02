@@ -5,7 +5,7 @@ tags:
 	- hello1
 ---
 
-中文版，hello world
+中文版，hello world, from mac
 
 ![alex.header][1]
 
