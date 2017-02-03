@@ -14,7 +14,7 @@ timezone:
 
 # URL
 ## If your site is put in a subdirectory, set url as 'http://yoursite.com/child' and root as '/child/'
-url: http://blog.lday.me
+url: http://lday.me
 root: /
 permalink: :year/:month/:day/:title/
 permalink_defaults:
@@ -76,5 +76,6 @@ theme: yilia
 deploy:
   type: git
   repo: git@github.com:lday0321/lday0321.github.io.git
+  #repo: https://github.com/lday0321/lday0321.github.io.git
   branch: master
   
