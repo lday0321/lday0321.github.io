@@ -98,6 +98,10 @@ func add(list []int) {
 我的回复：
 > 你示例add函数里面，实际上已经将100写入到list的空间了， 只是因为slice是值传递，在add里面，list的len修改为1， 但是出了add，list的len还是0，此时用Println是打印不出你写入的100的。我改了下示例，你可以看到underlyArray[0]已经被修改成100了：
 
+# 进一步思考
+
+当在闭包closure之外修改了slice的内容，闭包内访问slice，能看到更新的内容吗？
+
 # 参考资料
 [Go Slices: usage and internals][1]
 [Arrays, slices (and strings): The mechanics of 'append'][2]
