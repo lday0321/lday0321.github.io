@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+  <link rel="dns-prefetch" href="http://lday.me">
+  <title>细看Go中的切片(slice) | lday的博客</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="讨论群中关于切片的一个问题Q1：对slice的append无效在群里有人提问，下述代码对slice的append无效123456789101112131415package mainimport (	&quot;fmt&quot;)func main() &amp;#123;	list := make([]int, 2)	add(list)	fmt.Println(list)&amp;#125;func add(list []int">
+<meta property="og:type" content="article">
+<meta property="og:title" content="细看Go中的切片(slice)">
+<meta property="og:url" content="http://lday.me/2017/02/06/0004_golong-slice-depth/index.html">
+<meta property="og:site_name" content="lday的博客">
+<meta property="og:description" content="讨论群中关于切片的一个问题Q1：对slice的append无效在群里有人提问，下述代码对slice的append无效123456789101112131415package mainimport (	&quot;fmt&quot;)func main() &amp;#123;	list := make([]int, 2)	add(list)	fmt.Println(list)&amp;#125;func add(list []int">
+<meta property="og:updated_time" content="2017-02-06T14:00:39.223Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="细看Go中的切片(slice)">
+<meta name="twitter:description" content="讨论群中关于切片的一个问题Q1：对slice的append无效在群里有人提问，下述代码对slice的append无效123456789101112131415package mainimport (	&quot;fmt&quot;)func main() &amp;#123;	list := make([]int, 2)	add(list)	fmt.Println(list)&amp;#125;func add(list []int">
+  
+    <link rel="alternative" href="/atom.xml" title="lday的博客" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/assets/img/favicon.ico">
+  
+  <link rel="stylesheet" href="/main.css">
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div class="left-col">
+      <div class="overlay"></div>
+<div class="intrude-less">
+	<header id="header" class="inner">
+		<a href="/" class="profilepic">
+			
+			<img src="/assets/blogImg/donkey.jpg" class="js-avatar">
+			
+		</a>
+
+		<hgroup>
+		  <h1 class="header-author"><a href="/">lday</a></h1>
+		</hgroup>
+
+		
+		<p class="header-subtitle">Life, Coding, Funning</p>
+		
+
+		<nav class="header-menu">
+			<ul>
+			
+				<li><a href="/">主页</a></li>
+	        
+				<li><a href="/archives">归档</a></li>
+	        
+				<li><a href="/tags/hello/">随笔</a></li>
+	        
+			</ul>
+		</nav>
+		<nav class="header-smart-menu">
+	        
+    		
+    			
+    			<a class="js-smart-menu" data-idx="0" href="javascript:void(0)">所有文章</a>
+    			
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="1" href="javascript:void(0)">标签</a>
+    			
+    			
+            
+    			
+            
+    			
+    			<a class="js-smart-menu" data-idx="2" href="javascript:void(0)">关于我</a>
+    			
+    			
+            
+		</nav>
+		<nav class="header-nav">
+			<div class="social">
+				
+					<a class="github" target="_blank" href="https://github.com/lday0321" title="github">github</a>
+		        
+					<a class="weibo" target="_blank" href="http://weibo.com/lday" title="weibo">weibo</a>
+		        
+					<a class="rss" target="_blank" href="/atom.xml" title="rss">rss</a>
+		        
+					<a class="mail" target="_blank" href="/oneday0321@gmail.com" title="mail">mail</a>
+		        
+			</div>
+		</nav>
+	</header>		
+</div>
+
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+  	<div class="overlay">
+  		<div class="slider-trigger"><i class="icon-list"></i></div>
+  		<h1 class="header-author js-mobile-header hide">lday</h1>
+  	</div>
+	<div class="intrude-less">
+		<header id="header" class="inner">
+			<div class="profilepic">
+				
+					<img src="/assets/blogImg/donkey.jpg" class="js-avatar">
+				
+			</div>
+			<hgroup>
+			  <h1 class="header-author">lday</h1>
+			</hgroup>
+			
+			<p class="header-subtitle">Life, Coding, Funning</p>
+			
+			<nav class="header-menu">
+				<ul>
+				
+					<li><a href="/">主页</a></li>
+		        
+					<li><a href="/archives">归档</a></li>
+		        
+					<li><a href="/tags/hello/">随笔</a></li>
+		        
+				</ul>
+			</nav>
+			<nav class="header-nav">
+				<div class="social">
+					
+						<a class="github" target="_blank" href="https://github.com/lday0321" title="github">github</a>
+			        
+						<a class="weibo" target="_blank" href="http://weibo.com/lday" title="weibo">weibo</a>
+			        
+						<a class="rss" target="_blank" href="/atom.xml" title="rss">rss</a>
+			        
+						<a class="mail" target="_blank" href="/oneday0321@gmail.com" title="mail">mail</a>
+			        
+				</div>
+			</nav>
+		</header>				
+	</div>
+</nav>
+
+      <div class="body-wrap">
+        <article id="post-0004_golong-slice-depth" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      细看Go中的切片(slice)
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="讨论群中关于切片的一个问题"><a href="#讨论群中关于切片的一个问题" class="headerlink" title="讨论群中关于切片的一个问题"></a>讨论群中关于切片的一个问题</h1><h2 id="Q1：对slice的append无效"><a href="#Q1：对slice的append无效" class="headerlink" title="Q1：对slice的append无效"></a>Q1：对slice的append无效</h2><p>在群里有人提问，下述<a href="https://play.golang.org/p/jWy3kP2A25" target="_blank" rel="external">代码</a>对slice的append无效<br><figure class="highlight golang"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> main</div><div class="line"></div><div class="line"><span class="keyword">import</span> (</div><div class="line">	<span class="string">"fmt"</span></div><div class="line">)</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</div><div class="line">	list := <span class="built_in">make</span>([]<span class="keyword">int</span>, <span class="number">2</span>)</div><div class="line">	add(list)</div><div class="line">	fmt.Println(list)</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">add</span><span class="params">(list []<span class="keyword">int</span>)</span></span> &#123;</div><div class="line">	list = <span class="built_in">append</span>(list, <span class="number">100</span>)</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>执行结果：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">[0 0]</div></pre></td></tr></table></figure></p>
+<p>有人给出的解释是：</p>
+<blockquote>
+<p>切片扩容了实际地址发送了变化</p>
+</blockquote>
+<h2 id="Q2：即使空间足够，slice不扩容，对slice的append还是无效"><a href="#Q2：即使空间足够，slice不扩容，对slice的append还是无效" class="headerlink" title="Q2：即使空间足够，slice不扩容，对slice的append还是无效"></a>Q2：即使空间足够，slice不扩容，对slice的append还是无效</h2><p>根据上面的解释，提问者修改了示例<a href="https://play.golang.org/p/G0WE7S22Wq" target="_blank" rel="external">代码</a>，但修改后的代码对slice的append仍然无效：<br><figure class="highlight golang"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> main</div><div class="line"></div><div class="line"><span class="keyword">import</span> (</div><div class="line">	<span class="string">"fmt"</span></div><div class="line">)</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</div><div class="line">	list := <span class="built_in">make</span>([]<span class="keyword">int</span>, <span class="number">0</span>, <span class="number">100</span>) <span class="comment">//leave enough space</span></div><div class="line">	add(list)</div><div class="line">	fmt.Println(list)</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">add</span><span class="params">(list []<span class="keyword">int</span>)</span></span> &#123;</div><div class="line">  	list = <span class="built_in">append</span>(list, <span class="number">100</span>)</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>执行结果：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">[]</div></pre></td></tr></table></figure></p>
+<h1 id="细看slice"><a href="#细看slice" class="headerlink" title="细看slice"></a>细看slice</h1><p>出于对上述现象的好奇，我对Go中slice的相关的内容进行了一些梳理</p>
+<h2 id="函数传参"><a href="#函数传参" class="headerlink" title="函数传参"></a>函数传参</h2><h2 id="内部结构"><a href="#内部结构" class="headerlink" title="内部结构"></a>内部结构</h2><h3 id="array的组织结构"><a href="#array的组织结构" class="headerlink" title="array的组织结构"></a>array的组织结构</h3><h3 id="slice的组织结构"><a href="#slice的组织结构" class="headerlink" title="slice的组织结构"></a>slice的组织结构</h3><h2 id="对问题的分析"><a href="#对问题的分析" class="headerlink" title="对问题的分析"></a>对问题的分析</h2><figure class="highlight golang"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> main</div><div class="line"></div><div class="line"><span class="keyword">import</span> <span class="string">"fmt"</span></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</div><div class="line">	underlyArray := [<span class="number">5</span>]<span class="keyword">int</span>&#123;&#125;</div><div class="line">	list := underlyArray[<span class="number">0</span>:<span class="number">0</span>]</div><div class="line"></div><div class="line">	fmt.Println(underlyArray[<span class="number">0</span>])</div><div class="line">	</div><div class="line">	add(list)</div><div class="line">	</div><div class="line">	fmt.Println(list)</div><div class="line">	fmt.Println(underlyArray[<span class="number">0</span>])</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">add</span><span class="params">(list []<span class="keyword">int</span>)</span></span> &#123;</div><div class="line">  	list = <span class="built_in">append</span>(list, <span class="number">100</span>)</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>执行<a href="https://play.golang.org/p/PNvCKIeLek" target="_blank" rel="external">代码</a></p>
+<p>我的回复：</p>
+<blockquote>
+<p>你示例add函数里面，实际上已经将100写入到list的空间了， 只是因为slice是值传递，在add里面，list的len修改为1， 但是出了add，list的len还是0，此时用Println是打印不出你写入的100的。我改了下示例，你可以看到underlyArray[0]已经被修改成100了：</p>
+</blockquote>
+<h1 id="进一步思考"><a href="#进一步思考" class="headerlink" title="进一步思考"></a>进一步思考</h1><p>当在闭包closure之外修改了slice的内容，闭包内访问slice，能看到更新的内容吗？</p>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><p><a href="https://blog.golang.org/go-slices-usage-and-internals" target="_blank" rel="external">Go Slices: usage and internals</a><br><a href="https://blog.golang.org/slices" target="_blank" rel="external">Arrays, slices (and strings): The mechanics of ‘append’</a></p>
+
+      
+    </div>
+    <div class="article-info article-info-index">
+      
+      <a href="/2017/02/06/0004_golong-slice-depth/" class="archive-article-date">
+  	<time datetime="2017-02-06T06:59:11.000Z" itemprop="datePublished"><i class="icon-clock"></i>2017-02-06</time>
+</a>
+      
+	<div class="article-tag tagcloud">
+		<i class="icon-price-tags"></i>
+		<ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/golang/">golang</a></li></ul>
+	</div>
+
+      
+
+      <div class="clearfix"></div>
+    </div>
+  </div>
+</article>
+
+  
+<nav id="article-nav">
+  
+  
+    <a href="/2017/02/01/0003_seri-stm-etcd3/" id="article-nav-older" class="article-nav-link-wrap">
+      <div class="article-nav-title">基于etcd3的访问序列化及分布式软事务内存</div>
+      <i class="icon-circle-right"></i>
+    </a>
+  
+</nav>
+
+
+
+
+<div class="share_jia">
+	<!-- JiaThis Button BEGIN -->
+	<div class="jiathis_style">
+		<span class="jiathis_txt">Share to: &nbsp; </span>
+		<a class="jiathis_button_facebook"></a> 
+	    <a class="jiathis_button_twitter"></a>
+	    <a class="jiathis_button_plus"></a> 
+	    <a class="jiathis_button_tsina"></a>
+		<a class="jiathis_button_cqq"></a>
+		<a class="jiathis_button_douban"></a>
+		<a class="jiathis_button_weixin"></a>
+		<a class="jiathis_button_tumblr"></a>
+    <a href="http://www.jiathis.com/share" class="jiathis jiathis_txt jtico jtico_jiathis" target="_blank"></a>
+	</div>
+	<script type="text/javascript" src="//v3.jiathis.com/code/jia.js?uid=1405949716054953" charset="utf-8"></script>
+	<!-- JiaThis Button END -->
+</div>
+
+
+
+
+
+
+<div class="duoshuo">
+	<!-- 多说评论框 start -->
+	<div class="ds-thread" data-thread-key="0004_golong-slice-depth" data-title="细看Go中的切片(slice)" data-url="http://lday.me/2017/02/06/0004_golong-slice-depth/"></div>
+	<!-- 多说评论框 end -->
+	<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+	<script type="text/javascript">
+	var duoshuoQuery = {short_name:"lday0321"};
+	(function() {
+		var ds = document.createElement('script');
+		ds.type = 'text/javascript';ds.async = true;
+		ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+		ds.charset = 'UTF-8';
+		(document.getElementsByTagName('head')[0] 
+		 || document.getElementsByTagName('body')[0]).appendChild(ds);
+	})();
+	</script>
+	<!-- 多说公共JS代码 end -->
+</div>
+
+
+
+
+
+      </div>
+      <footer id="footer">
+  <div class="outer">
+    <div id="footer-info">
+    	<div class="footer-left">
+    		&copy; 2017 lday
+    	</div>
+      	<div class="footer-right">
+      		<a href="http://hexo.io/" target="_blank">Hexo</a>  Theme <a href="https://github.com/litten/hexo-theme-yilia" target="_blank">Yilia</a> by Litten
+      	</div>
+    </div>
+  </div>
+</footer>
+    </div>
+    <script>
+	var yiliaConfig = {
+		fancybox: true,
+		mathjax: false,
+		animate: true,
+		isHome: false,
+		isPost: true,
+		isArchive: false,
+		isTag: false,
+		isCategory: false,
+		open_in_new: true,
+		root: "/",
+		innerArchive: true
+	}
+</script>
+
+<script src="/./main.js"></script>
+
+
+    
+<div class="tools-col">
+  <ul class="btn-wrap">
+    
+      <li class="chose" data-hook="tools-section-all"><span class="text">全部</span><i class="icon-book"></i></li>
+    
+    
+      <li data-hook="tools-section-tag"><span class="text">标签</span><i class="icon-price-tags"></i></li>
+    
+    
+    
+      <li data-hook="tools-section-me"><span class="text">我</span><i class="icon-smile"></i></li>
+    
+  </ul>
+  <div class="tools-wrap">
+    
+    	<section class="tools-section tools-section-all chose">
+    	</section>
+    
+
+    
+    	<section class="tools-section tools-section-tag">
+    			<div class="widget tagcloud" id="js-tagcloud">
+    				<a href="/tags/etcd/" style="font-size: 10px;">etcd</a> <a href="/tags/golang/" style="font-size: 10px;">golang</a> <a href="/tags/hello/" style="font-size: 10px;">hello</a> <a href="/tags/hello1/" style="font-size: 10px;">hello1</a> <a href="/tags/分布式/" style="font-size: 10px;">分布式</a>
+    			</div>
+    	</section>
+    
+
+    
+
+    
+    	<section class="tools-section tools-section-me">
+  	  	
+  	  		<div class="aboutme-wrap" id="js-aboutme">lday&lt;br&gt;&lt;br&gt;80后IT码农一枚&lt;br&gt;白羊座，喜热闹&lt;br/&gt;</div>
+  	  	
+    	</section>
+    
+  </div>
+  
+</div>
+    <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                      <div class="pswp__preloader__cut">
+                        <div class="pswp__preloader__donut"></div>
+                      </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div> 
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+  </div>
+</body>
+</html>
