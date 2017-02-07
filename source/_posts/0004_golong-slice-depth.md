@@ -25,17 +25,18 @@ func add(list []int) {
 	list = append(list, 100)
 }
 ```
+
 执行结果：
-```
-[0 0]
-```
+
+	[0 0]
+
 
 有人给出的解释是：
-> 切片扩容了实际地址发送了变化
+> 在add函数中执行append后，切片由于当前可用空间不足而执行了扩容，实际地址发送了变化，因此外层访问的list并非append后的list地址
 
 
 ## Q2：即使空间足够，slice不扩容，对slice的append还是无效
-根据上面的解释，提问者修改了示例[代码][5]，但修改后的代码对slice的append仍然无效：
+根据上面的解释，提问者修改了示例[代码][5]，以确保切片当前的可用空间足够，append时不进行扩容，仍然保持原有的list地址，但修改后的代码对slice的append仍然无效：
 ```golang
 package main
 
@@ -54,15 +55,18 @@ func add(list []int) {
 }
 ```
 执行结果：
-```
-[]
-```
+
+	[]
+
 
 # 细看slice
 
 出于对上述现象的好奇，我对Go中slice的相关的内容进行了一些梳理
 
-## 函数传参
+## 数据类型
+
+在《The Go Programming Language》中，作者将Go中的数据类型做了如下分类：
+> Go’s types fall into four categories: basic types, aggregate types, reference types, and interface types. Basic types, ... include numbers, strings, and booleans. Aggregate types—arrays ... and structs ... form more complicated data types by combining values of several simpler ones. Reference types are a diverse group that includes pointers ..., slices ..., maps ..., functions ..., and channels ..., but what they have in common is that they all refer to program variables or state indirectly, so that the effect of an operation applied to one reference is observed by all copies of that reference. Finally, ... interface types ...
 
 ## 内部结构
 
