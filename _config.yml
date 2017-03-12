@@ -9,7 +9,7 @@ description: 复旦大学02级，就职于万达ffan。喜爱后端技术，分�
 author: lday
 email: oneday0321@gmail.com
 keywords: "码农"
-language:
+language: zh-Hans
 timezone:
 
 # URL
@@ -69,8 +69,17 @@ pagination_dir: page
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: yilia
+# theme: yilia
+# theme: maupassant
+theme: yelee
 
+feed:
+  type: atom
+  path: atom.xml
+  limit: 20
+  hub:
+  content:
+  
 # Deployment
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
