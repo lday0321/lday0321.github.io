@@ -8,6 +8,9 @@ tags:
 # 讨论群中关于切片的一个问题
 ## Q1：对slice的append无效
 在群里有人提问，下述[代码][4]对slice的append无效
+
+<!-- more -->
+
 ```golang
 package main
 
