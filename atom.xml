@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>lday的博客</title>
+  <subtitle>Life, Coding, Funning</subtitle>
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="http://lday.me/"/>
+  <updated>2017-03-12T07:35:15.990Z</updated>
+  <id>http://lday.me/</id>
+  
+  <author>
+    <name>lday</name>
+    <email>oneday0321@gmail.com</email>
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Golang程序调试工具介绍(gdb vs dlv)</title>
+    <link href="http://lday.me/2017/02/27/0005_gdb-vs-dlv/"/>
+    <id>http://lday.me/2017/02/27/0005_gdb-vs-dlv/</id>
+    <published>2017-02-27T13:26:03.000Z</published>
+    <updated>2017-03-12T07:35:15.990Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;通过log库输出日志，我们可以对程序进行异常分析和问题追踪。但有时候，我也希望能有更直接的程序跟踪及定位工具能够帮助我们更方便快捷的追踪、定位问题，最直观的感觉还是使用调试器。Linux平台下，原生的C/C++程序，我们往往使用gdb进行程序调试，切换到Golang，我们同样还是可以使用gdb进行调试。同时我们还可以使用golang实现的调试器dlv进行调试。以下内容是我对gdb以及dlv使用及对比总结&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="golang" scheme="http://lday.me/tags/golang/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>细看Go中的切片(slice)</title>
+    <link href="http://lday.me/2017/02/25/0004_golang-slice-depth/"/>
+    <id>http://lday.me/2017/02/25/0004_golang-slice-depth/</id>
+    <published>2017-02-25T04:24:11.000Z</published>
+    <updated>2017-03-11T16:17:28.287Z</updated>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;讨论群中关于切片的一个问题&quot;&gt;&lt;a href=&quot;#讨论群中关于切片的一个问题&quot; class=&quot;headerlink&quot; title=&quot;讨论群中关于切片的一个问题&quot;&gt;&lt;/a&gt;讨论群中关于切片的一个问题&lt;/h1&gt;&lt;h2 id=&quot;Q1：对slice的append无效&quot;&gt;&lt;a href=&quot;#Q1：对slice的append无效&quot; class=&quot;headerlink&quot; title=&quot;Q1：对slice的append无效&quot;&gt;&lt;/a&gt;Q1：对slice的append无效&lt;/h2&gt;&lt;p&gt;在群里有人提问，下述&lt;a href=&quot;https://play.golang.org/p/jWy3kP2A25&quot;&gt;代码&lt;/a&gt;对slice的append无效&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="golang" scheme="http://lday.me/tags/golang/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>基于etcd3的访问序列化及分布式软事务内存</title>
+    <link href="http://lday.me/2017/02/01/0003_seri-stm-etcd3/"/>
+    <id>http://lday.me/2017/02/01/0003_seri-stm-etcd3/</id>
+    <published>2017-02-01T15:20:14.000Z</published>
+    <updated>2017-03-11T16:17:14.803Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;&lt;em&gt;本文翻译自&lt;a href=&quot;https://coreos.com/blog/transactional-memory-with-etcd3.html&quot;&gt;Serializability and Distributed Software Transactional Memory with etcd3&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;新的etcd3 API引入了新的更加强大的原语，相比较于etcd2的限制，这些新的原语充分利用了系统的能力。作为评估etcd3性能的一部分，我们花费了很大力气来使用新的API开发分布式的并发算法。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="分布式" scheme="http://lday.me/tags/%E5%88%86%E5%B8%83%E5%BC%8F/"/>
+    
+      <category term="etcd" scheme="http://lday.me/tags/etcd/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>你好，世界</title>
+    <link href="http://lday.me/2016/11/04/0002_hi/"/>
+    <id>http://lday.me/2016/11/04/0002_hi/</id>
+    <published>2016-11-04T09:18:59.000Z</published>
+    <updated>2017-03-11T16:16:54.301Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;中文版，hello world, from mac&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="hello1" scheme="http://lday.me/tags/hello1/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>Hello World</title>
+    <link href="http://lday.me/2016/11/03/0001_hello-world/"/>
+    <id>http://lday.me/2016/11/03/0001_hello-world/</id>
+    <published>2016-11-03T15:55:00.000Z</published>
+    <updated>2017-03-11T16:16:42.562Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;Welcome to &lt;a href=&quot;https://hexo.io/&quot;&gt;Hexo&lt;/a&gt;! This is your very first post. Check &lt;a href=&quot;https://hexo.io/docs/&quot;&gt;documentation&lt;/a&gt; for more info. If you get any problems when using Hexo, you can find the answer in &lt;a href=&quot;https://hexo.io/docs/troubleshooting.html&quot;&gt;troubleshooting&lt;/a&gt; or you can ask me on &lt;a href=&quot;https://github.com/hexojs/hexo/issues&quot;&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="hello" scheme="http://lday.me/tags/hello/"/>
+    
+  </entry>
+  
+</feed>

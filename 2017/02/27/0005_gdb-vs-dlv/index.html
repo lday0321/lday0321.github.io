@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no" />
+<meta name="author" content="lday" />
+
+
+
+<meta name="description" content="通过log库输出日志，我们可以对程序进行异常分析和问题追踪。但有时候，我也希望能有更直接的程序跟踪及定位工具能够帮助我们更方便快捷的追踪、定位问题，最直观的感觉还是使用调试器。Linux平台下，原生的C/C++程序，我们往往使用gdb进行程序调试，切换到Golang，我们同样还是可以使用gdb进行调试。同时我们还可以使用golang实现的调试器dlv进行调试。以下内容是我对gdb以及dlv使用及对">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Golang程序调试工具介绍(gdb vs dlv)">
+<meta property="og:url" content="http://lday.me/2017/02/27/0005_gdb-vs-dlv/index.html">
+<meta property="og:site_name" content="lday的博客">
+<meta property="og:description" content="通过log库输出日志，我们可以对程序进行异常分析和问题追踪。但有时候，我也希望能有更直接的程序跟踪及定位工具能够帮助我们更方便快捷的追踪、定位问题，最直观的感觉还是使用调试器。Linux平台下，原生的C/C++程序，我们往往使用gdb进行程序调试，切换到Golang，我们同样还是可以使用gdb进行调试。同时我们还可以使用golang实现的调试器dlv进行调试。以下内容是我对gdb以及dlv使用及对">
+<meta property="og:image" content="https://raw.githubusercontent.com/aarzilli/gdlv/master/doc/screen.png">
+<meta property="og:updated_time" content="2017-03-12T07:35:15.990Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Golang程序调试工具介绍(gdb vs dlv)">
+<meta name="twitter:description" content="通过log库输出日志，我们可以对程序进行异常分析和问题追踪。但有时候，我也希望能有更直接的程序跟踪及定位工具能够帮助我们更方便快捷的追踪、定位问题，最直观的感觉还是使用调试器。Linux平台下，原生的C/C++程序，我们往往使用gdb进行程序调试，切换到Golang，我们同样还是可以使用gdb进行调试。同时我们还可以使用golang实现的调试器dlv进行调试。以下内容是我对gdb以及dlv使用及对">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/aarzilli/gdlv/master/doc/screen.png">
+
+<link rel="apple-touch-icon" href= "/apple-touch-icon.png">
+
+
+    <link rel="alternate" href="/atom.xml" title="lday的博客" type="application/atom+xml">
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+    <link href="//cdn.bootcss.com/animate.css/3.5.1/animate.min.css" rel="stylesheet">
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>Golang程序调试工具介绍(gdb vs dlv) | lday的博客</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: true,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: undefined
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/assets/blogImg/donkey.jpg" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">lday</a></h1>
+        </hgroup>
+
+        
+        <p class="header-subtitle">Life, Coding, Funning</p>
+        
+
+        
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>菜单</li>
+                        <li>标签</li>
+                        
+                        <li>友情链接</li>
+                        
+                        
+                        <li>关于我</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" href="mailto:oneday0321@gmail.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" href="https://github.com/lday0321" title="GitHub"></a>
+                            
+                                <a class="fa RSS" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/etcd/">etcd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/golang/">golang</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hello/">hello</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hello1/">hello1</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/分布式/">分布式</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">lday, 80后IT码农一枚. 白羊座，喜热闹</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">lday</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/assets/blogImg/donkey.jpg" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">lday</a></h1>
+            </hgroup>
+            
+            <p class="header-subtitle">Life, Coding, Funning</p>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:oneday0321@gmail.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/lday0321" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
+</nav>
+      <div class="body-wrap"><article id="post-0005_gdb-vs-dlv" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2017/02/27/0005_gdb-vs-dlv/" class="article-date">
+      <time datetime="2017-02-27T13:26:03.000Z" itemprop="datePublished">2017-02-27</time>
+</a>
+
+
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Golang程序调试工具介绍(gdb vs dlv)
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/golang/">golang</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <p>通过log库输出日志，我们可以对程序进行异常分析和问题追踪。但有时候，我也希望能有更直接的程序跟踪及定位工具能够帮助我们更方便快捷的追踪、定位问题，最直观的感觉还是使用调试器。Linux平台下，原生的C/C++程序，我们往往使用gdb进行程序调试，切换到Golang，我们同样还是可以使用gdb进行调试。同时我们还可以使用golang实现的调试器dlv进行调试。以下内容是我对gdb以及dlv使用及对比总结</p>
+<a id="more"></a>
+<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>为展示整个调试过程，准备了一个演示项目<strong>GoDbg</strong>,整个目录结构如下所示</p>
+<pre><code>[lday@alex GoDbg]$ tree
+.
+├── main.go
+└── mylib
+    └── dbgTest.go
+</code></pre><p>其中，main.go为主函数入口，而dbgTest.go启动多个goroutine，用于演示调试操作。<br>main.go:<br><figure class="highlight golang"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> main</div><div class="line"></div><div class="line"><span class="keyword">import</span> (</div><div class="line">	<span class="string">"GoWorks/GoDbg/mylib"</span></div><div class="line">	<span class="string">"fmt"</span></div><div class="line">	<span class="string">"os"</span></div><div class="line">)</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</div><div class="line">	fmt.Println(<span class="string">"Golang dbg test..."</span>)</div><div class="line"></div><div class="line">	<span class="keyword">var</span> argc = <span class="built_in">len</span>(os.Args)</div><div class="line">	<span class="keyword">var</span> argv = <span class="built_in">append</span>([]<span class="keyword">string</span>&#123;&#125;, os.Args...)</div><div class="line"></div><div class="line">	fmt.Printf(<span class="string">"argc:%d\n"</span>, argc)</div><div class="line">	fmt.Printf(<span class="string">"argv:%v\n"</span>, argv)</div><div class="line"></div><div class="line">	<span class="keyword">var</span> var1 = <span class="number">1</span></div><div class="line">	<span class="keyword">var</span> var2 = <span class="string">"golang dbg test"</span></div><div class="line">	<span class="keyword">var</span> var3 = []<span class="keyword">int</span>&#123;<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>&#125;</div><div class="line">	<span class="keyword">var</span> var4 mylib.MyStruct</div><div class="line">	var4.A = <span class="number">1</span></div><div class="line">	var4.B = <span class="string">"golang dbg my struct field B"</span></div><div class="line">	var4.C = <span class="keyword">map</span>[<span class="keyword">int</span>]<span class="keyword">string</span>&#123;<span class="number">1</span>: <span class="string">"value1"</span>, <span class="number">2</span>: <span class="string">"value2"</span>, <span class="number">3</span>: <span class="string">"value3"</span>&#125;</div><div class="line">	var4.D = []<span class="keyword">string</span>&#123;<span class="string">"D1"</span>, <span class="string">"D2"</span>, <span class="string">"D3"</span>&#125;</div><div class="line"></div><div class="line">	mylib.DBGTestRun(var1, var2, var3, var4)</div><div class="line">	fmt.Println(<span class="string">"Golang dbg test over"</span>)</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>dbgTest.go:<br><figure class="highlight golang"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> mylib</div><div class="line"></div><div class="line"><span class="keyword">import</span> (</div><div class="line">	<span class="string">"fmt"</span></div><div class="line">	<span class="string">"sync"</span></div><div class="line">	<span class="string">"time"</span></div><div class="line">)</div><div class="line"></div><div class="line"><span class="keyword">type</span> MyStruct <span class="keyword">struct</span> &#123;</div><div class="line">	A <span class="keyword">int</span></div><div class="line">	B <span class="keyword">string</span></div><div class="line">	C <span class="keyword">map</span>[<span class="keyword">int</span>]<span class="keyword">string</span></div><div class="line">	D []<span class="keyword">string</span></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">DBGTestRun</span><span class="params">(var1 <span class="keyword">int</span>, var2 <span class="keyword">string</span>, var3 []<span class="keyword">int</span>, var4 MyStruct)</span></span> &#123;</div><div class="line">	fmt.Println(<span class="string">"DBGTestRun Begin!\n"</span>)</div><div class="line">	waiter := &amp;sync.WaitGroup&#123;&#125;</div><div class="line"></div><div class="line">	waiter.Add(<span class="number">1</span>)</div><div class="line">	<span class="keyword">go</span> RunFunc1(var1, waiter)</div><div class="line"></div><div class="line">	waiter.Add(<span class="number">1</span>)</div><div class="line">	<span class="keyword">go</span> RunFunc2(var2, waiter)</div><div class="line"></div><div class="line">	waiter.Add(<span class="number">1</span>)</div><div class="line">	<span class="keyword">go</span> RunFunc3(&amp;var3, waiter)</div><div class="line"></div><div class="line">	waiter.Add(<span class="number">1</span>)</div><div class="line">	<span class="keyword">go</span> RunFunc4(&amp;var4, waiter)</div><div class="line"></div><div class="line">	waiter.Wait()</div><div class="line">	fmt.Println(<span class="string">"DBGTestRun Finished!\n"</span>)</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">RunFunc1</span><span class="params">(variable <span class="keyword">int</span>, waiter *sync.WaitGroup)</span></span> &#123;</div><div class="line">	fmt.Printf(<span class="string">"var1:%v\n"</span>, variable)</div><div class="line">	<span class="keyword">for</span> &#123;</div><div class="line">		<span class="keyword">if</span> variable != <span class="number">123456</span> &#123;</div><div class="line">			<span class="keyword">continue</span></div><div class="line">		&#125; <span class="keyword">else</span> &#123;</div><div class="line">			<span class="keyword">break</span></div><div class="line">		&#125;</div><div class="line">	&#125;</div><div class="line">	time.Sleep(<span class="number">10</span> * time.Second)</div><div class="line">	waiter.Done()</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">RunFunc2</span><span class="params">(variable <span class="keyword">string</span>, waiter *sync.WaitGroup)</span></span> &#123;</div><div class="line">	fmt.Printf(<span class="string">"var2:%v\n"</span>, variable)</div><div class="line">	time.Sleep(<span class="number">10</span> * time.Second)</div><div class="line">	waiter.Done()</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">RunFunc3</span><span class="params">(pVariable *[]<span class="keyword">int</span>, waiter *sync.WaitGroup)</span></span> &#123;</div><div class="line">	fmt.Printf(<span class="string">"*pVar3:%v\n"</span>, *pVariable)</div><div class="line">	time.Sleep(<span class="number">10</span> * time.Second)</div><div class="line">	waiter.Done()</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">RunFunc4</span><span class="params">(pVariable *MyStruct, waiter *sync.WaitGroup)</span></span> &#123;</div><div class="line">	fmt.Printf(<span class="string">"*pVar4:%v\n"</span>, *pVariable)</div><div class="line">	time.Sleep(<span class="number">10</span> * time.Second)</div><div class="line">	waiter.Done()</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>在对程序进行调试前，我们需要对目标程序进行调试版本程序的编译。C/C++程序，我们会通过gcc/g++进行编译、链接时加入<code>-g3</code>等参数，使得程序编译时带入调试信息，进而让调试器能够最终并解释相关的程序代码。同样的，在我们对Golang程序进行调试时，我们也需要加入相应的编译、链接选项：<code>-gcflags=&quot;-N -l&quot;</code>，生成程序调试信息（<code>-N -l</code>用于关闭编译器的内联优化）。编译GoDbg项目指令：<code>go build -gcflags=&quot;-N -l&quot; GoWorks/GoDbg</code></p>
+<h2 id="gdb调试程序"><a href="#gdb调试程序" class="headerlink" title="gdb调试程序"></a>gdb调试程序</h2><p>因为gdb对Golang的支持也是在不断完善中，为使用gdb调试Golang程序，建议将gdb升级到相对较新版本，目前，我使用的版本是<strong>gdb7.10</strong>。<br>大多数命令在使用gdb调试C/C++时都会用到，详细说明可参考：<a href="https://golang.org/doc/gdb" target="_blank" rel="external">Debugging Go Code with GDB</a>，具体操作如下：</p>
+<ol>
+<li><p>启动调试程序（<code>gdb</code>）</p>
+<pre><code>[lday@alex GoDbg]$ gdb ./GoDbg
+</code></pre></li>
+<li><p>在main函数上设置断点（<code>b</code>）</p>
+<pre><code>(gdb) b main.main
+Breakpoint 1 at 0x401000: file /home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/main.go, line 9.
+</code></pre></li>
+<li><p>带参数启动程序（<code>r</code>）</p>
+<pre><code>(gdb) r arg1 arg2
+Starting program: /home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/GoDbg arg1 arg2
+[New LWP 8412]
+[New LWP 8413]
+[New LWP 8414]
+[New LWP 8415]
+
+Breakpoint 1, main.main () at /home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/main.go:9
+9    func main() {
+</code></pre></li>
+<li><p>在文件dbgTest.go上通过行号设置断点（<code>b</code>）</p>
+<pre><code>(gdb) b dbgTest.go:16
+Breakpoint 3 at 0x457960: file /home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/mylib/dbgTest.go, line 16.
+</code></pre></li>
+<li><p>查看断点设置情况（<code>info b</code>）</p>
+<pre><code>(gdb) info b
+Num     Type           Disp Enb Address            What
+1       breakpoint     keep y   0x0000000000401000 in main.main 
+                                                   at /home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/main.go:9
+    breakpoint already hit 1 time
+2       breakpoint     keep y   0x0000000000401000 in main.main 
+                                                   at /home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/main.go:9
+    breakpoint already hit 1 time
+3       breakpoint     keep y   0x0000000000457960 in GoWorks/GoDbg/mylib.DBGTestRun 
+                                                   at /home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/mylib/dbgTest.go:16
+</code></pre></li>
+<li><p>禁用断点（<code>dis n</code>）</p>
+<pre><code>(gdb) dis 1   
+(gdb) info b
+Num     Type           Disp Enb Address            What
+1       breakpoint     keep n   0x0000000000401000 in main.main 
+                                                   at /home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/main.go:9
+    breakpoint already hit 1 time
+2       breakpoint     keep y   0x0000000000401000 in main.main 
+                                                   at /home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/main.go:9
+    breakpoint already hit 1 time
+3       breakpoint     keep y   0x0000000000457960 in GoWorks/GoDbg/mylib.DBGTestRun 
+                                                   at /home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/mylib/dbgTest.go:16
+</code></pre></li>
+<li><p>删除断点（<code>del n</code>）</p>
+<pre><code>(gdb) del 1
+(gdb) info b
+Num     Type           Disp Enb Address            What
+2       breakpoint     keep y   0x0000000000401000 in main.main 
+                                                   at /home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/main.go:9
+    breakpoint already hit 1 time
+3       breakpoint     keep y   0x0000000000457960 in GoWorks/GoDbg/mylib.DBGTestRun 
+                                                   at /home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/mylib/dbgTest.go:16
+</code></pre></li>
+<li><p>断点后继续执行（<code>c</code>）</p>
+<pre><code>(gdb) c
+Continuing.
+Golang dbg test...
+argc:3
+argv:[/home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/GoDbg arg1 arg2]
+
+Breakpoint 3, GoWorks/GoDbg/mylib.DBGTestRun (var1=1, var2=&quot;golang dbg test&quot;)
+    at /home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/mylib/dbgTest.go:16
+16    func DBGTestRun(var1 int, var2 string, var3 []int, var4 MyStruct) {
+(gdb) 
+</code></pre></li>
+<li><p>显示代码（<code>l</code>）</p>
+<pre><code>(gdb) l
+11        B string
+12        C map[int]string
+13        D []string
+14    }
+15    
+16    func DBGTestRun(var1 int, var2 string, var3 []int, var4 MyStruct) {
+17        fmt.Println(&quot;DBGTestRun Begin!\n&quot;)
+18        waiter := &amp;sync.WaitGroup{}
+19    
+20        waiter.Add(1)
+</code></pre></li>
+<li><p>单步执行（<code>n</code>）</p>
+<pre><code>(gdb) n
+DBGTestRun Begin!
+
+18        waiter := &amp;sync.WaitGroup{}
+</code></pre></li>
+<li><p>打印变量信息（<code>print/p</code>）<br>在进入DBGTestRun的地方设置断点(<code>b dbgTest.go:16</code>)，进入该函数后，通过p命令显示对应变量：</p>
+<pre><code>(gdb) l 17
+12        C map[int]string
+13        D []string
+14    }
+15    
+16    func DBGTestRun(var1 int, var2 string, var3 []int, var4 MyStruct) {
+17        fmt.Println(&quot;DBGTestRun Begin!\n&quot;)
+18        waiter := &amp;sync.WaitGroup{}
+19    
+20        waiter.Add(1)
+21        go RunFunc1(var1, waiter)
+(gdb) p var1 
+$3 = 1
+(gdb) p var2
+$4 = &quot;golang dbg test&quot;
+(gdb) p var3
+No symbol &quot;var3&quot; in current context.
+</code></pre><p><strong><em>从上面的输出我们可以看到一个很奇怪的事情，虽然DBGTestRun有4个参数传入，但是，似乎var3和var4 gdb无法识别，在后续对dlv的实验操作中，我们发现，dlv能够识别var3， var4.</em></strong></p>
+</li>
+<li><p>查看调用栈（<code>bt</code>），切换调用栈（<code>f n</code>），显示当前栈变量信息</p>
+<pre><code>(gdb) bt
+#0  GoWorks/GoDbg/mylib.DBGTestRun (var1=1, var2=&quot;golang dbg test&quot;)
+    at /home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/mylib/dbgTest.go:17
+#1  0x00000000004018c2 in main.main () at /home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/main.go:27
+(gdb) f 1
+#1  0x00000000004018c2 in main.main () at /home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/main.go:27
+27        mylib.DBGTestRun(var1, var2, var3, var4)
+(gdb) l
+22        var4.A = 1
+23        var4.B = &quot;golang dbg my struct field B&quot;
+24        var4.C = map[int]string{1: &quot;value1&quot;, 2: &quot;value2&quot;, 3: &quot;value3&quot;}
+25        var4.D = []string{&quot;D1&quot;, &quot;D2&quot;, &quot;D3&quot;}
+26    
+27        mylib.DBGTestRun(var1, var2, var3, var4)
+28        fmt.Println(&quot;Golang dbg test over&quot;)
+29    }
+(gdb) print var1 
+$5 = 1
+(gdb) print var2
+$6 = &quot;golang dbg test&quot;
+(gdb) print var3
+$7 =  []int = {1, 2, 3}
+
+(gdb) print var4
+$8 = {A = 1, B = &quot;golang dbg my struct field B&quot;, C = map[int]string = {[1] = &quot;value1&quot;, [2] = &quot;value2&quot;, [3] = &quot;value3&quot;}, 
+D =  []string = {&quot;D1&quot;, &quot;D2&quot;, &quot;D3&quot;}}
+</code></pre></li>
+<li><p>显示goroutine列表（<code>info goroutines</code>）<br>当程序执行到<code>dbgTest.go:23</code>时，程序通过go启动了第一个goroutine，并执行<code>RunFunc1()</code>，我们可以通过上述命令查看goroutine列表</p>
+<pre><code>(gdb) n
+23        waiter.Add(1)
+(gdb) info goroutines
+* 1 running  runtime.systemstack_switch
+  2 waiting  runtime.gopark
+  17 waiting  runtime.gopark
+  18 waiting  runtime.gopark
+  19 runnable GoWorks/GoDbg/mylib.RunFunc1
+</code></pre></li>
+<li><p>查看goroutine的具体情况（<code>goroutine n cmd</code>）</p>
+<pre><code>(gdb) goroutine 19 bt
+#0  GoWorks/GoDbg/mylib.RunFunc1 (variable=1, waiter=0xc8200721f0)
+    at /home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/mylib/dbgTest.go:36
+#1  0x0000000000456df1 in runtime.goexit () at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/runtime/asm_amd64.s:1998
+#2  0x0000000000000001 in ?? ()
+#3  0x000000c8200721f0 in ?? ()
+#4  0x0000000000000000 in ?? ()
+</code></pre><p>我们可以通过上述指令查看goroutine 9的调用栈，显然，该goroutine正在执行<code>dbgTest.go:36</code>行的函数：<code>RunFunc1</code>的goroutine。我们通过<code>goroutine 19 info args</code>等命令来查看该goroutine最顶层调用栈的变量信息，但是，如果我们需要查看的信息不再最顶层调用栈上，则很遗憾，gdb没法输出</p>
+<pre><code>(gdb) goroutine 19 info args
+variable = 1
+waiter = 0xc8200721f0
+(gdb) goroutine 19 p waiter 
+$1 = (struct sync.WaitGroup *) 0xc8200721f0
+
+(gdb) goroutine 19 p *waiter 
+$2 = {state1 = &quot;\000\000\000\000\001\000\000\000\000\000\000&quot;, sema = 0}
+</code></pre><p>当我们执行到第26行，第2个goroutine被我们启动时，再次查看goroutine列表：</p>
+<pre><code>(gdb) n
+26        waiter.Add(1)
+(gdb) info goroutines
+* 1 running  runtime.systemstack_switch
+  2 waiting  runtime.gopark
+  17 waiting  runtime.gopark
+  18 waiting  runtime.gopark
+* 19 running  syscall.Syscall
+  20 runnable GoWorks/GoDbg/mylib.RunFunc2
+</code></pre><p>此时我们再次查看goroutine 19的状态</p>
+<pre><code>(gdb) goroutine 19 bt
+#0  syscall.Syscall () at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/syscall/asm_linux_amd64.s:19
+#1  0x00000000004ab95f in syscall.write (fd=1, p= []uint8 = {...}, n=859530587568, err=...)
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/syscall/zsyscall_linux_amd64.go:1064
+#2  0x00000000004ab40d in syscall.Write (fd=5131648, p= []uint8, n=0, err=...)
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/syscall/syscall_unix.go:180
+#3  0x000000000046c928 in os.(*File).write (f=0xc820084008, b= []uint8, n=4571929, err=...)
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/os/file_unix.go:255
+#4  0x000000000046aa24 in os.(*File).Write (f=0xc82008a000, b= []uint8 = {...}, n=7, err=...)
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/os/file.go:144
+#5  0x000000000045c707 in fmt.Fprintf (w=..., format=&quot;var1:%v\n&quot;, a= []interface {} = {...}, n=7, err=...)
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/fmt/print.go:190
+#6  0x000000000045c7b4 in fmt.Printf (format=&quot;var1:%v\n&quot;, a= []interface {} = {...}, n=7, err=...)
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/fmt/print.go:197
+#7  0x00000000004583eb in GoWorks/GoDbg/mylib.RunFunc1 (variable=1, waiter=0xc8200721f0)
+    at /home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/mylib/dbgTest.go:37
+#8  0x0000000000456df1 in runtime.goexit () at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/runtime/asm_amd64.s:1998
+#9  0x0000000000000001 in ?? ()
+#10 0x000000c8200721f0 in ?? ()
+#11 0x0000000000000000 in ?? ()
+</code></pre><p>从第7，8层调用栈我们可以看到，此时goroutine 19已经进入到<code>RunFunc1</code>的<code>fmt.Printf</code>函数中，当我们尝试在goroutine 19上切换栈时，gdb报错：</p>
+<pre><code>(gdb) goroutine 19 f 7
+#7  0x00000000004583eb in GoWorks/GoDbg/mylib.RunFunc1 (variable=1, waiter=0xc8200721f0)
+    at /home/lday/Works/Go_Works/GoLocalWorks/src/GoWorks/GoDbg/mylib/dbgTest.go:37
+37        fmt.Printf(&quot;var1:%v\n&quot;, variable)
+Python Exception &lt;class &apos;gdb.error&apos;&gt; Frame is invalid.: 
+Error occurred in Python command: Frame is invalid.
+</code></pre><p>似乎gdb不允许我们在goroutine上做调用栈的切换，因此我们没法在这种状态下查看某层调用栈的变量信息。<strong><em>缺少在goroutine上不同frame的变量查看，个人感觉gdb调试Golang程序功能大打折扣，在后面对dlv的实验操作中我们可以看到，dlv可以！</em></strong></p>
+</li>
+</ol>
+<h2 id="dlv调试程序"><a href="#dlv调试程序" class="headerlink" title="dlv调试程序"></a>dlv调试程序</h2><p>尝试了”老牌”调试器gdb，我们再来试试新进的Golang原生调试器<a href="https://github.com/derekparker/delve" target="_blank" rel="external">delve(dlv)</a>。</p>
+<blockquote>
+<p>Delve is a debugger for the Go programming language. The goal of the project is to provide a simple, full featured debugging tool for Go</p>
+</blockquote>
+<p>dlv是Golang实现的Golang调试器，目前dlv对windows平台的支持似乎不是很好，我在windows平台调试，dlv无法找到目标程序的源代码，因此建议在Linux平台下调试Golang程序时使用。使用dlv前，需在本地通过<code>go get github.com/derekparker/delve/cmd/dlv</code>进行安装。dlv的详细介绍可参见github上的<a href="https://github.com/derekparker/delve" target="_blank" rel="external">delve介绍</a>。以下是具体操作说明</p>
+<ol>
+<li><p>带参数启动程序（<code>dlv exec ./GoDbg -- arg1 arg2</code>）</p>
+<pre><code>[lday@alex GoDbg]$ dlv exec ./GoDbg -- arg1 arg2 
+Type &apos;help&apos; for list of commands.
+(dlv) 
+</code></pre></li>
+<li><p>在main函数上设置断点（<code>b</code>）</p>
+<pre><code>(dlv) b main.main
+Breakpoint 1 set at 0x40101b for main.main() ./main.go:9
+</code></pre></li>
+<li><p>启动调试，断点后继续执行（<code>c</code>）</p>
+<pre><code>(dlv) c
+&gt; main.main() ./main.go:9 (hits goroutine(1):1 total:1) (PC: 0x40101b)
+     4:        &quot;GoWorks/GoDbg/mylib&quot;
+     5:        &quot;fmt&quot;
+     6:        &quot;os&quot;
+     7:    )
+     8:    
+=&gt;   9:    func main() {
+    10:        fmt.Println(&quot;Golang dbg test...&quot;)
+    11:    
+    12:        var argc = len(os.Args)
+    13:        var argv = append([]string{}, os.Args...)
+    14:    
+</code></pre></li>
+<li><p>在文件dbgTest.go上通过行号设置断点（<code>b</code>）</p>
+<pre><code>(dlv) b dbgTest.go:17
+Breakpoint 2 set at 0x457f51 for GoWorks/GoDbg/mylib.DBGTestRun() ./mylib/dbgTest.go:17
+(dlv) b dbgTest.go:23
+Breakpoint 3 set at 0x4580d0 for GoWorks/GoDbg/mylib.DBGTestRun() ./mylib/dbgTest.go:23
+(dlv) b dbgTest.go:26
+Breakpoint 4 set at 0x458123 for GoWorks/GoDbg/mylib.DBGTestRun() ./mylib/dbgTest.go:26
+(dlv) b dbgTest.go:29
+Breakpoint 5 set at 0x458166 for GoWorks/GoDbg/mylib.DBGTestRun() ./mylib/dbgTest.go:29
+</code></pre></li>
+<li><p>显示所有断点列表（<code>bp</code>）</p>
+<pre><code>(dlv) bp
+Breakpoint unrecovered-panic at 0x429690 for runtime.startpanic() /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/runtime/panic.go:524 (0)
+Breakpoint 1 at 0x40101b for main.main() ./main.go:9 (1)
+Breakpoint 2 at 0x457f51 for GoWorks/GoDbg/mylib.DBGTestRun() ./mylib/dbgTest.go:17 (0)
+Breakpoint 3 at 0x4580d0 for GoWorks/GoDbg/mylib.DBGTestRun() ./mylib/dbgTest.go:23 (0)
+Breakpoint 4 at 0x458123 for GoWorks/GoDbg/mylib.DBGTestRun() ./mylib/dbgTest.go:26 (0)
+Breakpoint 5 at 0x458166 for GoWorks/GoDbg/mylib.DBGTestRun() ./mylib/dbgTest.go:29 (0)
+</code></pre><p>dlv似乎没有提供类似gdb<code>dis x</code>，禁止某个断点的功能，在文档中暂时没有查到。不过这个功能用处不大。</p>
+</li>
+<li><p>删除某个断点（<code>clear x</code>）</p>
+<pre><code>(dlv) clear 5
+Breakpoint 5 cleared at 0x458166 for GoWorks/GoDbg/mylib.DBGTestRun() ./mylib/dbgTest.go:29
+(dlv) bp
+Breakpoint unrecovered-panic at 0x429690 for runtime.startpanic() /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/runtime/panic.go:524 (0)
+Breakpoint 1 at 0x40101b for main.main() ./main.go:9 (1)
+Breakpoint 2 at 0x457f51 for GoWorks/GoDbg/mylib.DBGTestRun() ./mylib/dbgTest.go:17 (0)
+Breakpoint 3 at 0x4580d0 for GoWorks/GoDbg/mylib.DBGTestRun() ./mylib/dbgTest.go:23 (0)
+Breakpoint 4 at 0x458123 for GoWorks/GoDbg/mylib.DBGTestRun() ./mylib/dbgTest.go:26 (0)
+</code></pre></li>
+<li><p>显示当前运行的代码位置（<code>ls</code>）</p>
+<pre><code>(dlv) ls
+&gt; GoWorks/GoDbg/mylib.DBGTestRun() ./mylib/dbgTest.go:17 (hits goroutine(1):1 total:1) (PC: 0x457f51)
+    12:        C map[int]string
+    13:        D []string
+    14:    }
+    15:    
+    16:    func DBGTestRun(var1 int, var2 string, var3 []int, var4 MyStruct) {
+=&gt;  17:        fmt.Println(&quot;DBGTestRun Begin!\n&quot;)
+    18:        waiter := &amp;sync.WaitGroup{}
+    19:    
+    20:        waiter.Add(1)
+    21:        go RunFunc1(var1, waiter)
+    22:    
+</code></pre></li>
+<li><p>查看当前调用栈信息（<code>bt</code>）</p>
+<pre><code>(dlv) bt
+0  0x0000000000457f51 in GoWorks/GoDbg/mylib.DBGTestRun
+   at ./mylib/dbgTest.go:17
+1  0x0000000000401818 in main.main
+   at ./main.go:27
+2  0x000000000042aefb in runtime.main
+   at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/runtime/proc.go:188
+3  0x0000000000456df0 in runtime.goexit
+   at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/runtime/asm_amd64.s:1998
+</code></pre></li>
+<li><p>输出变量信息（<code>print/p</code>）</p>
+<pre><code>(dlv) print var1
+1
+(dlv) print var2
+&quot;golang dbg test&quot;
+(dlv) print var3
+[]int len: 3, cap: 3, [1,2,3]
+(dlv) print var4
+GoWorks/GoDbg/mylib.MyStruct {
+    A: 1,
+    B: &quot;golang dbg my struct field B&quot;,
+    C: map[int]string [
+        1: &quot;value1&quot;, 
+        2: &quot;value2&quot;, 
+        3: &quot;value3&quot;, 
+    ],
+    D: []string len: 3, cap: 3, [&quot;D1&quot;,&quot;D2&quot;,&quot;D3&quot;],}
+</code></pre><p><strong><em>类比gdb调试，我们看到，之前我们使用gdb进行调试时，发现gdb在此时无法输出var3, var4的内容，而dlv可以</em></strong>    </p>
+</li>
+<li><p>在第n层调用栈上执行相应指令（<code>frame n cmd</code>）</p>
+<pre><code>(dlv) frame 1 ls
+    22:        var4.A = 1
+    23:        var4.B = &quot;golang dbg my struct field B&quot;
+    24:        var4.C = map[int]string{1: &quot;value1&quot;, 2: &quot;value2&quot;, 3: &quot;value3&quot;}
+    25:        var4.D = []string{&quot;D1&quot;, &quot;D2&quot;, &quot;D3&quot;}
+    26:    
+=&gt;  27:        mylib.DBGTestRun(var1, var2, var3, var4)
+    28:        fmt.Println(&quot;Golang dbg test over&quot;)
+    29:    }
+</code></pre><p><code>frame 1 ls</code>将显示程序在第1层调用栈上的具体实行位置    </p>
+</li>
+<li><p>查看goroutine的信息（<code>goroutines</code>）<br>当我们执行到<code>dbgTest.go:26</code>时，我们已经启动了两个goroutine</p>
+<pre><code>(dlv) 
+&gt; GoWorks/GoDbg/mylib.DBGTestRun() ./mylib/dbgTest.go:26 (hits goroutine(1):1 total:1) (PC: 0x458123)
+    21:        go RunFunc1(var1, waiter)
+    22:    
+    23:        waiter.Add(1)
+    24:        go RunFunc2(var2, waiter)
+    25:    
+=&gt;  26:        waiter.Add(1)
+    27:        go RunFunc3(&amp;var3, waiter)
+    28:    
+    29:        waiter.Add(1)
+    30:        go RunFunc4(&amp;var4, waiter)
+    31:    
+</code></pre><p>此时我们来查看程序的goroutine状态信息</p>
+<pre><code>(dlv) goroutines
+[6 goroutines]
+* Goroutine 1 - User: ./mylib/dbgTest.go:26 GoWorks/GoDbg/mylib.DBGTestRun (0x458123) (thread 9022)
+  Goroutine 2 - User: /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/runtime/proc.go:263 runtime.gopark (0x42b2d3)
+  Goroutine 3 - User: /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/runtime/proc.go:263 runtime.gopark (0x42b2d3)
+  Goroutine 4 - User: /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/runtime/proc.go:263 runtime.gopark (0x42b2d3)
+  Goroutine 5 - User: ./mylib/dbgTest.go:39 GoWorks/GoDbg/mylib.RunFunc1 (0x4583eb) (thread 9035)
+  Goroutine 6 - User: /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/fmt/format.go:130 fmt.(*fmt).padString (0x459545)
+</code></pre><p>从输出的信息来看，先启动的goroutine 5，执行<code>RunFunc1</code>，此时还没有执行<code>fmt.Printf</code>，而后启动的goroutine 6，执行<code>RunFunc2</code>，则已经进入到<code>fmt.Printf</code>的内部调用过程中了</p>
+</li>
+<li><p>进一步查看goroutine信息（<code>goroutine x</code>）<br>接第11步的操作，此时我想查看goroutine 6的具体执行情况，则执行<code>goroutine 6</code></p>
+<pre><code>(dlv) goroutine 6
+Switched from 1 to 6 (thread 9022)
+</code></pre><p>在此基础上，执行<code>bt</code>，则可以看到当前goroutine的调用栈情况</p>
+<pre><code>(dlv) bt
+ 0  0x0000000000454730 in runtime.systemstack_switch
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/runtime/asm_amd64.s:245
+ 1  0x000000000040f700 in runtime.mallocgc
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/runtime/malloc.go:643
+ 2  0x000000000040fc43 in runtime.rawmem
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/runtime/malloc.go:809
+ 3  0x000000000043c2a5 in runtime.growslice
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/runtime/slice.go:95
+ 4  0x000000000043c015 in runtime.growslice_n
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/runtime/slice.go:44
+ 5  0x0000000000459545 in fmt.(*fmt).padString
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/fmt/format.go:130
+ 6  0x000000000045a13f in fmt.(*fmt).fmt_s
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/fmt/format.go:322
+ 7  0x000000000045e905 in fmt.(*pp).fmtString
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/fmt/print.go:518
+ 8  0x000000000046200f in fmt.(*pp).printArg
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/fmt/print.go:797
+ 9  0x0000000000468a8d in fmt.(*pp).doPrintf
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/fmt/print.go:1238
+10  0x000000000045c654 in fmt.Fprintf
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/fmt/print.go:188
+</code></pre><p>此时输出了10层调用栈，但似乎最原始的我自身程序dbgTest.go的调用栈没有输出， 可以通过<code>bt</code>加depth参数，设定bt的输出深度，进而找到我们自己的调用栈，例如<code>bt 13</code></p>
+<pre><code>(dlv) bt 13
+...
+10  0x000000000045c654 in fmt.Fprintf
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/fmt/print.go:188
+11  0x000000000045c74b in fmt.Printf
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/fmt/print.go:197
+12  0x000000000045846f in GoWorks/GoDbg/mylib.RunFunc2
+    at ./mylib/dbgTest.go:50
+13  0x0000000000456df0 in runtime.goexit
+    at /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/runtime/asm_amd64.s:1998
+</code></pre><p>我们看到，我们自己dbgTest.go的调用栈在第12层。当前goroutine已经不再我们自己的调用栈上，而是进入到系统函数的调用中，在这种情况下，使用gdb进行调试时，我们发现，此时我们没有很好的方法能够输出我们需要的调用栈变量信息。<strong>dlv可以!</strong>此时只需简单的通过<code>frame x cmd</code>就可以输出我们想要的调用栈信息了</p>
+<pre><code>(dlv) frame 12 ls
+    45:        time.Sleep(10 * time.Second)
+    46:        waiter.Done()
+    47:    }
+    48:    
+    49:    func RunFunc2(variable string, waiter *sync.WaitGroup) {
+=&gt;  50:        fmt.Printf(&quot;var2:%v\n&quot;, variable)
+    51:        time.Sleep(10 * time.Second)
+    52:        waiter.Done()
+    53:    }
+    54:    
+    55:    func RunFunc3(pVariable *[]int, waiter *sync.WaitGroup) {
+(dlv) frame 12 print variable 
+&quot;golang dbg test&quot;
+(dlv) frame 12 print waiter
+*sync.WaitGroup {
+    state1: [12]uint8 [0,0,0,0,2,0,0,0,0,0,0,0],
+    sema: 0,}
+</code></pre><p>多好的功能啊！</p>
+</li>
+<li><p>查看当前是在哪个goroutine上（<code>goroutine</code>）<br>当使用<code>goroutine</code>不带参数时，dlv就会显示当前goroutine信息，这可以帮助我们在调试时确认是否需要做goroutine切换</p>
+<pre><code>(dlv) goroutine
+Thread 9022 at ./mylib/dbgTest.go:26
+Goroutine 6:
+    Runtime: /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/runtime/asm_amd64.s:245 runtime.systemstack_switch (0x454730)
+    User: /home/lday/Tools/Dev_Tools/Go_Tools/go_1_6_2/src/fmt/format.go:130 fmt.(*fmt).padString (0x459545)
+    Go: ./mylib/dbgTest.go:26 GoWorks/GoDbg/mylib.DBGTestRun (0x458123)
+</code></pre></li>
+</ol>
+<h3 id="dlv前端-gdlv"><a href="#dlv前端-gdlv" class="headerlink" title="dlv前端(gdlv)"></a>dlv前端(gdlv)</h3><p>dlv提供了类似gdb的cli调试系统，而有第三方还提供了dlv的GUI前端(<a href="https://github.com/aarzilli/gdlv" target="_blank" rel="external">gdlv</a>)，对于那些习惯了使用GUI进行调试的人来说，结合gdlv和dlv，调试会更加方便。gdlv有个问题是：他无法在xwindows server上运行，只能在server本地运行。<br><img src="https://raw.githubusercontent.com/aarzilli/gdlv/master/doc/screen.png" alt=""></p>
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>综合比较两个Golang程序调试器gdb和dlv，我认为dlv的功能更为完善，更能满足实际调试时的功能需求。两者的优缺点比较大致如下</p>
+<table>
+<thead>
+<tr>
+<th>调试器</th>
+<th>优势</th>
+<th>不足</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>dlv</td>
+<td>对goroutine环境调试支持比较完善</td>
+<td>暂时没找到</td>
+</tr>
+<tr>
+<td>gdb</td>
+<td>符合现有的调试习惯，类似C/C++调试指令都有</td>
+<td>对goroutine场景支持不足，不能很好的应对goroutine的调试</td>
+</tr>
+</tbody>
+</table>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2017/02/27/0005_gdb-vs-dlv/">Golang程序调试工具介绍(gdb vs dlv)</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">lday</a></p>
+        <p><span>发布时间:</span>2017-02-27, 21:26:03</p>
+        <p><span>最后更新:</span>2017-03-12, 15:35:15</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2017/02/27/0005_gdb-vs-dlv/" title="Golang程序调试工具介绍(gdb vs dlv)">http://lday.me/2017/02/27/0005_gdb-vs-dlv/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://lday.me/2017/02/27/0005_gdb-vs-dlv/　　作者: lday" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2017/02/25/0004_golang-slice-depth/">
+                    细看Go中的切片(slice)
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+        <strong class="toc-title">文章目录</strong>
+        
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#准备工作"><span class="toc-number">1.</span> <span class="toc-text">准备工作</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#gdb调试程序"><span class="toc-number">2.</span> <span class="toc-text">gdb调试程序</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#dlv调试程序"><span class="toc-number">3.</span> <span class="toc-text">dlv调试程序</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#dlv前端-gdlv"><span class="toc-number">3.1.</span> <span class="toc-text">dlv前端(gdlv)</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#结论"><span class="toc-number">4.</span> <span class="toc-text">结论</span></a></li></ol>
+        
+    </div>
+    <style>
+        .left-col .switch-btn,
+        .left-col .switch-area {
+            display: none;
+        }
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+    <input type="button" id="tocButton" value="隐藏目录"  title="点击按钮隐藏或者显示文章目录">
+
+    <script>
+        yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+    </script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"Golang程序调试工具介绍(gdb vs dlv)　| lday的博客　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+      <div class="duoshuo" id="comments">
+    <div id="comment-box" ></div>
+    <div class="ds-thread" id="ds-thread" data-thread-key="2017/02/27/0005_gdb-vs-dlv/" data-title="Golang程序调试工具介绍(gdb vs dlv)" data-url="http://lday.me/2017/02/27/0005_gdb-vs-dlv/"></div>
+    <script>
+        var duoshuoQuery = {short_name:"http://lday.duoshuo.com"};
+        var loadComment = function(){
+            var d = document, s = d.createElement('script');
+            s.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+            s.async = true; s.charset = 'UTF-8';
+            (d.head || d.body).appendChild(s);
+        }
+
+        
+    </script>
+    
+    <script> loadComment(); </script>
+
+</div>
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/" title="回到主页"><i class="fa fa-home"></i></a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2017/02/25/0004_golang-slice-depth/" title="下一篇: 细看Go中的切片(slice)">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2017/02/27/0005_gdb-vs-dlv/">Golang程序调试工具介绍(gdb vs dlv)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/25/0004_golang-slice-depth/">细看Go中的切片(slice)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/01/0003_seri-stm-etcd3/">基于etcd3的访问序列化及分布式软事务内存</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/11/04/0002_hi/">你好，世界</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/11/03/0001_hello-world/">Hello World</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016-2017 lday
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" title="本站到访数"><i class="fa fa-user" aria-hidden="true"></i><span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>| </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit"  title="本页阅读量"><i class="fa fa-eye animated infinite pulse" aria-hidden="true"></i><span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script>
+    // Open in New Window
+    
+        var oOpenInNew = {
+            
+            
+            
+            
+            
+            
+             archives: ".archive-article-title", 
+             miniArchives: "a.post-list-link", 
+            
+             friends: "#js-friends a", 
+             socail: ".social a" 
+        }
+        for (var x in oOpenInNew) {
+            $(oOpenInNew[x]).attr("target", "_blank");
+        }
+    
+</script>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>
