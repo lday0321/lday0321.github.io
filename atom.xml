@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://lday.me/"/>
-  <updated>2017-03-12T07:35:15.990Z</updated>
+  <updated>2017-03-19T06:26:50.436Z</updated>
   <id>http://lday.me/</id>
   
   <author>
@@ -14,6 +14,26 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>多维索引容器(multi_index_container)的使用</title>
+    <link href="http://lday.me/2017/03/19/0006_boost-multi-index-container/"/>
+    <id>http://lday.me/2017/03/19/0006_boost-multi-index-container/</id>
+    <published>2017-03-19T05:34:18.000Z</published>
+    <updated>2017-03-19T06:26:50.436Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;C++ STL库为我们提供了vector/list/queue/(unordered)set/(unordered)map等各类容器，这些容器各自有各自的特点。有的提供链表类型的连续访问(vector/list/queue)，有的提供平衡二叉树的数据组织结构(set/map)，有的提供基于Hash的随即定位访问(unordered_set/unordered_map)。但有些时候，单一类型的访问并无法满足我们的需求，例如，有这样一个需求，需要我们实现一个LRU Cache。LRU的意思是：Least Recently Used，即最近最久未被使用的意思。LRU Cache的意思是：如果一个数据在最近一段时间没有被访问到，那么在将来它被访问的可能性也很小，基于这个原则，我们希望该类Cache的空间已经存满数据时，应当把最久没有被访问到的数据淘汰。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="cpp" scheme="http://lday.me/tags/cpp/"/>
+    
+      <category term="boost" scheme="http://lday.me/tags/boost/"/>
+    
+  </entry>
   
   <entry>
     <title>Golang程序调试工具介绍(gdb vs dlv)</title>

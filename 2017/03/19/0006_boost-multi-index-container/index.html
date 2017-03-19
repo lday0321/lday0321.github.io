@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no" />
+<meta name="author" content="lday" />
+
+
+
+<meta name="description" content="C++ STL库为我们提供了vector/list/queue/(unordered)set/(unordered)map等各类容器，这些容器各自有各自的特点。有的提供链表类型的连续访问(vector/list/queue)，有的提供平衡二叉树的数据组织结构(set/map)，有的提供基于Hash的随即定位访问(unordered_set/unordered_map)。但有些时候，单一类型的访问并">
+<meta property="og:type" content="article">
+<meta property="og:title" content="多维索引容器(multi_index_container)的使用">
+<meta property="og:url" content="http://lday.me/2017/03/19/0006_boost-multi-index-container/index.html">
+<meta property="og:site_name" content="lday的博客">
+<meta property="og:description" content="C++ STL库为我们提供了vector/list/queue/(unordered)set/(unordered)map等各类容器，这些容器各自有各自的特点。有的提供链表类型的连续访问(vector/list/queue)，有的提供平衡二叉树的数据组织结构(set/map)，有的提供基于Hash的随即定位访问(unordered_set/unordered_map)。但有些时候，单一类型的访问并">
+<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/multi_index/png/0001_multi_index_01.png">
+<meta property="og:updated_time" content="2017-03-19T06:26:50.436Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="多维索引容器(multi_index_container)的使用">
+<meta name="twitter:description" content="C++ STL库为我们提供了vector/list/queue/(unordered)set/(unordered)map等各类容器，这些容器各自有各自的特点。有的提供链表类型的连续访问(vector/list/queue)，有的提供平衡二叉树的数据组织结构(set/map)，有的提供基于Hash的随即定位访问(unordered_set/unordered_map)。但有些时候，单一类型的访问并">
+<meta name="twitter:image" content="http://og43lpuu1.bkt.clouddn.com/multi_index/png/0001_multi_index_01.png">
+
+<link rel="apple-touch-icon" href= "/apple-touch-icon.png">
+
+
+    <link rel="alternate" href="/atom.xml" title="lday的博客" type="application/atom+xml">
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+    <link href="//cdn.bootcss.com/animate.css/3.5.1/animate.min.css" rel="stylesheet">
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>多维索引容器(multi_index_container)的使用 | lday的博客</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: true,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: undefined
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/assets/blogImg/donkey.jpg" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">lday</a></h1>
+        </hgroup>
+
+        
+        <p class="header-subtitle">Life, Coding, Funning</p>
+        
+
+        
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>菜单</li>
+                        <li>标签</li>
+                        
+                        <li>友情链接</li>
+                        
+                        
+                        <li>关于我</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" href="mailto:oneday0321@gmail.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" href="https://github.com/lday0321" title="GitHub"></a>
+                            
+                                <a class="fa RSS" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/boost/">boost</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cpp/">cpp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/etcd/">etcd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/golang/">golang</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hello/">hello</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hello1/">hello1</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/分布式/">分布式</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">lday, 80后IT码农一枚. 白羊座，喜热闹</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">lday</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/assets/blogImg/donkey.jpg" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">lday</a></h1>
+            </hgroup>
+            
+            <p class="header-subtitle">Life, Coding, Funning</p>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:oneday0321@gmail.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/lday0321" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
+</nav>
+      <div class="body-wrap"><article id="post-0006_boost-multi-index-container" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2017/03/19/0006_boost-multi-index-container/" class="article-date">
+      <time datetime="2017-03-19T05:34:18.000Z" itemprop="datePublished">2017-03-19</time>
+</a>
+
+
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      多维索引容器(multi_index_container)的使用
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/boost/">boost</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cpp/">cpp</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <p>C++ STL库为我们提供了vector/list/queue/(unordered)set/(unordered)map等各类容器，这些容器各自有各自的特点。有的提供链表类型的连续访问(vector/list/queue)，有的提供平衡二叉树的数据组织结构(set/map)，有的提供基于Hash的随即定位访问(unordered_set/unordered_map)。但有些时候，单一类型的访问并无法满足我们的需求，例如，有这样一个需求，需要我们实现一个LRU Cache。LRU的意思是：Least Recently Used，即最近最久未被使用的意思。LRU Cache的意思是：如果一个数据在最近一段时间没有被访问到，那么在将来它被访问的可能性也很小，基于这个原则，我们希望该类Cache的空间已经存满数据时，应当把最久没有被访问到的数据淘汰。</p>
+<a id="more"></a>
+<p>理解了LRU Cache的含义后，我们进一步思考，我们应当用什么样的数据结构来管理整个LRU Cache呢？首先，第一个问题，用什么样的数据结构管理数据，能够体现最近最久未被使用这层含义呢？使用double linked List(STL中的deque提供类似的功能)，每次有新数据被访问，就将该数据放在deque的头部，如果此时cache空间已满，则需要首先移出deque尾部数据。deque越靠经头部的数据越是recently used(越最近被用过)。是不是deque就足够了？显然不是，通过deque我们只处理了“新”数据被访问的情况。我们还需要处理原本就在Cache中的“老数据”再度被访问的场景，需要调整该数据在deque中的位置，将其重新放置到deque头部。这个问题看似挺好解决，分两步执行操作：首先将这个“老数据”从deque中移除，然后再将这个数据加入到deque的头部即可了。将数据重新加入到deque头部是相对简单的，但如果才能迅速的找到“老数据”，并将他从原来的位置移除，这个操作看似简单，却并不简单。如果需要从deque中找到这个“老数据”，我们必须得遍历整个deque，因此从deque中删除“老数据”的时间复杂度将会是O(n)。作为一个Cache，每次数据命中之后都必须执行一个O(n)的调整操作，显然代价太大了。那能否有别的办法呢？最直观的想法就是用过hash直接能找到“老数据”，找到之后将其从deque上移除，并重新插入到deque头部。这里，实际上我们就是在构建一个2维索引：deque+hash。</p>
+<p><img src="http://og43lpuu1.bkt.clouddn.com/multi_index/png/0001_multi_index_01.png" alt=""></p>
+<p>在第0维Deque索引上，维护的是按最近被访问数据排列的数据顺序。而在第1维Hash索引上，则直接维护的1:1的Key(memory Address)—value索引信息，用于在需要进行查找操作时，直接通过key定位到所需的cache。当然，目前为止，我们还仅仅给出了LRU Cache的基本组织结果，为满足LRU Cache的整体功能，我们还需要实现在某一维索引上执行插入(<code>deque::push_back</code>, <code>deque::push_front</code>, <code>hash::insert</code>)操作时，对另外一维索引的同步调整，以及在某一维索引上执行删除操作时，同样的在另外一维索引上的同步调整。整个实现不能说特别复杂，但至少还是需要一定的工作量，以及周全的思考的。</p>
+<p>有没有什么工具能够帮我们来实现这样一个多维索引结构呢？STL中没有，但Boost中有。这个结构就是今天要介绍的多维索引容器：multi_index_container。多维索引结构就是如上图LRU Cache结构类似的结构，他为用户提供了统一的多维索引视图，允许用户定义一个多维索引容器上的每一维索引，并为每维索引提供访问接口，为用户屏蔽了在进行插入、删除以及更新时的复杂的多维索引间同步调整逻辑，使得用户在定义好多维索引容器之后就能够非常方便的使用多维索引结构。</p>
+<p>要使用boost的multi_index_container，简单来说分为两步：1. 定义多维索引容器；2.使用多维索引容器。</p>
+<p><strong>定义多维索引容器</strong><br>多维索引容器定义时，需要指定：1. 容器中存放的元素类型；2. 容器上构建多少维索引，各维索引如何组织等信息。</p>
+<p>定义多维索引容器的难点主要在于：2.定义容器上构建的索引。</p>
+<p>并不是什么类型的索引都能够作为<code>boost::multi_index_container</code>的索引。boost为multi_index_container提供了5类索引类型：</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Boost.MutiIndex类型</th>
+<th style="text-align:left">对应类比的STL容器类型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left">ordered_unique</td>
+<td style="text-align:left">set</td>
+</tr>
+<tr>
+<td style="text-align:left">ordered_non_unique</td>
+<td style="text-align:left">multiset</td>
+</tr>
+<tr>
+<td style="text-align:left">hashed_unique</td>
+<td style="text-align:left">unordered_set</td>
+</tr>
+<tr>
+<td style="text-align:left">hashed_non_unique</td>
+<td style="text-align:left">unordered_multiset</td>
+</tr>
+<tr>
+<td style="text-align:left">sequenced</td>
+<td style="text-align:left">list (deque)</td>
+</tr>
+</tbody>
+</table>
+<p>类比我们对LRU Cache的设计，我们可以选择multi_index_container中的sequenced + hashed_unique两个索引。对于使用<code>stl::set/unordered_set</code>时，我们自然知道，针对实例化的元素类型，我们需要为stl::set提供ElementLessComp调用对象，为unordered_set提供ElementEqualComp和ElementHashValue两个调用对象。在multi_index_container中定义对应的hashed_unique索引类型时，也必须给出对应的两个可调用对象。</p>
+<p>假设我们的LRU Cache中存放的是智能指针对象，且在deque和hash之外再多构建一维索引：set，那么我们将可以按如下形式来定义一个多维索引容器：</p>
+<p>依赖的头文件:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;boost/multi_index_container.hpp&gt;</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;boost/multi_index/ordered_index.hpp&gt;</span>	     <span class="comment">//有序索引，对应(ordered)set, 包括multiset</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;boost/multi_index/hashed_index.hpp&gt;</span>	     <span class="comment">//散列索引，无序，对应(unordered)hash</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;boost/multi_index/sequenced_index.hpp&gt;</span>     <span class="comment">//序列索引，list</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;boost/multi_index/key_extractors.hpp&gt;</span>	     <span class="comment">//键提取器</span></span></div><div class="line">	</div><div class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> boost::multi_index;</div></pre></td></tr></table></figure>
+<p>容器元素定义：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">class</span> MyCustomizedClass10SmartPtrIdLessComp;</div><div class="line"><span class="keyword">class</span> MyCustomizedClass10SmartPtrWholeEqualComp;</div><div class="line"><span class="keyword">class</span> MyCustomizedClass10SmartPtrWholeHash;</div><div class="line">    </div><div class="line"><span class="keyword">class</span> MyCustomizedClass10</div><div class="line">&#123;</div><div class="line"><span class="keyword">public</span>:</div><div class="line"></div><div class="line">	MyCustomizedClass10(<span class="keyword">int</span> id, <span class="keyword">const</span> <span class="built_in">string</span> &amp;f, <span class="keyword">const</span> <span class="built_in">string</span> &amp;l):</div><div class="line">		m_id(id), m_fname(f), m_lname(l)</div><div class="line">	&#123;&#125;</div><div class="line"></div><div class="line">	<span class="function"><span class="keyword">const</span> <span class="built_in">string</span> &amp; <span class="title">first_name</span><span class="params">()</span> <span class="keyword">const</span> 			<span class="comment">//const成员函数，取m_fname</span></span></div><div class="line">	&#123;</div><div class="line">		<span class="keyword">return</span> m_fname;</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	<span class="function"><span class="built_in">string</span> &amp; <span class="title">last_name</span><span class="params">()</span> 					<span class="comment">//非const成员函数，取m_lname</span></span></div><div class="line">	&#123;</div><div class="line">		<span class="keyword">return</span> m_lname;</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	<span class="keyword">friend</span> ostream &amp; <span class="keyword">operator</span> &lt;&lt; (ostream &amp; out, <span class="keyword">const</span> MyCustomizedClass10 &amp; c);</div><div class="line">	<span class="keyword">friend</span> <span class="keyword">class</span> MyCustomizedClass10SmartPtrIdLessComp;</div><div class="line">	<span class="keyword">friend</span> <span class="keyword">class</span> MyCustomizedClass10SmartPtrWholeEqualComp;</div><div class="line">	<span class="keyword">friend</span> <span class="keyword">class</span> MyCustomizedClass10SmartPtrWholeHash;</div><div class="line"></div><div class="line"></div><div class="line"><span class="keyword">private</span>:</div><div class="line">	<span class="keyword">int</span> m_id;							<span class="comment">//身份证id</span></div><div class="line">	<span class="built_in">string</span> m_fname, m_lname;			<span class="comment">//姓名</span></div><div class="line">&#125;;</div><div class="line"></div><div class="line"><span class="keyword">typedef</span> boost::<span class="built_in">shared_ptr</span>&lt;MyCustomizedClass10&gt; MyCustomizedClass10Ptr;</div></pre></td></tr></table></figure>
+<p>用于定义索引的可调用对象定义：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">class</span> MyCustomizedClass10SmartPtrIdLessComp</div><div class="line">&#123;</div><div class="line"><span class="keyword">public</span>:</div><div class="line">	<span class="function"><span class="keyword">bool</span> <span class="title">operator</span><span class="params">()</span><span class="params">(<span class="keyword">const</span> MyCustomizedClass10Ptr &amp;lhs, </span></span></div><div class="line">				<span class="keyword">const</span> MyCustomizedClass10Ptr &amp;rhs)</div><div class="line">	&#123;</div><div class="line">		<span class="built_in">cout</span> &lt;&lt; <span class="string">"MyCustomizedClass10SmartPtrIdLessComp call"</span> &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">		<span class="keyword">return</span> lhs-&gt;m_id &lt; rhs-&gt;m_id;</div><div class="line">	&#125;</div><div class="line">&#125;;</div><div class="line"></div><div class="line"><span class="keyword">class</span> MyCustomizedClass10SmartPtrWholeEqualComp</div><div class="line">&#123;</div><div class="line"><span class="keyword">public</span>:</div><div class="line">	<span class="function"><span class="keyword">bool</span> <span class="title">operator</span><span class="params">()</span><span class="params">(<span class="keyword">const</span> MyCustomizedClass10Ptr &amp;lhs, </span></span></div><div class="line">				<span class="keyword">const</span> MyCustomizedClass10Ptr &amp;rhs) <span class="keyword">const</span> <span class="comment">//const不能少！</span></div><div class="line">	&#123;</div><div class="line">		<span class="built_in">cout</span> &lt;&lt; <span class="string">"MyCustomizedClass10SmartPtrWholeEqualComp call"</span> &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">		<span class="keyword">return</span> lhs-&gt;m_id == rhs-&gt;m_id &amp;&amp;</div><div class="line">				lhs-&gt;m_fname == rhs-&gt;m_fname &amp;&amp;</div><div class="line">				lhs-&gt;m_lname == rhs-&gt;m_lname;</div><div class="line">	&#125;</div><div class="line">&#125;;</div><div class="line"></div><div class="line"></div><div class="line"><span class="keyword">class</span> MyCustomizedClass10SmartPtrWholeHash</div><div class="line">&#123;</div><div class="line"><span class="keyword">public</span>:</div><div class="line">	<span class="built_in">std</span>::<span class="keyword">size_t</span> <span class="keyword">operator</span>()(<span class="keyword">const</span> MyCustomizedClass10Ptr lhs) <span class="keyword">const</span></div><div class="line">	&#123;</div><div class="line">		<span class="built_in">std</span>::<span class="keyword">size_t</span> seed = <span class="number">0u</span>;</div><div class="line"></div><div class="line">		boost::hash_combine(seed, boost::hash_value(lhs-&gt;m_id));</div><div class="line">		boost::hash_combine(seed, boost::hash_value(lhs-&gt;m_fname));</div><div class="line">		boost::hash_combine(seed, boost::hash_value(lhs-&gt;m_lname));</div><div class="line"></div><div class="line">		<span class="built_in">cout</span> &lt;&lt; <span class="string">"MyCustomizedClass10SmartPtrWholeHash seed:"</span> &lt;&lt; seed &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">		<span class="keyword">return</span> seed;</div><div class="line">	&#125;</div><div class="line">&#125;;</div></pre></td></tr></table></figure></p>
+<p>对多维索引容器需要的各位索引类型进行定义：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// 1.直接针对整个对象做序列索引,list</span></div><div class="line"><span class="keyword">typedef</span> sequenced&lt;&gt; c10_idx_0_seq;</div><div class="line"></div><div class="line"><span class="comment">// 2.针对id做有序单键索引，set								</span></div><div class="line"><span class="keyword">typedef</span> ordered_unique&lt;identity&lt;MyCustomizedClass10Ptr&gt;,</div><div class="line">				MyCustomizedClass10SmartPtrIdLessComp&gt; c10_idx_1_set;</div><div class="line"></div><div class="line"><span class="comment">// 3.针对name做散列索引 hash</span></div><div class="line"><span class="keyword">typedef</span> hashed_unique&lt;identity&lt;MyCustomizedClass10Ptr&gt;, </div><div class="line">			MyCustomizedClass10SmartPtrWholeHash,</div><div class="line">			MyCustomizedClass10SmartPtrWholeEqualComp&gt; c10_idx_2_hash;</div></pre></td></tr></table></figure></p>
+<p>最后，基于定义的索引类型，给出最终多维索引容器的定义<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="comment">//定义一个容纳MyCustomizedClass1的多维索引容器</span></div><div class="line"><span class="keyword">typedef</span> multi_index_container&lt;</div><div class="line">		MyCustomizedClass10Ptr,	<span class="comment">//容纳的对象是智能指针类型</span></div><div class="line">		indexed_by&lt;			<span class="comment">//设置多维索引</span></div><div class="line">			c10_idx_0_seq,</div><div class="line">			c10_idx_1_set,</div><div class="line">			c10_idx_2_hash</div><div class="line">		&gt; 	<span class="comment">//索引定义结束</span></div><div class="line">&gt; <span class="keyword">mic_c10_t</span>;	<span class="comment">//最终的多维索引类型</span></div></pre></td></tr></table></figure></p>
+<p>完成上述定义滞后，一个完整的多维索引容器类型mic_c10_t就已经定义好了，后续则可以根据定义实际的容器对象，并执行相应的操作。对于多维索引容器的操作，实际上是基于多维索引容器上的索引执行相应的操作。在执行增、删、改时，我们实际上是通过索引进行操作。</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">Case07_MultiIndexContainerSmartPointerElement</span><span class="params">()</span></span></div><div class="line">&#123;</div><div class="line">	MyCustomizedClass10Ptr pMyCC10_0 = boost::make_shared&lt;MyCustomizedClass10&gt;</div><div class="line">										(<span class="number">2</span>, <span class="string">"agent"</span>, <span class="string">"smith"</span>);</div><div class="line">	MyCustomizedClass10Ptr pMyCC10_1 = boost::make_shared&lt;MyCustomizedClass10&gt;</div><div class="line">										(<span class="number">20</span>, <span class="string">"lee"</span>, <span class="string">"someone"</span>);</div><div class="line">	MyCustomizedClass10Ptr pMyCC10_2 = boost::make_shared&lt;MyCustomizedClass10&gt;</div><div class="line">										(<span class="number">1</span>, <span class="string">"anderson"</span>, <span class="string">"neo"</span>);</div><div class="line">	MyCustomizedClass10Ptr pMyCC10_3 = boost::make_shared&lt;MyCustomizedClass10&gt;</div><div class="line">										(<span class="number">10</span>, <span class="string">"lee"</span>, <span class="string">"bruce"</span>);</div><div class="line"></div><div class="line"></div><div class="line">	<span class="keyword">mic_c10_t</span> mic;</div><div class="line">	<span class="keyword">mic_c10_t</span>::nth_index&lt;<span class="number">0</span>&gt;::type &amp; listIdx = mic.get&lt;<span class="number">0</span>&gt;();</div><div class="line">	<span class="keyword">mic_c10_t</span>::nth_index&lt;<span class="number">1</span>&gt;::type &amp; setIdx = mic.get&lt;<span class="number">1</span>&gt;();</div><div class="line">	<span class="keyword">mic_c10_t</span>::nth_index&lt;<span class="number">2</span>&gt;::type &amp; hashIdx = mic.get&lt;<span class="number">2</span>&gt;();</div><div class="line"></div><div class="line">	listIdx.push_back(pMyCC10_0);</div><div class="line">	listIdx.push_back(pMyCC10_1);</div><div class="line">	setIdx.insert(pMyCC10_2);</div><div class="line">	hashIdx.insert(pMyCC10_3);</div><div class="line"></div><div class="line">	<span class="comment">//通过hash查找元素</span></div><div class="line">	<span class="keyword">mic_c10_t</span>::nth_index&lt;<span class="number">2</span>&gt;::type::iterator itr =</div><div class="line">			hashIdx.find(pMyCC10_2);</div><div class="line">	<span class="keyword">if</span>(itr != hashIdx.end())</div><div class="line">	&#123;</div><div class="line">		<span class="built_in">cout</span> &lt;&lt; <span class="string">"Find pMyCC10_2 by Hash Idx"</span> &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">		<span class="built_in">cout</span> &lt;&lt; **itr &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">	&#125;</div><div class="line"></div><div class="line">	<span class="comment">//dup</span></div><div class="line">	<span class="built_in">cout</span> &lt;&lt; <span class="string">"Duplication"</span> &lt;&lt;<span class="built_in">endl</span>;</div><div class="line">	<span class="built_in">std</span>::pair&lt;<span class="keyword">mic_c10_t</span>::nth_index&lt;<span class="number">0</span>&gt;::type::iterator, <span class="keyword">bool</span>&gt; result =</div><div class="line">			listIdx.push_back(pMyCC10_0);</div><div class="line">	<span class="built_in">cout</span> &lt;&lt; <span class="string">"Dup Push Result : "</span> &lt;&lt; result.second;</div><div class="line"></div><div class="line">	TraverOutput4On0thIdx(mic);</div><div class="line">	TraverOutput4On1stIdx(mic);</div><div class="line">	TraverOutput4On2ndIdx(mic);</div><div class="line"></div><div class="line">	<span class="keyword">return</span> <span class="number">0</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>通过不同索引对容器数据进行遍历<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div></pre></td><td class="code"><pre><div class="line">ostream &amp; <span class="keyword">operator</span> &lt;&lt; (ostream &amp; out, <span class="keyword">const</span> MyCustomizedClass10 &amp; c)</div><div class="line">&#123;</div><div class="line">	out &lt;&lt; <span class="string">"[Id:"</span> &lt;&lt; c.m_id &lt;&lt; <span class="string">", name:"</span> &lt;&lt; c.m_lname &lt;&lt; <span class="string">" "</span> &lt;&lt; c.m_fname &lt;&lt; <span class="string">"]"</span>;</div><div class="line">	<span class="keyword">return</span> out;</div><div class="line">&#125;</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">TraverOutput4On0thIdx</span><span class="params">(<span class="keyword">mic_c10_t</span> mic)</span></span></div><div class="line">&#123;</div><div class="line">	<span class="keyword">mic_c10_t</span>::nth_index&lt;<span class="number">0</span>&gt;::type &amp; listIdx = mic.get&lt;<span class="number">0</span>&gt;();</div><div class="line"></div><div class="line">	<span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">	<span class="built_in">cout</span> &lt;&lt; <span class="string">"0th Index(list):"</span> &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">	<span class="keyword">mic_c10_t</span>::nth_index&lt;<span class="number">0</span>&gt;::type::iterator listIdxItr =</div><div class="line">			listIdx.begin();</div><div class="line">	<span class="keyword">for</span>( ; listIdxItr != listIdx.end(); ++listIdxItr)</div><div class="line">	&#123;</div><div class="line">  		<span class="comment">//list索引返回的对象是不可被修改的！</span></div><div class="line">		<span class="keyword">const</span> MyCustomizedClass10Ptr pMC = *listIdxItr;  </div><div class="line">		<span class="built_in">cout</span> &lt;&lt; *pMC  &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">	&#125;</div><div class="line">	<span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">&#125;</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">TraverOutput4On1stIdx</span><span class="params">(<span class="keyword">mic_c10_t</span> mic)</span></span></div><div class="line">&#123;</div><div class="line">	<span class="keyword">mic_c10_t</span>::nth_index&lt;<span class="number">1</span>&gt;::type &amp; setIdx = mic.get&lt;<span class="number">1</span>&gt;();</div><div class="line"></div><div class="line">	<span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">	<span class="built_in">cout</span> &lt;&lt; <span class="string">"1st Index(set):"</span> &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">	<span class="keyword">mic_c10_t</span>::nth_index&lt;<span class="number">1</span>&gt;::type::iterator setIdxItr =</div><div class="line">			setIdx.begin();</div><div class="line">	<span class="keyword">for</span>( ; setIdxItr != setIdx.end(); ++setIdxItr)</div><div class="line">	&#123;</div><div class="line">		<span class="keyword">const</span> MyCustomizedClass10Ptr pMC = *setIdxItr;</div><div class="line">		<span class="built_in">cout</span> &lt;&lt; *pMC &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">	&#125;</div><div class="line">	<span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">&#125;</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">void</span> <span class="title">TraverOutput4On2ndIdx</span><span class="params">(<span class="keyword">mic_c10_t</span> mic)</span></span></div><div class="line">&#123;</div><div class="line">	<span class="keyword">mic_c10_t</span>::nth_index&lt;<span class="number">2</span>&gt;::type &amp; hashIdx = mic.get&lt;<span class="number">2</span>&gt;();</div><div class="line"></div><div class="line">	<span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">	<span class="built_in">cout</span> &lt;&lt; <span class="string">"2nd Index(hash):"</span> &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">	<span class="keyword">mic_c10_t</span>::nth_index&lt;<span class="number">2</span>&gt;::type::iterator hashIdxItr =</div><div class="line">			hashIdx.begin();</div><div class="line">	<span class="keyword">for</span>( ; hashIdxItr != hashIdx.end(); ++hashIdxItr)</div><div class="line">	&#123;</div><div class="line">		<span class="keyword">const</span> MyCustomizedClass10Ptr pMC = *hashIdxItr;</div><div class="line">		<span class="built_in">cout</span> &lt;&lt; *pMC &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">	&#125;</div><div class="line">	<span class="built_in">cout</span> &lt;&lt; <span class="built_in">endl</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>当然通过多维索引容器除了执行插入、删除操作外，还可能需要调整key值等修改操作。和不同容器的迭代器不同，多维索引容器获取的迭代器为常量类型，不允许随便修改，这是因为多维索引容器的修改涉及到各维索引及位置的“联动”。多维索引容器提供了modify方法用于修改索引key值，进一步的对于多维索引的详细操作使用说明可以参考<a href="http://www.boost.org/doc/libs/1_57_0/libs/multi_index/doc/index.html" target="_blank" rel="external">boost的官方文档</a>。</p>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2017/03/19/0006_boost-multi-index-container/">多维索引容器(multi_index_container)的使用</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">lday</a></p>
+        <p><span>发布时间:</span>2017-03-19, 13:34:18</p>
+        <p><span>最后更新:</span>2017-03-19, 14:26:50</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2017/03/19/0006_boost-multi-index-container/" title="多维索引容器(multi_index_container)的使用">http://lday.me/2017/03/19/0006_boost-multi-index-container/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://lday.me/2017/03/19/0006_boost-multi-index-container/　　作者: lday" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2017/02/27/0005_gdb-vs-dlv/">
+                    Golang程序调试工具介绍(gdb vs dlv)
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+        <strong class="toc-title">文章目录</strong>
+        
+            
+        
+    </div>
+    <style>
+        .left-col .switch-btn,
+        .left-col .switch-area {
+            display: none;
+        }
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+    <input type="button" id="tocButton" value="隐藏目录"  title="点击按钮隐藏或者显示文章目录">
+
+    <script>
+        yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+    </script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"多维索引容器(multi_index_container)的使用　| lday的博客　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+      <div class="duoshuo" id="comments">
+    <div id="comment-box" ></div>
+    <div class="ds-thread" id="ds-thread" data-thread-key="2017/03/19/0006_boost-multi-index-container/" data-title="多维索引容器(multi_index_container)的使用" data-url="http://lday.me/2017/03/19/0006_boost-multi-index-container/"></div>
+    <script>
+        var duoshuoQuery = {short_name:"http://lday.duoshuo.com"};
+        var loadComment = function(){
+            var d = document, s = d.createElement('script');
+            s.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+            s.async = true; s.charset = 'UTF-8';
+            (d.head || d.body).appendChild(s);
+        }
+
+        
+    </script>
+    
+    <script> loadComment(); </script>
+
+</div>
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/" title="回到主页"><i class="fa fa-home"></i></a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2017/02/27/0005_gdb-vs-dlv/" title="下一篇: Golang程序调试工具介绍(gdb vs dlv)">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2017/03/19/0006_boost-multi-index-container/">多维索引容器(multi_index_container)的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/27/0005_gdb-vs-dlv/">Golang程序调试工具介绍(gdb vs dlv)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/25/0004_golang-slice-depth/">细看Go中的切片(slice)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/01/0003_seri-stm-etcd3/">基于etcd3的访问序列化及分布式软事务内存</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/11/04/0002_hi/">你好，世界</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/11/03/0001_hello-world/">Hello World</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016-2017 lday
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" title="本站到访数"><i class="fa fa-user" aria-hidden="true"></i><span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>| </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit"  title="本页阅读量"><i class="fa fa-eye animated infinite pulse" aria-hidden="true"></i><span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script>
+    // Open in New Window
+    
+        var oOpenInNew = {
+            
+            
+            
+            
+            
+            
+             archives: ".archive-article-title", 
+             miniArchives: "a.post-list-link", 
+            
+             friends: "#js-friends a", 
+             socail: ".social a" 
+        }
+        for (var x in oOpenInNew) {
+            $(oOpenInNew[x]).attr("target", "_blank");
+        }
+    
+</script>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>
