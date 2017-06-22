@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://lday.me/"/>
-  <updated>2017-03-19T06:26:50.436Z</updated>
+  <updated>2017-06-22T14:54:20.775Z</updated>
   <id>http://lday.me/</id>
   
   <author>
@@ -14,6 +14,24 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>ElasticSearch总结</title>
+    <link href="http://lday.me/2017/06/22/0007_elasticsearch_summary/"/>
+    <id>http://lday.me/2017/06/22/0007_elasticsearch_summary/</id>
+    <published>2017-06-22T14:03:18.000Z</published>
+    <updated>2017-06-22T14:54:20.775Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;前段时间对分布式追踪相关的实现方案进行了一些调研，了解到近期对于大数据的日志检索、分析从原来基于hadoop的实现逐渐过渡到基于es的方案上来。近期在消息审计追踪相关的项目上也尝试的使用了类似的方案。这里对es的一些了解以及常用的一些使用整理于此。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="elasticsearch" scheme="http://lday.me/tags/elasticsearch/"/>
+    
+  </entry>
   
   <entry>
     <title>多维索引容器(multi_index_container)的使用</title>

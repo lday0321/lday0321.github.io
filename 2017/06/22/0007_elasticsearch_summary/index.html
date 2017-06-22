@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no" />
+<meta name="author" content="lday" />
+
+
+
+<meta name="description" content="前段时间对分布式追踪相关的实现方案进行了一些调研，了解到近期对于大数据的日志检索、分析从原来基于hadoop的实现逐渐过渡到基于es的方案上来。近期在消息审计追踪相关的项目上也尝试的使用了类似的方案。这里对es的一些了解以及常用的一些使用整理于此。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ElasticSearch总结">
+<meta property="og:url" content="http://lday.me/2017/06/22/0007_elasticsearch_summary/index.html">
+<meta property="og:site_name" content="lday的博客">
+<meta property="og:description" content="前段时间对分布式追踪相关的实现方案进行了一些调研，了解到近期对于大数据的日志检索、分析从原来基于hadoop的实现逐渐过渡到基于es的方案上来。近期在消息审计追踪相关的项目上也尝试的使用了类似的方案。这里对es的一些了解以及常用的一些使用整理于此。">
+<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/elasticsearch_summary/001_es_index_terminology.png">
+<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/elasticsearch_summary/002_kibana_dev_tool.png">
+<meta property="og:updated_time" content="2017-06-22T14:54:20.775Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ElasticSearch总结">
+<meta name="twitter:description" content="前段时间对分布式追踪相关的实现方案进行了一些调研，了解到近期对于大数据的日志检索、分析从原来基于hadoop的实现逐渐过渡到基于es的方案上来。近期在消息审计追踪相关的项目上也尝试的使用了类似的方案。这里对es的一些了解以及常用的一些使用整理于此。">
+<meta name="twitter:image" content="http://og43lpuu1.bkt.clouddn.com/elasticsearch_summary/001_es_index_terminology.png">
+
+<link rel="apple-touch-icon" href= "/apple-touch-icon.png">
+
+
+    <link rel="alternate" href="/atom.xml" title="lday的博客" type="application/atom+xml">
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+    <link href="//cdn.bootcss.com/animate.css/3.5.1/animate.min.css" rel="stylesheet">
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>ElasticSearch总结 | lday的博客</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: true,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: undefined
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/assets/blogImg/donkey.jpg" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">lday</a></h1>
+        </hgroup>
+
+        
+        <p class="header-subtitle">Life, Coding, Funning</p>
+        
+
+        
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>菜单</li>
+                        <li>标签</li>
+                        
+                        <li>友情链接</li>
+                        
+                        
+                        <li>关于我</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" href="mailto:oneday0321@gmail.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" href="https://github.com/lday0321" title="GitHub"></a>
+                            
+                                <a class="fa RSS" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/boost/">boost</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cpp/">cpp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/">elasticsearch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/etcd/">etcd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/golang/">golang</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hello/">hello</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hello1/">hello1</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/分布式/">分布式</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">lday, 80后IT码农一枚. 白羊座，喜热闹</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">lday</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/assets/blogImg/donkey.jpg" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">lday</a></h1>
+            </hgroup>
+            
+            <p class="header-subtitle">Life, Coding, Funning</p>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:oneday0321@gmail.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/lday0321" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
+</nav>
+      <div class="body-wrap"><article id="post-0007_elasticsearch_summary" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2017/06/22/0007_elasticsearch_summary/" class="article-date">
+      <time datetime="2017-06-22T14:03:18.000Z" itemprop="datePublished">2017-06-22</time>
+</a>
+
+
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      ElasticSearch总结
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/elasticsearch/">elasticsearch</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <p>前段时间对分布式追踪相关的实现方案进行了一些调研，了解到近期对于大数据的日志检索、分析从原来基于hadoop的实现逐渐过渡到基于es的方案上来。近期在消息审计追踪相关的项目上也尝试的使用了类似的方案。这里对es的一些了解以及常用的一些使用整理于此。</p>
+<a id="more"></a>
+<h2 id="1-全文索引"><a href="#1-全文索引" class="headerlink" title="1. 全文索引"></a>1. 全文索引</h2><p>全文索引是指计算机搜索程序通过扫描文件中的每个单词，对每个词建立一个索引，指明该词在文章中出现的次数和位置，当用户查询时，搜索程序就根据事先建立的索引进行查找，并将查找结果反馈给用户。这个过程类似于通过字典中的搜索字表查字的过程。</p>
+<h3 id="Lucene倒排索引"><a href="#Lucene倒排索引" class="headerlink" title="Lucene倒排索引"></a>Lucene倒排索引</h3><p>倒排索引原语实际应用中需要更具属性的值来查找记录。这种索引表中的每一项都包括一个属性值和具有该属性值的各记录的地址。由于不是由记录类确定属性值，而是由属性值来确定记录的位置，因而称为倒排索引(inverted index)。带有倒排索引的文件我们称为倒排索引文件，简称倒排文件(inverted file)</p>
+<blockquote>
+<p><strong>倒排索引为什么叫倒排索引？</strong>  </p>
+<ul>
+<li><p>渣翻译的例子之一。英文原名Inverted index，大概因为 Invert 有颠倒的意思，就被翻译成了倒排。但是倒排这个名称很容易让人理解为从A-Z颠倒成Z-A。个人认为翻译成转置索引可能比较合适。一个未经处理的数据库中，一般是以文档ID作为索引，以文档内容作为记录。而Inverted index 指的是将单词或记录作为索引，将文档ID作为记录，这样便可以方便地通过单词或记录查找到其所在的文档。  </p>
+</li>
+<li><p>倒排索引对应的英文术语为inverted index，有的papers里也成为inverted files，说的都是同一种东西。倒排索引是区别于正排索引(forward index)来说的。<br>文档是有许多的单词组成的，其中每个单词也可以在同一个文档中重复出现很多次，当然，同一个单词也可以出现在不同的文档中。<br>正排索引(forward index)：从文档角度看其中的单词，表示每个文档（用文档ID标识）都含有哪些单词，以及每个单词出现了多少次（词频）及其出现位置（相对于文档首部的偏移量）。<br>倒排索引(inverted index，或inverted files)：从单词角度看文档，标识每个单词分别在那些文档中出现(文档ID)，以及在各自的文档中每个单词分别出现了多少次（词频）及其出现位置（相对于该文档首部的偏移量）。<br>简单记为：<br>正排索引：文档 —&gt; 单词<br>倒排索引：单词 —&gt; 文档  </p>
+</li>
+</ul>
+</blockquote>
+<p>倒排索引中的索引对象是文档或者文档集合中的单词等，用来存储这些单词在一个文档或者一组文档中的存储位置，是对文档或者文档集合的一种最常见的索引机制。</p>
+<p>搜索引擎的关键步骤就是建立倒排索引，倒排索引一般表示为一个关键词，然后是他的频度（出现次数）、位置（出现在哪一篇文章或者网页中，及有关的日期，作者信息等），好比一本书的目录、标签。读者想看哪一个主题相关的章节，直接根据目录即可找到相关的页面。不必再从书的第一页到最后一页，一页一页的查找。</p>
+<h4 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h4><p>假设有两篇文章1和文章2<br>文章1的内容为：Tom lives in Guangzhou, I live in Guangzhou too.<br>文章2的内容为：He once lived in Shanghai.</p>
+<h5 id="步骤1：取得关键词"><a href="#步骤1：取得关键词" class="headerlink" title="步骤1：取得关键词"></a>步骤1：取得关键词</h5><p>由于lucene是基于关键词索引和查询的，首先我们要取得这两篇文章的关键词，通常我们需要如下处理措施：</p>
+<ol>
+<li>我们现在有的是文章内容，即一个字符串，我们先要找出字符串中的所有单词，即分词。英文单词由于用空格分隔，比较好处理。中文单词间是连在一起的需要特殊的分词处理。</li>
+<li>文章中的”in”, “once” “too”等词没有什么实际意义，中文中的“的”“是”等字通常也无具体含义，这些不代表概念的词可以过滤掉</li>
+<li>用户通常希望查“He”时能把含“he”，“HE”的文章也找出来，所以所有单词需要统一大小写。</li>
+<li>用户通常希望查“live”时能把含“lives”，“lived”的文章也找出来，所以需要把“lives”，“lived”还原成“live”</li>
+<li>文章中的标点符号通常不表示某种概念，也可以过滤掉</li>
+</ol>
+<p>在lucene中以上措施由Analyzer类完成<br>经过上面处理后</p>
+<ul>
+<li>文章1的所有关键词为：[tom] [live] [guangzhou] [live] [guangzhou]</li>
+<li>文章2的所有关键词为：[he] [live] [shanghai]</li>
+</ul>
+<h5 id="步骤2：建立倒排索引"><a href="#步骤2：建立倒排索引" class="headerlink" title="步骤2：建立倒排索引"></a>步骤2：建立倒排索引</h5><p>有了关键词后，我们就可以建立倒排索引了。上面的对应关系是：“文章号”对“文章中所有关键词”。倒排索引把这个关系倒过来，变成：“关键词”对“拥有该关键词的所有文章号”。文章1，2经过倒排后的对应关系见表：</p>
+<table>
+<thead>
+<tr>
+<th>关键词</th>
+<th>文章号</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>guangzhou</td>
+<td>1</td>
+</tr>
+<tr>
+<td>he</td>
+<td>2</td>
+</tr>
+<tr>
+<td>i</td>
+<td>1</td>
+</tr>
+<tr>
+<td>live</td>
+<td>1, 2</td>
+</tr>
+<tr>
+<td>shanghai</td>
+<td>2</td>
+</tr>
+<tr>
+<td>tom</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>通常仅知道关键词在哪些文章中出现还不够，我们还需要知道关键词在文章中出现次数和出现的位置，通常有两种位置:</p>
+<ol>
+<li>字符位置，即记录该词是文章中第几个字符（优点是关键词亮显时定位快）</li>
+<li>关键词位置，即记录该词是文章中第几个关键词（优点是节约索引空间、词组（phase）查询快），lucene 中记录的就是这种位置。</li>
+</ol>
+<p>加上“出现频率”和“出现位置”信息后，我们的索引结构变为：</p>
+<table>
+<thead>
+<tr>
+<th>关键词</th>
+<th>文章号[出现频率]</th>
+<th>出现位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>guangzhou</td>
+<td>1<a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-reindex.html" target="_blank" rel="external">2</a></td>
+<td>3，6</td>
+</tr>
+<tr>
+<td>he</td>
+<td>2<a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html" target="_blank" rel="external">1</a></td>
+<td>1</td>
+</tr>
+<tr>
+<td>i</td>
+<td>1<a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html" target="_blank" rel="external">1</a></td>
+<td>4</td>
+</tr>
+<tr>
+<td>live</td>
+<td>1<a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-reindex.html" target="_blank" rel="external">2</a>, 2<a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html" target="_blank" rel="external">1</a></td>
+<td>2, 5, 2</td>
+</tr>
+<tr>
+<td>shanghai</td>
+<td>2<a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html" target="_blank" rel="external">1</a></td>
+<td>3</td>
+</tr>
+<tr>
+<td>tom</td>
+<td>1<a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html" target="_blank" rel="external">1</a></td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<p>以live 这行为例我们说明一下该结构：live在文章1中出现了2次，文章2中出现了一次，它的出现位置为“2,5,2”这表示什么呢？我们需要结合文章号和出现频率来分析，文章1中出现了2次，那么“2,5”就表示live在文章1中出现的两个位置，文章2中出现了一次，剩下的“2”就表示live是文章2中第 2个关键字。</p>
+<p>以上就是lucene索引结构中最核心的部分。我们注意到关键字是按字符顺序排列的（lucene没有使用B树结构），因此lucene可以用二元搜索算法快速定位关键词。</p>
+<h5 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h5><p>实现时 lucene将上面三列分别作为词典文件（Term Dictionary）、频率文件(frequencies)、位置文件 (positions)保存。其中词典文件不仅保存有每个关键词，还保留了指向频率文件和位置文件的指针，通过指针可以找到该关键字的频率信息和位置信息。</p>
+<p>Lucene中使用了field的概念，用于表达信息所在位置（如标题中，文章中，url中），在建索引中，该field信息也记录在词典文件中，每个关键词都有一个field信息(因为每个关键字一定属于一个或多个field)。</p>
+<h5 id="压缩算法"><a href="#压缩算法" class="headerlink" title="压缩算法"></a>压缩算法</h5><p>为了减小索引文件的大小，Lucene对索引还使用了压缩技术。首先，对词典文件中的关键词进行了压缩，关键词压缩为&lt;前缀长度，后缀&gt;，例如：当前词为“阿拉伯语”，上一个词为“阿拉伯”，那么“阿拉伯语”压缩为<3，语>。其次大量用到的是对数字的压缩，数字只保存与上一个值的差值（这样可以减小数字的长度，进而减少保存该数字需要的字节数）。例如当前文章号是16389（不压缩要用3个字节保存），上一文章号是16382，压缩后保存7（只用一个字节）。</3，语></p>
+<h5 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h5><p>下面我们可以通过对该索引的查询来解释一下为什么要建立索引。</p>
+<p>假设要查询单词 “live”，lucene先对词典二元查找、找到该词，通过指向频率文件的指针读出所有文章号，然后返回结果。词典通常非常小，因而，整个过程的时间是毫秒级的。</p>
+<p>而用普通的顺序匹配算法，不建索引，而是对所有文章的内容进行字符串匹配，这个过程将会相当缓慢，当文章数目很大时，时间往往是无法忍受的。</p>
+<h2 id="2-术语"><a href="#2-术语" class="headerlink" title="2. 术语"></a>2. 术语</h2><ul>
+<li>term，索引词。能够被索引的精确值，索引词(term)可以通过term搜索进行准确查询</li>
+<li>text，文本。是一段普通的非结构化文字。通常文本会被分析称一个个的索引词。</li>
+<li>analysis，分析。分析是将文本转换为索引词的过程，分析的结果依赖于分词器。</li>
+<li>index，索引。是具有相同结构的文档集合。在单个集群中，可以定义多个你想要的索引。（<strong>索引相当于数据库中的表</strong>）</li>
+<li>type，类型。类型是索引的逻辑分区。（<strong>相当于数据库表中子表定义</strong>，一个索引（数据库中的表）可以有多个子表）。在一般情况下，一种类型被定义为具有一组公共字段的文档。例如，让我们假设你运行一个博客平台，并把所有的数据存储在一个索引中。在这个索引中，你可以定义一种类型为“用户数据”，一种类型为“博客数据”，另外一种类型为“评论数据”</li>
+<li>document，文档。是存储在Elasticsearch中的一个JSON格式的字符串（<strong>数据库表中的一行记录</strong>）。</li>
+<li>mapping，映射。<strong>相当于数据库中的表结构</strong>，每一个索引都有一个映射，它定义了索引中每一个字段类型，以及一个索引范围内的设置。一个映射可以实现被定义，或者在第一次存储文档时候被自动识别</li>
+<li>field，字段。文档中包含零个或者多个字段，字段可以是一个简单的值，也可以是一个数组或者是对象的嵌套结构。<strong>字段类似于表中的列</strong></li>
+<li>source field，来源字段。默认情况下，你的源文档江北存储在_source这个字段中，当你查询的时候也是返回这个字段。这允许你可以从搜索结构中访问原始的对象，这个对象返回一个精确的JSON字符串，这个对象不显示索引分析后的任何数据</li>
+<li>id，主键。是文件的唯一标识，如果在存库的时候没有提供ID，系统会自动生成一个ID，文档的“<strong>index/type/id</strong>”必须是唯一的</li>
+</ul>
+<p><img src="http://og43lpuu1.bkt.clouddn.com/elasticsearch_summary/001_es_index_terminology.png" alt=""></p>
+<h2 id="3-操作API"><a href="#3-操作API" class="headerlink" title="3. 操作API"></a>3. 操作API</h2><p>elasticsearch提供了丰富的操作方法（API），使得用户可以很方便的对elasticsearch进行管理，以及通过elasticsearch查询，汇总各类统计结果。完整的详细说明可参见<a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html" target="_blank" rel="external">Elasticsearch Reference</a>，这里我主要总结了几类基础的，我比较常用的操作API</p>
+<ul>
+<li>索引操作相关<ul>
+<li>创建索引</li>
+<li>获取索引</li>
+<li>删除索引</li>
+<li>重建索引</li>
+<li>创建索引模板</li>
+<li>查看索引模板</li>
+<li>删除索引模板</li>
+</ul>
+</li>
+<li>查询操作相关<ul>
+<li>获取索引上的文档总数</li>
+<li>(不)包含某个字段的文档</li>
+<li>AND查询</li>
+<li>Time Range查询</li>
+</ul>
+</li>
+<li>聚合操作相关<ul>
+<li>按某个字段x聚合，获取x总数count(x)</li>
+</ul>
+</li>
+</ul>
+<p>因为elasticsearch提供的都是HTTP RESTful API接口，因此很容易通过http工具对各接口进行验证，我在使用时，一般使用2类工具进行验证：</p>
+<ol>
+<li><p>kibana的DevTools<br>通过kebana的DevTools，可以很方便的根据需要书写http msg body，同时，kibana还可以给出关键字提示，执行命令，返回结果就显示在右侧的结果栏中<br><img src="http://og43lpuu1.bkt.clouddn.com/elasticsearch_summary/002_kibana_dev_tool.png" alt=""></p>
+</li>
+<li><p>curl命令<br>强大的curl命令，可以用于构建各类http请求，并获得反馈结果。某些msgbody内容较大，较复杂的命令，我会使用curl，指定本地文件的形式来执行。例如，创建post索引，索引的映射类型定义在post.json中：<code>curl -XPOST &#39;http://192.168.149.150:9200/posts&#39; -d @posts.json</code></p>
+</li>
+</ol>
+<h3 id="索引操作相关"><a href="#索引操作相关" class="headerlink" title="索引操作相关"></a>索引操作相关</h3><h4 id="创建索引"><a href="#创建索引" class="headerlink" title="创建索引"></a>创建索引</h4><p>创建索引，相当于创建数据库中的一张表，在创建索引时，我们往往会给出该索引的映射，方便索引文档的构建。假设我们需要创建一个索引：myIndex，在这个索引上，我们计划会创建两类文档：doc1， doc2。此时，我们会定义一个映射配置文件<code>my_index_map.json</code>，这个文件定义了doc1，doc2应该怎么被索引：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">    &quot;mappings&quot;:&#123;</div><div class="line">    </div><div class="line">        &quot;doc1&quot; : &#123;</div><div class="line">            &quot;properties&quot; : &#123;</div><div class="line">                &quot;log_timestamp&quot; : &#123;</div><div class="line">                    &quot;type&quot; : &quot;date&quot;,</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;format&quot; : &quot;MM/dd/yy HH:mm:ss z&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;pub_appid&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;integer&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;remote_ip&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;text&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;real_ip&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;text&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;topic&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;keyword&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;partition&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;integer&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;offset&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;long&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;async_flag&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;boolean&quot;</div><div class="line">                &#125;</div><div class="line">            &#125;</div><div class="line">        &#125;,</div><div class="line"></div><div class="line">        &quot;doc2&quot; : &#123;</div><div class="line">            &quot;properties&quot; : &#123;</div><div class="line">                &quot;log_timestamp&quot; : &#123;</div><div class="line">                    &quot;type&quot; : &quot;date&quot;,</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;format&quot; : &quot;MM/dd/yy HH:mm:ss z&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;sub_appid&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;integer&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;sub_group&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;keyword&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;remote_ip&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;text&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;real_ip&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;text&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;topic&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;keyword&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;partition&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;integer&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;offset&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;long&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;dack_flag&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;boolean&quot;</div><div class="line">                &#125;</div><div class="line">            &#125;</div><div class="line">        &#125;        </div><div class="line">        </div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>在这个映射文件中，我们定义doc1, doc2的字段映射关系。doc1中有哪些字段：log_timestamp, pub_appid, …，同时，给这些字段定义了类型：date, integer, keyword…等，基于这个映射文件，我们可以创建我们需要的索引：myIndex:<br><code>curl -XPOST &#39;http://192.168.149.150:9200/myIndex&#39; -d @my_index_map.json</code></p>
+<h4 id="获取索引"><a href="#获取索引" class="headerlink" title="获取索引"></a>获取索引</h4><p>通过GET命令，则可以方便的获取到你的目标索引的定义信息：<br><code>curl -XGET &#39;http://192.168.149.150:9200/myIndex?pretty&#39;</code></p>
+<h4 id="删除索引"><a href="#删除索引" class="headerlink" title="删除索引"></a>删除索引</h4><p>通过DELETE命令，则是删除目标索引：<br><code>curl -XDELETE &quot;http://192.168.149.150:9200/myIndex/&quot;</code></p>
+<h4 id="重建索引"><a href="#重建索引" class="headerlink" title="重建索引"></a>重建索引</h4><p>有些时候，我们会希望调整索引的映射配置，在调整映射配置之后，有时候是需要对索引进行重建的。重建索引指令主要用于将一个索引中的数据“搬到”另外一个索引中去。详细信息可参考：<a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-reindex.html" target="_blank" rel="external">Reindex API</a>的说明</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">curl -XPOST &apos;192.168.149.150:9200/_reindex?pretty&apos; -d&apos;</div><div class="line">&#123;</div><div class="line">  &quot;source&quot;: &#123;</div><div class="line">    &quot;index&quot;: &quot;myIndex&quot;</div><div class="line">  &#125;,</div><div class="line">  &quot;dest&quot;: &#123;</div><div class="line">    &quot;index&quot;: &quot;myIndex_new&quot;</div><div class="line">  &#125;</div><div class="line">&#125;</div><div class="line">&apos;</div></pre></td></tr></table></figure>
+<p>当索引中的数据量很大时，重建索引需要一定的时间才能完成，通过下述命令可以查看索引重建的状态</p>
+<p><code>curl -XGET &#39;192.168.149.150:9200/_tasks?detailed=true&amp;actions=*reindex&amp;pretty&#39;</code></p>
+<h4 id="创建索引模板"><a href="#创建索引模板" class="headerlink" title="创建索引模板"></a>创建索引模板</h4><p>随着时间的推移，如果所有数据都放在同一个索引中，会导致索引变的越来越大，无法控制。为方便对索引内容进行管理，我们往往会以天为单位，每天建一个索引，这样，则可以滚动创建一批索引，例如：myIndex_2017.06.21, myIndex_2017.06.22, myIndex_2017.06.23, myIndex<em>2017.06.24, …，当整个myIndex</em>*索引簇过大时，我们可以清理掉若干天的索引，保留最近7天的索引。如何滚动保留最近7天的数据，可参考elasticsearch工具curator的说明：<a href="https://www.elastic.co/guide/en/elasticsearch/client/curator/current/index.html" target="_blank" rel="external">Curator Reference</a></p>
+<p>为达到按天建立索引的目标，我们需要创建一个索引模板，<strong>告知elasticsearch，以某种规律命名的索引，都基于这个索引模板来设置映射。</strong></p>
+<p>与创建索引类似，在创建索引模板时，我们也会给出一个索引模板的定义文件：my_index_map_template.json:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">    &quot;template&quot;: &quot;my_index_*&quot;,</div><div class="line">    &quot;mappings&quot;:&#123;</div><div class="line">    </div><div class="line">        &quot;doc1&quot; : &#123;</div><div class="line">            &quot;properties&quot; : &#123;</div><div class="line">                &quot;log_timestamp&quot; : &#123;</div><div class="line">                    &quot;type&quot; : &quot;date&quot;,</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;format&quot; : &quot;MM/dd/yy HH:mm:ss z&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;pub_appid&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;integer&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;remote_ip&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;text&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;real_ip&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;text&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;topic&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;keyword&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;partition&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;integer&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;offset&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;long&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;async_flag&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;boolean&quot;</div><div class="line">                &#125;</div><div class="line">            &#125;</div><div class="line">        &#125;,</div><div class="line"></div><div class="line">        &quot;doc2&quot; : &#123;</div><div class="line">            &quot;properties&quot; : &#123;</div><div class="line">                &quot;log_timestamp&quot; : &#123;</div><div class="line">                    &quot;type&quot; : &quot;date&quot;,</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;format&quot; : &quot;MM/dd/yy HH:mm:ss z&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;sub_appid&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;integer&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;sub_group&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;keyword&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;remote_ip&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;text&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;real_ip&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;text&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;topic&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;keyword&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;partition&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;integer&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;offset&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;long&quot;</div><div class="line">                &#125;,</div><div class="line">                &quot;dack_flag&quot; : &#123;</div><div class="line">                    &quot;store&quot;: true,</div><div class="line">                    &quot;type&quot; : &quot;boolean&quot;</div><div class="line">                &#125;</div><div class="line">            &#125;</div><div class="line">        &#125;        </div><div class="line">        </div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>这个索引模板中的mapping部分，和表中的索引映射文件一致，需要注意的是，索引模板多了一个字段：<code>&quot;template&quot;: &quot;my_index_*&quot;</code>，这个字段就是告诉elasticsearch，如果有人想要建立以<code>my_index_</code>开头的索引，则根据这个索引模板定义个mapping进行创建。</p>
+<p>创建索引模板，我们使用命令：<br><code>curl -XPUT &#39;http://192.168.149.150:9200/_template/my_index_per_day&#39; -d @my_index_map_template.json</code></p>
+<h4 id="查看索引模板"><a href="#查看索引模板" class="headerlink" title="查看索引模板"></a>查看索引模板</h4><p>查看索引模板的定义，则使用：<br><code>curl -XGET &#39;http://192.168.149.150:9200/_template/my_index_per_day?pretty&#39;</code></p>
+<h4 id="删除索引模板"><a href="#删除索引模板" class="headerlink" title="删除索引模板"></a>删除索引模板</h4><p>需要删除索引模板时，使用：<br><code>curl -XDELETE &#39;192.168.149.150:9200/_template/my_index_per_day?pretty&#39;</code></p>
+<h3 id="查询操作相关"><a href="#查询操作相关" class="headerlink" title="查询操作相关"></a>查询操作相关</h3><h4 id="获取索引上的文档总数"><a href="#获取索引上的文档总数" class="headerlink" title="获取索引上的文档总数"></a>获取索引上的文档总数</h4><p>当需要获取一个索引上有多少数据时，需要使用match_all匹配，es会返回totalCount</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">GET my_index_*/_search</div><div class="line">&#123;</div><div class="line">  &quot;from&quot;:0,</div><div class="line">  &quot;size&quot;:0,</div><div class="line">  &quot;query&quot;: &#123;</div><div class="line">    &quot;match_all&quot;: &#123;&#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>设置size:0，告诉es不用返回任何一条结果。我们只需要知道totalCount信息</p>
+<h4 id="不-包含某个字段的文档"><a href="#不-包含某个字段的文档" class="headerlink" title="(不)包含某个字段的文档"></a>(不)包含某个字段的文档</h4><p>通过exists查询，可以获取那些包含某个字段值的记录</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">curl -XGET &apos;localhost:9200/_search?pretty&apos; -H &apos;Content-Type: application/json&apos; -d&apos;</div><div class="line">&#123;</div><div class="line">    &quot;query&quot;: &#123;</div><div class="line">        &quot;exists&quot; : &#123; &quot;field&quot; : &quot;user&quot; &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div><div class="line">&apos;</div></pre></td></tr></table></figure>
+<p>反过来，exists查询结合bool复合查询（must_not事件类型）可以搜索不包含某字段的文档记录</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div></pre></td><td class="code"><pre><div class="line">curl -XGET &apos;localhost:9200/_search?pretty&apos; -H &apos;Content-Type: application/json&apos; -d&apos;</div><div class="line">&#123;</div><div class="line">    &quot;query&quot;: &#123;</div><div class="line">        &quot;bool&quot;: &#123;</div><div class="line">            &quot;must_not&quot;: &#123;</div><div class="line">                &quot;exists&quot;: &#123;</div><div class="line">                    &quot;field&quot;: &quot;user&quot;</div><div class="line">                &#125;</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div><div class="line">&apos;</div></pre></td></tr></table></figure>
+<h4 id="AND查询"><a href="#AND查询" class="headerlink" title="AND查询"></a>AND查询</h4><p>and查询则是找出同时满足某几个条件的数据，同样可以基于bool复合查询来完成：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line">GET my_index_2017.05.05/doc1/_search</div><div class="line">&#123;</div><div class="line">  &quot;from&quot;: 0,</div><div class="line">  &quot;size&quot;: 5,</div><div class="line">  &quot;sort&quot;: [</div><div class="line">    &#123;</div><div class="line">      &quot;offset&quot;: &quot;asc&quot;</div><div class="line">    &#125;</div><div class="line">  ],</div><div class="line">  &quot;query&quot;: &#123;</div><div class="line">    &quot;bool&quot; : &#123;</div><div class="line">      &quot;must&quot; : [</div><div class="line">        &#123;</div><div class="line">          &quot;term&quot; : &#123;&quot;topic&quot;: &quot;55.userpuid.v1&quot;&#125;</div><div class="line">        &#125;, </div><div class="line">        &#123; </div><div class="line">          &quot;term&quot; :&#123;&quot;partition&quot;: 0&#125;</div><div class="line">        &#125;</div><div class="line">      ]</div><div class="line">    &#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>注意到，上面我们还是用了sort字段，这里规定了es按哪个字段进行排序并返回结果。</p>
+<h4 id="Time-Range查询"><a href="#Time-Range查询" class="headerlink" title="Time Range查询"></a>Time Range查询</h4><p>对date类型的字段进行time range查询，可以返回某一时间区间内的结果：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div></pre></td><td class="code"><pre><div class="line">GET my_index_2017.05.08/doc1/_search</div><div class="line">&#123;</div><div class="line">  &quot;from&quot;: 0,</div><div class="line">  &quot;size&quot;: 10,</div><div class="line">  &quot;sort&quot; : [</div><div class="line">        &#123; &quot;log_timestamp&quot; : &quot;asc&quot; &#125;</div><div class="line">    ],</div><div class="line">   &quot;_source&quot;: [&quot;topic&quot;,&quot;partition&quot;,&quot;offset&quot;, &quot;log_timestamp&quot;],</div><div class="line">  &quot;query&quot;: &#123;</div><div class="line">    &quot;bool&quot; : &#123;</div><div class="line">      &quot;must&quot; : [</div><div class="line">        &#123;</div><div class="line">          &quot;term&quot; : &#123;&quot;topic&quot;: &quot;51.cda-store.v1&quot;&#125;</div><div class="line">        &#125;,</div><div class="line">        &#123;</div><div class="line">          &quot;range&quot;: &#123;</div><div class="line">            &quot;log_timestamp&quot;: &#123;</div><div class="line">              &quot;gte&quot;: &quot;05/08/17 10:45:00 CST&quot;,</div><div class="line">              &quot;lte&quot;: &quot;05/08/17 10:55:00 CST&quot;,</div><div class="line">              &quot;format&quot;: &quot;MM/dd/yy HH:mm:ss z&quot;</div><div class="line">            &#125;</div><div class="line">          &#125;</div><div class="line">        &#125;</div><div class="line">      ]</div><div class="line">    &#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><code>&quot;gte&quot;: &quot;05/08/17 10:45:00 CST&quot;,</code>中<code>gte</code>表示要求时间点大于或等于:”05/08/17 10:45:00 CST”, 同理，<code>&quot;lte&quot;: &quot;05/08/17 10:55:00 CST&quot;</code>表示要小于等于”05/08/17 10:55:00 CST”</p>
+<h3 id="聚合操作相关"><a href="#聚合操作相关" class="headerlink" title="聚合操作相关"></a>聚合操作相关</h3><h4 id="按某个字段x聚合，获取x总数count-x"><a href="#按某个字段x聚合，获取x总数count-x" class="headerlink" title="按某个字段x聚合，获取x总数count(x)"></a>按某个字段x聚合，获取x总数count(x)</h4><p>聚合操作会按照指定的聚合指标对数据进行聚合统计，详细的聚合接口说明可参考<a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations.html" target="_blank" rel="external">Aggregations章节</a>的说明</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div></pre></td><td class="code"><pre><div class="line">GET my_index_*/doc2/_search</div><div class="line">&#123;</div><div class="line">  &quot;from&quot;: 0,</div><div class="line">  &quot;size&quot;: 0,</div><div class="line">  &quot;query&quot;: &#123;</div><div class="line">    &quot;bool&quot;: &#123;</div><div class="line">      &quot;must&quot;: [</div><div class="line">        &#123;</div><div class="line">          &quot;term&quot;: &#123;</div><div class="line">            &quot;topic&quot;: &quot;201.OrderStatusDelayMsg.v1&quot;</div><div class="line">          &#125;</div><div class="line">        &#125;,</div><div class="line">        &#123;</div><div class="line">          &quot;term&quot;: &#123;</div><div class="line">            &quot;partition&quot;: 0</div><div class="line">          &#125;</div><div class="line">        &#125;</div><div class="line">      ]</div><div class="line">    &#125;</div><div class="line">  &#125;,</div><div class="line">  &quot;aggs&quot;: &#123;</div><div class="line">    &quot;cg&quot;: &#123;</div><div class="line">      &quot;terms&quot;: &#123;</div><div class="line">        &quot;field&quot;: &quot;sub_group&quot;,</div><div class="line">        &quot;size&quot;: &quot;10000&quot;</div><div class="line">      &#125;</div><div class="line">    &#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>上面定义了一个名为cg的聚合，该聚合的类型是terms(桶聚合的一种），这个聚合是按”sub_group”这个指标进行的，实际上，上面查询的是topic=201.OrderStatusDelayMsg.v1&amp;partition=0的记录，按sub_group进行统计，看每个sub_group分别有多少数据量。这里需要注意到cg聚合中还有一个<strong>字段”size”</strong>，之所以将其设置成10000，是希望es在每个shard上都将所有数据进行聚合，获取到精确数量，而不是仅仅将topN的数据做聚合，size较少时，汇总的数据不精确。具体可参见对size字段的描述:<a href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-terms-aggregation.html#_size" target="_blank" rel="external">Document counts are approximate</a></p>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2017/06/22/0007_elasticsearch_summary/">ElasticSearch总结</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">lday</a></p>
+        <p><span>发布时间:</span>2017-06-22, 22:03:18</p>
+        <p><span>最后更新:</span>2017-06-22, 22:54:20</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2017/06/22/0007_elasticsearch_summary/" title="ElasticSearch总结">http://lday.me/2017/06/22/0007_elasticsearch_summary/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://lday.me/2017/06/22/0007_elasticsearch_summary/　　作者: lday" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2017/03/19/0006_boost-multi-index-container/">
+                    多维索引容器(multi_index_container)的使用
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+        <strong class="toc-title">文章目录</strong>
+        
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-全文索引"><span class="toc-number">1.</span> <span class="toc-text">1. 全文索引</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Lucene倒排索引"><span class="toc-number">1.1.</span> <span class="toc-text">Lucene倒排索引</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#示例"><span class="toc-number">1.1.1.</span> <span class="toc-text">示例</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#步骤1：取得关键词"><span class="toc-number">1.1.1.1.</span> <span class="toc-text">步骤1：取得关键词</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#步骤2：建立倒排索引"><span class="toc-number">1.1.1.2.</span> <span class="toc-text">步骤2：建立倒排索引</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#实现"><span class="toc-number">1.1.1.3.</span> <span class="toc-text">实现</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#压缩算法"><span class="toc-number">1.1.1.4.</span> <span class="toc-text">压缩算法</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#应用场景"><span class="toc-number">1.1.1.5.</span> <span class="toc-text">应用场景</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-术语"><span class="toc-number">2.</span> <span class="toc-text">2. 术语</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-操作API"><span class="toc-number">3.</span> <span class="toc-text">3. 操作API</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#索引操作相关"><span class="toc-number">3.1.</span> <span class="toc-text">索引操作相关</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#创建索引"><span class="toc-number">3.1.1.</span> <span class="toc-text">创建索引</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#获取索引"><span class="toc-number">3.1.2.</span> <span class="toc-text">获取索引</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#删除索引"><span class="toc-number">3.1.3.</span> <span class="toc-text">删除索引</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#重建索引"><span class="toc-number">3.1.4.</span> <span class="toc-text">重建索引</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#创建索引模板"><span class="toc-number">3.1.5.</span> <span class="toc-text">创建索引模板</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#查看索引模板"><span class="toc-number">3.1.6.</span> <span class="toc-text">查看索引模板</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#删除索引模板"><span class="toc-number">3.1.7.</span> <span class="toc-text">删除索引模板</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#查询操作相关"><span class="toc-number">3.2.</span> <span class="toc-text">查询操作相关</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#获取索引上的文档总数"><span class="toc-number">3.2.1.</span> <span class="toc-text">获取索引上的文档总数</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#不-包含某个字段的文档"><span class="toc-number">3.2.2.</span> <span class="toc-text">(不)包含某个字段的文档</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#AND查询"><span class="toc-number">3.2.3.</span> <span class="toc-text">AND查询</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Time-Range查询"><span class="toc-number">3.2.4.</span> <span class="toc-text">Time Range查询</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#聚合操作相关"><span class="toc-number">3.3.</span> <span class="toc-text">聚合操作相关</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#按某个字段x聚合，获取x总数count-x"><span class="toc-number">3.3.1.</span> <span class="toc-text">按某个字段x聚合，获取x总数count(x)</span></a></li></ol></li></ol></li></ol>
+        
+    </div>
+    <style>
+        .left-col .switch-btn,
+        .left-col .switch-area {
+            display: none;
+        }
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+    <input type="button" id="tocButton" value="隐藏目录"  title="点击按钮隐藏或者显示文章目录">
+
+    <script>
+        yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+    </script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"ElasticSearch总结　| lday的博客　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+      <div class="duoshuo" id="comments">
+    <div id="comment-box" ></div>
+    <div class="ds-thread" id="ds-thread" data-thread-key="2017/06/22/0007_elasticsearch_summary/" data-title="ElasticSearch总结" data-url="http://lday.me/2017/06/22/0007_elasticsearch_summary/"></div>
+    <script>
+        var duoshuoQuery = {short_name:"http://lday.duoshuo.com"};
+        var loadComment = function(){
+            var d = document, s = d.createElement('script');
+            s.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+            s.async = true; s.charset = 'UTF-8';
+            (d.head || d.body).appendChild(s);
+        }
+
+        
+    </script>
+    
+    <script> loadComment(); </script>
+
+</div>
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/" title="回到主页"><i class="fa fa-home"></i></a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2017/03/19/0006_boost-multi-index-container/" title="下一篇: 多维索引容器(multi_index_container)的使用">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2017/06/22/0007_elasticsearch_summary/">ElasticSearch总结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/03/19/0006_boost-multi-index-container/">多维索引容器(multi_index_container)的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/27/0005_gdb-vs-dlv/">Golang程序调试工具介绍(gdb vs dlv)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/25/0004_golang-slice-depth/">细看Go中的切片(slice)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/01/0003_seri-stm-etcd3/">基于etcd3的访问序列化及分布式软事务内存</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/11/04/0002_hi/">你好，世界</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/11/03/0001_hello-world/">Hello World</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016-2017 lday
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" title="本站到访数"><i class="fa fa-user" aria-hidden="true"></i><span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>| </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit"  title="本页阅读量"><i class="fa fa-eye animated infinite pulse" aria-hidden="true"></i><span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script>
+    // Open in New Window
+    
+        var oOpenInNew = {
+            
+            
+            
+            
+            
+            
+             archives: ".archive-article-title", 
+             miniArchives: "a.post-list-link", 
+            
+             friends: "#js-friends a", 
+             socail: ".social a" 
+        }
+        for (var x in oOpenInNew) {
+            $(oOpenInNew[x]).attr("target", "_blank");
+        }
+    
+</script>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>
