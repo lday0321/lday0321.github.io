@@ -452,24 +452,27 @@
 
 
     
-      <div class="duoshuo" id="comments">
-    <div id="comment-box" ></div>
-    <div class="ds-thread" id="ds-thread" data-thread-key="2017/03/19/0006_boost-multi-index-container/" data-title="多维索引容器(multi_index_container)的使用" data-url="http://lday.me/2017/03/19/0006_boost-multi-index-container/"></div>
+        <section id="comments">
+    <style> aside.comment-bar { margin: auto 30px; }</style>
+    <div id="disqus_thread"></div>
     <script>
-        var duoshuoQuery = {short_name:"http://lday.duoshuo.com"};
+        var disqus_config = function(){
+            this.page.url = 'http://lday.me/2017/03/19/0006_boost-multi-index-container/';
+            this.page.identifier = '2017/03/19/0006_boost-multi-index-container/';
+        };
         var loadComment = function(){
             var d = document, s = d.createElement('script');
-            s.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
-            s.async = true; s.charset = 'UTF-8';
+            s.src = '//lday.disqus.com/embed.js';
+            s.setAttribute('data-timestamp', +new Date());
             (d.head || d.body).appendChild(s);
         }
-
-        
     </script>
     
     <script> loadComment(); </script>
 
-</div>
+</section>
+
+
     
 
 

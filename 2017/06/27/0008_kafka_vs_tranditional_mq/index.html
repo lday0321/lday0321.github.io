@@ -435,24 +435,27 @@
 
 
     
-      <div class="duoshuo" id="comments">
-    <div id="comment-box" ></div>
-    <div class="ds-thread" id="ds-thread" data-thread-key="2017/06/27/0008_kafka_vs_tranditional_mq/" data-title="Kafka与传统消息中间件的差异" data-url="http://lday.me/2017/06/27/0008_kafka_vs_tranditional_mq/"></div>
+        <section id="comments">
+    <style> aside.comment-bar { margin: auto 30px; }</style>
+    <div id="disqus_thread"></div>
     <script>
-        var duoshuoQuery = {short_name:"http://lday.duoshuo.com"};
+        var disqus_config = function(){
+            this.page.url = 'http://lday.me/2017/06/27/0008_kafka_vs_tranditional_mq/';
+            this.page.identifier = '2017/06/27/0008_kafka_vs_tranditional_mq/';
+        };
         var loadComment = function(){
             var d = document, s = d.createElement('script');
-            s.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
-            s.async = true; s.charset = 'UTF-8';
+            s.src = '//lday.disqus.com/embed.js';
+            s.setAttribute('data-timestamp', +new Date());
             (d.head || d.body).appendChild(s);
         }
-
-        
     </script>
     
     <script> loadComment(); </script>
 
-</div>
+</section>
+
+
     
 
 
