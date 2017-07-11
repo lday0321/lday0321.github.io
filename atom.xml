@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://lday.me/"/>
-  <updated>2017-06-27T14:21:59.839Z</updated>
+  <updated>2017-07-11T13:33:00.443Z</updated>
   <id>http://lday.me/</id>
   
   <author>
@@ -14,6 +14,31 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>为什么没有收到预期的413状态码</title>
+    <link href="http://lday.me/2017/07/11/0009_why_not_413/"/>
+    <id>http://lday.me/2017/07/11/0009_why_not_413/</id>
+    <published>2017-07-11T13:21:21.000Z</published>
+    <updated>2017-07-11T13:33:00.443Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;HTTP状态码413的含义是请求实体过长，RFC7231对413状态码的定义如下：&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;&lt;strong&gt;6.5.11.  413 Payload Too Large&lt;/strong&gt;&lt;br&gt;The 413 (Payload Too Large) status code indicates that the server is refusing to process a request because the request payload is larger than the server is willing or able to process.  The server MAY close the connection to prevent the client from continuing the request.&lt;/p&gt;
+&lt;/blockquote&gt;
+    
+    </summary>
+    
+    
+      <category term="golang" scheme="http://lday.me/tags/golang/"/>
+    
+      <category term="HTTP" scheme="http://lday.me/tags/HTTP/"/>
+    
+      <category term="java" scheme="http://lday.me/tags/java/"/>
+    
+  </entry>
   
   <entry>
     <title>Kafka与传统消息中间件的差异</title>

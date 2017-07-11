@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no" />
+<meta name="author" content="lday" />
+
+
+
+<meta name="description" content="HTTP状态码413的含义是请求实体过长，RFC7231对413状态码的定义如下：
+
+6.5.11.  413 Payload Too LargeThe 413 (Payload Too Large) status code indicates that the server is refusing to process a request because the request payload">
+<meta property="og:type" content="article">
+<meta property="og:title" content="为什么没有收到预期的413状态码">
+<meta property="og:url" content="http://lday.me/2017/07/11/0009_why_not_413/index.html">
+<meta property="og:site_name" content="lday的博客">
+<meta property="og:description" content="HTTP状态码413的含义是请求实体过长，RFC7231对413状态码的定义如下：
+
+6.5.11.  413 Payload Too LargeThe 413 (Payload Too Large) status code indicates that the server is refusing to process a request because the request payload">
+<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/why_not_413/png/01_client_debug_exception_output.png">
+<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/why_not_413/png/02_wireshark_client_reset_by_peer_01.png">
+<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/why_not_413/png/03_wireshark_client_reset_by_peer_02.png">
+<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/why_not_413/png/04_seq_diagram_reset_by_peer.png">
+<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/why_not_413/png/05_wireshark_async_client_413_ok.png">
+<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/why_not_413/png/06_seq_diagram_expect_100_continue.png">
+<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/why_not_413/png/07_wireshark_client_small_msg_100_continue.png">
+<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/why_not_413/png/08_wireshark_client_too_big_expect_continue.png">
+<meta property="og:updated_time" content="2017-07-11T13:33:00.443Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="为什么没有收到预期的413状态码">
+<meta name="twitter:description" content="HTTP状态码413的含义是请求实体过长，RFC7231对413状态码的定义如下：
+
+6.5.11.  413 Payload Too LargeThe 413 (Payload Too Large) status code indicates that the server is refusing to process a request because the request payload">
+<meta name="twitter:image" content="http://og43lpuu1.bkt.clouddn.com/why_not_413/png/01_client_debug_exception_output.png">
+
+<link rel="apple-touch-icon" href= "/apple-touch-icon.png">
+
+
+    <link rel="alternate" href="/atom.xml" title="lday的博客" type="application/atom+xml">
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+    <link href="//cdn.bootcss.com/animate.css/3.5.1/animate.min.css" rel="stylesheet">
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>为什么没有收到预期的413状态码 | lday的博客</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: true,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: undefined
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/assets/blogImg/donkey.jpg" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">lday</a></h1>
+        </hgroup>
+
+        
+        <p class="header-subtitle">Life, Coding, Funning</p>
+        
+
+        
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>菜单</li>
+                        <li>标签</li>
+                        
+                        <li>友情链接</li>
+                        
+                        
+                        <li>关于我</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" href="mailto:oneday0321@gmail.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" href="https://github.com/lday0321" title="GitHub"></a>
+                            
+                                <a class="fa RSS" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/HTTP/">HTTP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kafka/">Kafka</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/boost/">boost</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cpp/">cpp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/">elasticsearch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/etcd/">etcd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/golang/">golang</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hello/">hello</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hello1/">hello1</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/java/">java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/分布式/">分布式</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">lday, 80后IT码农一枚. 白羊座，喜热闹</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">lday</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/assets/blogImg/donkey.jpg" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">lday</a></h1>
+            </hgroup>
+            
+            <p class="header-subtitle">Life, Coding, Funning</p>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:oneday0321@gmail.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/lday0321" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
+</nav>
+      <div class="body-wrap"><article id="post-0009_why_not_413" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2017/07/11/0009_why_not_413/" class="article-date">
+      <time datetime="2017-07-11T13:21:21.000Z" itemprop="datePublished">2017-07-11</time>
+</a>
+
+
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      为什么没有收到预期的413状态码
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/HTTP/">HTTP</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/golang/">golang</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/java/">java</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <p>HTTP状态码413的含义是请求实体过长，RFC7231对413状态码的定义如下：</p>
+<blockquote>
+<p><strong>6.5.11.  413 Payload Too Large</strong><br>The 413 (Payload Too Large) status code indicates that the server is refusing to process a request because the request payload is larger than the server is willing or able to process.  The server MAY close the connection to prevent the client from continuing the request.</p>
+</blockquote>
+<a id="more"></a>
+<p>从上面的描述我们可以看出，当http请求的实体过长时，server端可以返回一个413的状态码，而当client端收到413的状态码时，则意味着client端知道消息过长，本次请求失败。这是一个看似很常规的request/response逻辑。但似乎又没我们想的那么简单</p>
+<h1 id="问题描述"><a href="#问题描述" class="headerlink" title="问题描述"></a>问题描述</h1><p>遇到的问题来自本次618活动我们实际发生的线上问题。我们的消息中间件PubSub系统对外提供HTTP RESTful的API，用户可以通过HTTP POST请求执行消息Pub动作，通过HTTP GET请求执行消息Sub动作。当用户执行HTTP POST时，收到状态码201，则表示消息Pub成功，而收到其他状态码均意味着消息Pub失败。对于消息的大小，PubSub系统会有一定的控制，根据实际情况，线上系统设置的MAX_MSG_SIZE是512K，当用户提交的数据超过512K时，后端系统将返回如上提到的413(Payload Too Large)状态码，告知用户消息体过大，Pub失败。发送端通过在HTTP请求上设置Content-Length字段来明确消息的实际大小。</p>
+<p>上述交互设计看似没有问题，当遗憾的是，在618活动当天，在拒绝过大消息体的Pub请求时，客户端未能获取到413的错误码，这是为什么？</p>
+<h1 id="原因分析"><a href="#原因分析" class="headerlink" title="原因分析"></a>原因分析</h1><p>为了将问题说明清楚，我将客户端代码和服务端代码做了简化抽离，以便直观的重现问题。</p>
+<p>客户端代码如下（Java实现）：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> HttpConfig <span class="title">buildHttpSettings</span><span class="params">()</span> </span>&#123;</div><div class="line"></div><div class="line">    HttpConfig httpConfig = <span class="keyword">new</span> HttpConfig();</div><div class="line">    httpConfig.setMaxTotalConnections(<span class="number">5</span>);</div><div class="line"></div><div class="line">    <span class="keyword">return</span> httpConfig;</div><div class="line"></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> HttpClient <span class="title">createHttpClient</span><span class="params">(HttpConfig config)</span> </span>&#123;</div><div class="line"></div><div class="line">    HttpParams params = <span class="keyword">new</span> BasicHttpParams();</div><div class="line">    HttpConnectionParams.setConnectionTimeout(params, config.getConnectTimeOut());</div><div class="line">    </div><div class="line">    HttpConnectionParams.setSoTimeout(params, config.getSocketTimeOut());</div><div class="line">    HttpConnectionParams.setSoKeepalive(params, <span class="keyword">true</span>);</div><div class="line">    HttpConnectionParams.setStaleCheckingEnabled(params, <span class="keyword">true</span>);</div><div class="line">    HttpConnectionParams.setTcpNoDelay(params, <span class="keyword">true</span>);</div><div class="line"></div><div class="line">    PoolingClientConnectionManager connectionManager = <span class="keyword">new</span> PoolingClientConnectionManager();</div><div class="line">    connectionManager.closeIdleConnections(config.getIdleBeforeColse(), TimeUnit.MILLISECONDS);</div><div class="line">    connectionManager.setMaxTotal(config.getMaxTotalConnections());</div><div class="line">    connectionManager.setDefaultMaxPerRoute(config.getMaxTotalConnections());</div><div class="line"></div><div class="line">    DefaultHttpClient httpClient = <span class="keyword">new</span> DefaultHttpClient(connectionManager, params);</div><div class="line"></div><div class="line">    httpClient.setKeepAliveStrategy(<span class="keyword">new</span> DefaultConnectionKeepAliveStrategy());</div><div class="line">    httpClient.setHttpRequestRetryHandler(<span class="keyword">new</span> DefaultHttpRequestRetryHandler(<span class="number">0</span>, <span class="keyword">false</span>));</div><div class="line"></div><div class="line">    <span class="keyword">return</span> httpClient;</div><div class="line">&#125;</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">postMsg</span><span class="params">(<span class="keyword">byte</span>[] msg)</span> </span>&#123;</div><div class="line"></div><div class="line"></div><div class="line">    HttpConfig httpConf = buildHttpSettings();</div><div class="line">    HttpClient httpClient = createHttpClient(httpConf);</div><div class="line"></div><div class="line">    String targetUrl = <span class="string">"http://192.168.149.150:8080/big"</span>;</div><div class="line">    HttpPost httpPost = <span class="keyword">new</span> HttpPost(targetUrl);</div><div class="line">    httpPost.setHeader(<span class="string">"User-Agent"</span>, Constants.USER_AGENT);</div><div class="line"></div><div class="line">    <span class="keyword">int</span> msgLen = msg.length;</div><div class="line">    logger.debug(<span class="string">"msgLen:"</span> + msgLen);</div><div class="line"></div><div class="line">    <span class="keyword">try</span> &#123;</div><div class="line">        httpPost.setEntity(<span class="keyword">new</span> ByteArrayEntity(msg));</div><div class="line">        HttpResponse response = httpClient.execute(httpPost);</div><div class="line"></div><div class="line"></div><div class="line">        <span class="keyword">int</span> statusCode = <span class="number">0</span>;</div><div class="line">        <span class="keyword">if</span> (response.getStatusLine() != <span class="keyword">null</span>) &#123;</div><div class="line">            statusCode = response.getStatusLine().getStatusCode();</div><div class="line"></div><div class="line">        &#125; <span class="keyword">else</span> &#123;</div><div class="line">            logger.debug(<span class="string">"StatusLine is null "</span>);</div><div class="line">            <span class="keyword">return</span>;</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        String result = <span class="keyword">null</span>;</div><div class="line">        HttpEntity entity = response.getEntity();</div><div class="line">        <span class="keyword">if</span> (statusCode != <span class="number">201</span>) &#123;</div><div class="line"></div><div class="line">            <span class="comment">// get errmsg</span></div><div class="line">            <span class="keyword">if</span> (entity != <span class="keyword">null</span>) &#123;</div><div class="line">                result = EntityUtils.toString(entity, <span class="string">"UTF-8"</span>);</div><div class="line">                JSONObject jsonObject = JSONObject.parseObject(result);</div><div class="line">                logger.debug(<span class="string">"errmsg:"</span> + jsonObject.getString(<span class="string">"errmsg"</span>));</div><div class="line">                logger.debug(<span class="string">"statusCode:"</span> + statusCode);</div><div class="line"></div><div class="line">                httpPost.abort();</div><div class="line">            &#125;</div><div class="line">        &#125; <span class="keyword">else</span> &#123;</div><div class="line"></div><div class="line">            <span class="comment">// close entity</span></div><div class="line">            <span class="keyword">if</span> (entity != <span class="keyword">null</span>) &#123;</div><div class="line">                result = EntityUtils.toString(entity, <span class="string">"UTF-8"</span>);</div><div class="line">                logger.debug(result);</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line"></div><div class="line"></div><div class="line">    &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</div><div class="line">        e.printStackTrace();</div><div class="line">        logger.error(<span class="string">"UnsupportedEncodingException"</span>);</div><div class="line">        <span class="keyword">return</span>;</div><div class="line">    &#125; <span class="keyword">catch</span> (ClientProtocolException e) &#123;</div><div class="line">        e.printStackTrace();</div><div class="line">        logger.error(<span class="string">"ClientProtocolException"</span>);</div><div class="line">        <span class="keyword">return</span>;</div><div class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</div><div class="line">        e.printStackTrace();</div><div class="line">        logger.error(<span class="string">"IOException"</span>);</div><div class="line">        <span class="keyword">return</span>;</div><div class="line">    &#125;</div><div class="line"></div><div class="line"></div><div class="line">    <span class="keyword">return</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>服务端代码如下（Go实现）：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">var</span> (</div><div class="line">	ResponseOk = []<span class="keyword">byte</span>(<span class="string">`&#123;"ok":1&#125;`</span>)</div><div class="line">)</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">bigPostHandle</span><span class="params">(w http.ResponseWriter, r *http.Request, params httprouter.Params)</span></span> &#123;</div><div class="line">	contentLen := r.ContentLength</div><div class="line">	MaxMsgSize := <span class="keyword">int64</span>(<span class="number">512</span> * <span class="number">1024</span>)</div><div class="line">	</div><div class="line">	log4go.Debug(<span class="string">"contentLen:%d"</span>, contentLen)</div><div class="line"></div><div class="line">	<span class="comment">// check content-length</span></div><div class="line">	<span class="keyword">if</span> contentLen &gt; MaxMsgSize &#123;</div><div class="line">		log4go.Error(<span class="string">"too big content, contentLen:%d, max:%d"</span>, contentLen, MaxMsgSize)</div><div class="line"></div><div class="line">		<span class="comment">// reject big contentLen</span></div><div class="line">		errStr := <span class="string">"too big message"</span></div><div class="line">		errCode := http.StatusRequestEntityTooLarge</div><div class="line">		w.Header().Set(<span class="string">"Connection"</span>, <span class="string">"close"</span>)</div><div class="line">		writeError(w, errStr, errCode)</div><div class="line">		<span class="keyword">return</span></div><div class="line">	&#125;</div><div class="line"></div><div class="line">	<span class="comment">// read all data and return</span></div><div class="line">	msgContent := <span class="built_in">make</span>([]<span class="keyword">byte</span>, contentLen+<span class="number">1</span>, contentLen+<span class="number">1</span>)</div><div class="line">	lbr := io.LimitReader(r.Body, MaxMsgSize+<span class="number">1</span>)</div><div class="line">	<span class="keyword">if</span> x, err := io.ReadAtLeast(lbr, msgContent, <span class="keyword">int</span>(contentLen)); err != <span class="literal">nil</span> &#123;</div><div class="line">		log4go.Error(<span class="string">"contentLen: %d, x:%d, ioReader error, %+v"</span>, contentLen, x, err)</div><div class="line"></div><div class="line">		<span class="comment">// read error</span></div><div class="line">		errStr := <span class="string">"read body error"</span></div><div class="line">		errCode := http.StatusInternalServerError</div><div class="line">		w.Header().Set(<span class="string">"Connection"</span>, <span class="string">"close"</span>)</div><div class="line">		writeError(w, errStr, errCode)</div><div class="line"></div><div class="line">		<span class="keyword">return</span></div><div class="line">	&#125;</div><div class="line"></div><div class="line">	log4go.Info(<span class="string">"len: %d, content:[%s], header:%+v"</span>, contentLen, msgContent, w.Header())</div><div class="line"></div><div class="line">	<span class="comment">// return 201 resp</span></div><div class="line">	w.WriteHeader(http.StatusCreated)</div><div class="line">	<span class="keyword">if</span> _, err := w.Write(ResponseOk); err != <span class="literal">nil</span> &#123;</div><div class="line">		log4go.Error(<span class="string">"resp: %v"</span>, err)</div><div class="line">		<span class="keyword">return</span></div><div class="line">	&#125;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">writeError</span><span class="params">(resp http.ResponseWriter, errMsg <span class="keyword">string</span>, errCode <span class="keyword">int</span>)</span></span> &#123;</div><div class="line">	<span class="keyword">var</span> out = <span class="keyword">map</span>[<span class="keyword">string</span>]<span class="keyword">string</span>&#123;</div><div class="line">		<span class="string">"errmsg"</span>: errMsg,</div><div class="line">	&#125;</div><div class="line">	b, _ := json.Marshal(out)</div><div class="line">	http.Error(resp, <span class="keyword">string</span>(b), errCode)</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>从上面的示例代码我们可以看到，客户端是使用java实现的简单的http客户端，他依赖apache的httpclient包，向服务端发送post请求，并在完成post请求发送后，获取<code>HttpResponse</code>信息，从中获取返回码，以及响应信息等内容。而服务端则是由go实现的，服务端在处理post请求时，会从请求头中获取对应的ContentLength信息(<code>r.ContentLength</code>)，将该长度信息与最大长度<code>MaxMsgSize</code>进行比较，当消息过长时，则设置状态码为<code>http.StatusRequestEntityTooLarge</code>(413)并返回；当消息长度没有超出最大长度限制时，则将消息体读出来进行处理，并在处理完成之后，返回<code>http.StatusCreated</code>(201)。在实际运行过程中，当消息体未超过512k时，客户端在发送消息之后都能正确的接收到201状态码的响应。然而，当消息超出512k时，却不能。</p>
+<p>为探寻具体的原因，我们对代码进行跟踪调试，并在调试的过程中通过wireshark进行了抓包分析。在调试时，我们在客户端发现<code>HttpResponse response = httpClient.execute(httpPost);</code>此段代码抛出了异常：</p>
+<p><img src="http://og43lpuu1.bkt.clouddn.com/why_not_413/png/01_client_debug_exception_output.png" alt=""></p>
+<p>从上图我们可以看到明显的异常<font color="#DB4B36"><strong><code>java.net.SocketException: Connection reset by peer: socket write error</code></strong></font></p>
+<p>再通过wireshark抓包，我们来继续看看究竟网络交互上发生了什么：</p>
+<p><img src="http://og43lpuu1.bkt.clouddn.com/why_not_413/png/02_wireshark_client_reset_by_peer_01.png" alt=""></p>
+<p>上图显示，客户端主动向服务器端发起了post请求，并且，请求中的Content-Length字段被设置成了800610，该值已超过最大限度512k</p>
+<p><img src="http://og43lpuu1.bkt.clouddn.com/why_not_413/png/03_wireshark_client_reset_by_peer_02.png" alt=""></p>
+<p>而从上图我们可以看到，在收到客户端的post请求后，服务端的确是发回了413状态码的响应，进一步观察我们可以看到，在发回响应之后，服务端便关闭了连接(Fin数据包)。从消息流来看，客户端并没有关注服务端的413响应，而是继续在向服务端推送剩余的Post请求体数据，由于该连接已经被服务端关闭，在网络上，服务端会向客户端发送重置的数据包(RST)，反映在客户端，则是<code>Connection reset by peer</code></p>
+<p><img src="http://og43lpuu1.bkt.clouddn.com/why_not_413/png/04_seq_diagram_reset_by_peer.png" alt=""></p>
+<p>从抓包的网络数据交互过程我们可以看出，实际上，Server端在接收到Content-Lenght: 800610的请求后，就已经回复了413(“too big message”)的响应，但是，此时，由于httpclient还未完成Post请求的发送，他并没有去接收响应，而是继续发送post请求体，但服务端在发送完413的响应之后，则对链接进行了关闭，在一个已关闭的连接上写入数据，client端最终收到了Connection reset by peer的exception，在收到exception之后报错退出。</p>
+<h1 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h1><p>通过上面的抓包和调试，我们已经明确了：</p>
+<ol>
+<li>413的状态码已经发回来</li>
+<li>服务端关闭了连接</li>
+<li>客户端没有去获取响应数据，而是继续在关闭的连接上发送数据，导致exception</li>
+</ol>
+<h2 id="方案一：异步处理"><a href="#方案一：异步处理" class="headerlink" title="方案一：异步处理"></a>方案一：异步处理</h2><p>之所以客户端没有获取响应数据，而是继续发送数据，是因为我们目前使用的是同步的httpclient客户端。使用同步客户端，就意味着必须是请求发送完毕，再获取响应数据。显然在上述场景下，同步模式的客户端无法正常获取到响应数据。既然同步模式下无法在请求发送完成前获取响应数据，那我们可以尝试使用异步模式，在发送请求的同时，及时的监听响应的回传，并在收到响应后及时进行处理。实际上，java的<code>org.apache.httpcomponents</code>包中不但提供了同步的<code>httpclient</code>，还提供了异步的<code>httpasyncclient</code>。而通过异步模式，我们就可以在发送数据的同时，监听响应回传</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">asyncPostMsg</span><span class="params">(<span class="keyword">byte</span>[] msg)</span> </span>&#123;</div><div class="line">    CloseableHttpAsyncClient httpAsyncClient = HttpAsyncClients.createDefault();</div><div class="line">    httpAsyncClient.start();</div><div class="line"></div><div class="line">    String targetUrl = <span class="string">"http://192.168.149.150:8080/big"</span>;</div><div class="line">    HttpPost httpPost = <span class="keyword">new</span> HttpPost(targetUrl);</div><div class="line">    httpPost.setHeader(<span class="string">"User-Agent"</span>, Constants.USER_AGENT);</div><div class="line"></div><div class="line">    <span class="keyword">int</span> msgLen = msg.length;</div><div class="line">    logger.debug(<span class="string">"msgLen:"</span> + msgLen);</div><div class="line"></div><div class="line">    <span class="keyword">try</span> &#123;</div><div class="line">        httpPost.setEntity(<span class="keyword">new</span> ByteArrayEntity(msg));</div><div class="line">        Future&lt;HttpResponse&gt; future = httpAsyncClient.execute(httpPost,<span class="keyword">null</span>);</div><div class="line">        HttpResponse response = future.get();</div><div class="line"></div><div class="line">        <span class="keyword">int</span> statusCode = <span class="number">0</span>;</div><div class="line">        <span class="keyword">if</span> (response.getStatusLine() != <span class="keyword">null</span>) &#123;</div><div class="line">            statusCode = response.getStatusLine().getStatusCode();</div><div class="line"></div><div class="line">        &#125; <span class="keyword">else</span> &#123;</div><div class="line">            logger.debug(<span class="string">"StatusLine is null "</span>);</div><div class="line">            <span class="keyword">return</span>;</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        String result = <span class="keyword">null</span>;</div><div class="line">        HttpEntity entity = response.getEntity();</div><div class="line">        <span class="keyword">if</span> (statusCode != <span class="number">201</span>) &#123;</div><div class="line"></div><div class="line">            <span class="comment">// get errmsg</span></div><div class="line">            <span class="keyword">if</span> (entity != <span class="keyword">null</span>) &#123;</div><div class="line">                result = EntityUtils.toString(entity, <span class="string">"UTF-8"</span>);</div><div class="line">                JSONObject jsonObject = JSONObject.parseObject(result);</div><div class="line">                logger.debug(<span class="string">"errmsg:"</span> + jsonObject.getString(<span class="string">"errmsg"</span>));</div><div class="line">                logger.debug(<span class="string">"statusCode:"</span> + statusCode);</div><div class="line"></div><div class="line">                httpPost.abort();</div><div class="line">            &#125;</div><div class="line">        &#125; <span class="keyword">else</span> &#123;</div><div class="line"></div><div class="line">            <span class="comment">// close entity</span></div><div class="line">            <span class="keyword">if</span> (entity != <span class="keyword">null</span>) &#123;</div><div class="line">                result = EntityUtils.toString(entity, <span class="string">"UTF-8"</span>);</div><div class="line">                logger.debug(result);</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line"></div><div class="line"></div><div class="line">    &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</div><div class="line">        e.printStackTrace();</div><div class="line">        logger.error(<span class="string">"UnsupportedEncodingException"</span>);</div><div class="line">        <span class="keyword">return</span>;</div><div class="line">    &#125; <span class="keyword">catch</span> (ClientProtocolException e) &#123;</div><div class="line">        e.printStackTrace();</div><div class="line">        logger.error(<span class="string">"ClientProtocolException"</span>);</div><div class="line">        <span class="keyword">return</span>;</div><div class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</div><div class="line">        e.printStackTrace();</div><div class="line">        logger.error(<span class="string">"IOException"</span>);</div><div class="line">        <span class="keyword">return</span>;</div><div class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</div><div class="line">        e.printStackTrace();</div><div class="line">        logger.error(<span class="string">"InterruptedException"</span>);</div><div class="line">        <span class="keyword">return</span>;</div><div class="line">    &#125; <span class="keyword">catch</span> (ExecutionException e) &#123;</div><div class="line">        e.printStackTrace();</div><div class="line">        logger.error(<span class="string">"ExecutionException"</span>);</div><div class="line">        <span class="keyword">return</span>;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>从上面的代码逻辑我们可以看到，原来使用的同步httpclient，被我们替换成了异步的httpasyncclient:<code>CloseableHttpAsyncClient httpAsyncClient = HttpAsyncClients.createDefault();</code>，基于异步的client，执行post请求，并通过future对象，异步的获取响应结果：<code>ttpResponse response = future.get();</code></p>
+<p>从运行结果看，客户端正常获取到了413的响应信息。同时，通过wireshark抓包，我们也可以看到，链接通道被双向正常关闭：</p>
+<p><img src="http://og43lpuu1.bkt.clouddn.com/why_not_413/png/05_wireshark_async_client_413_ok.png" alt=""></p>
+<h2 id="方案二：遵循RFC标准的同步交互流程"><a href="#方案二：遵循RFC标准的同步交互流程" class="headerlink" title="方案二：遵循RFC标准的同步交互流程"></a>方案二：遵循RFC标准的同步交互流程</h2><p>客户端的异步处理模式能够异步的接收到响应数据，解决上述请求未发送完成，响应已返回需处理的问题。但直观的感觉，一来一回的request-response同步模式，似乎才是主流HTTP交互模式，在同步模式下难道没有标准的解决流程吗？应该能找到对应的方案。</p>
+<p><strong>基于RFC 7231中对Expect: 100-continue → 100 continue的交互流程实现数据提交前数据长度确认</strong>。（<a href="https://tools.ietf.org/html/rfc7231#section-5.1.1）" target="_blank" rel="external">https://tools.ietf.org/html/rfc7231#section-5.1.1）</a></p>
+<p>简单说，HTTP 1.1允许客户端在发送实际消息体之前，通过Expect: 100-continue请求告知server端，后续即将发送多大的消息，server端可以基于该请求，响应是否接受该长度的消息（回复100 continue的响应)。client端将在发送Expect之后等待100 continue响应，如果timeout之后没有任何响应，client也将启动实际数据的发送。</p>
+<blockquote>
+<p>a client MAY proceed to send the message body even if it has not yet received a response. Furthermore, since 100 (Continue) responses cannot be sent through an HTTP/1.0 intermediary, such a client SHOULD NOT wait for an indefinite period before sending the message body.</p>
+</blockquote>
+<p><img src="http://og43lpuu1.bkt.clouddn.com/why_not_413/png/06_seq_diagram_expect_100_continue.png" alt=""></p>
+<h3 id="具体方案"><a href="#具体方案" class="headerlink" title="具体方案"></a>具体方案</h3><ol>
+<li><p>java sdk端引入Expect: 100-continue支持</p>
+<p><code>params.setBooleanParameter(&quot;http.protocol.expect-continue&quot;,true);</code></p>
+</li>
+<li><p>nginx根据Options.MinPubSize设置对应的<code>client_max_body_size 512k;</code></p>
+<p>在有nginx做反向代理时，面对带有<code>Expect: 100-continue</code>的请求，nginx会根据自身<code>client_max_body_size</code>设置，完成<code>100 continue</code>或者<code>413</code>的回应。<br>nginx不会直接转发带有<code>Expect: 100-continue</code>的请求。在nginx-1.12.0以及tengine-2.2.0上均抓包验证发现，nginx会自动对<code>Expect</code>进行回应。通过启动nginx的unbuffered upload模式<code>proxy_request_buffering off;</code>或者是关闭body size控制<code>client_max_body_size 0</code>,也没有效果，nginx始终自动处理<code>Expect</code>，主动返回<code>100 continue</code>或者413。从6年前nginx作者Igor Sysoev的<a href="https://forum.nginx.org/read.php?2,212533,212549#msg-212549" target="_blank" rel="external">答复</a>来看，nginx在设计上就是要这么做，而且从nginx的<a href="https://trac.nginx.org/nginx/ticket/493" target="_blank" rel="external">trac</a>来看，3年前有人提出类似的问题，该问题被标记为<code>wontfix</code>，意味着还不打算变</p>
+</li>
+<li><p>server在处理pub请求时，判断是否有<code>Expect</code>标志，如果有，则判断Content-Length信息，过大，则413; 符合要求，则回复100 continue，并在完成pub之后，返回最终结果</p>
+<p>根据RFC 7231的说明，server方在处理Expect时，返回100 continue之后，还需返回最终处理结果：</p>
+<blockquote>
+<p>A server that sends a 100 (Continue) response MUST ultimately send a final status code, once the message body is received and processed, unless the connection is closed prematurely.</p>
+</blockquote>
+<p>之所以在nginx控制后，还需要server进行控制，是确保在无nginx前置的环境下，还能高效、正常工作(server不返回100 continue，也是可以的，只是这种情况下，发送端会有一个默认等待的timeout时间，在此之后客户端才会发送具体msg body，kateway返回100 continue，就是为了避免这个timeout时间)</p>
+<p>从上面支持Expect: 100-continue的交互流程我们可以看出，在允许body发送时，server端需要首先向客户端返回<code>HTTP/1.1 100 continue</code>，接着在完成消息处理后需最终返回<code>HTTP/1.1 201 Created</code>的状态码。这也就要求在同一条HTTP请求上两次返回状态码。对于这种交互流程，golang的net/http库标库是不支持的，golang标准库中<a href="https://golang.org/src/net/http/server.go#L1052" target="_blank" rel="external">ResponseWriter的status code一旦写入，就没法改</a>。为了支持Expect: 100-continue的两段式交互，我们需要对net/http请求进行hijack处理(类似的，在支持websocket时，也需要做hijack处理)</p>
+</li>
+</ol>
+<p>客户端实现：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div></pre></td><td class="code"><pre><div class="line"></div><div class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> HttpClient <span class="title">createHttpClient</span><span class="params">(HttpConfig config)</span> </span>&#123;</div><div class="line"></div><div class="line">    HttpParams params = <span class="keyword">new</span> BasicHttpParams();</div><div class="line">    HttpConnectionParams.setConnectionTimeout(params, config.getConnectTimeOut());</div><div class="line">  </div><div class="line">    HttpConnectionParams.setSoTimeout(params, config.getSocketTimeOut());</div><div class="line">    HttpConnectionParams.setSoKeepalive(params, <span class="keyword">true</span>);</div><div class="line">    HttpConnectionParams.setStaleCheckingEnabled(params, <span class="keyword">true</span>);</div><div class="line">    HttpConnectionParams.setTcpNoDelay(params, <span class="keyword">true</span>);</div><div class="line"></div><div class="line">    <span class="comment">// open expect-continue flag</span></div><div class="line">    params.setBooleanParameter(<span class="string">"http.protocol.expect-continue"</span>,<span class="keyword">true</span>);</div><div class="line">    </div><div class="line">    PoolingClientConnectionManager connectionManager = <span class="keyword">new</span> PoolingClientConnectionManager();</div><div class="line">    connectionManager.closeIdleConnections(config.getIdleBeforeColse(), TimeUnit.MILLISECONDS);</div><div class="line">    connectionManager.setMaxTotal(config.getMaxTotalConnections());</div><div class="line">    connectionManager.setDefaultMaxPerRoute(config.getMaxTotalConnections());</div><div class="line"></div><div class="line">    DefaultHttpClient httpClient = <span class="keyword">new</span> DefaultHttpClient(connectionManager, params);</div><div class="line"></div><div class="line">    httpClient.setKeepAliveStrategy(<span class="keyword">new</span> DefaultConnectionKeepAliveStrategy());</div><div class="line">    httpClient.setHttpRequestRetryHandler(<span class="keyword">new</span> DefaultHttpRequestRetryHandler(<span class="number">0</span>, <span class="keyword">false</span>));</div><div class="line"></div><div class="line">    <span class="keyword">return</span> httpClient;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">postMsg</span><span class="params">(<span class="keyword">byte</span>[] msg)</span> </span>&#123;</div><div class="line"></div><div class="line">    HttpConfig httpConf = buildHttpSettings();</div><div class="line">    HttpClient httpClient = createHttpClient(httpConf, supportContinue);</div><div class="line"></div><div class="line">    <span class="comment">//bigSupportContinue is the backend which support 100-continue</span></div><div class="line">    targetUrl = <span class="string">"http://192.168.149.150:8080/bigSupportContinue"</span>;  </div><div class="line">    </div><div class="line">    HttpPost httpPost = <span class="keyword">new</span> HttpPost(targetUrl);</div><div class="line">    httpPost.setHeader(<span class="string">"User-Agent"</span>, Constants.USER_AGENT);</div><div class="line"></div><div class="line">    <span class="keyword">int</span> msgLen = msg.length;</div><div class="line">    logger.debug(<span class="string">"msgLen:"</span> + msgLen);</div><div class="line"></div><div class="line">    <span class="keyword">try</span> &#123;</div><div class="line">        httpPost.setEntity(<span class="keyword">new</span> ByteArrayEntity(msg));</div><div class="line">        HttpResponse response = httpClient.execute(httpPost);</div><div class="line"></div><div class="line"></div><div class="line">        <span class="keyword">int</span> statusCode = <span class="number">0</span>;</div><div class="line">        <span class="keyword">if</span> (response.getStatusLine() != <span class="keyword">null</span>) &#123;</div><div class="line">            statusCode = response.getStatusLine().getStatusCode();</div><div class="line"></div><div class="line">        &#125; <span class="keyword">else</span> &#123;</div><div class="line">            logger.debug(<span class="string">"StatusLine is null "</span>);</div><div class="line">            <span class="keyword">return</span>;</div><div class="line">        &#125;</div><div class="line"></div><div class="line">        String result = <span class="keyword">null</span>;</div><div class="line">        HttpEntity entity = response.getEntity();</div><div class="line">        <span class="keyword">if</span> (statusCode != <span class="number">201</span>) &#123;</div><div class="line"></div><div class="line">            <span class="comment">// get errmsg</span></div><div class="line">            <span class="keyword">if</span> (entity != <span class="keyword">null</span>) &#123;</div><div class="line">                result = EntityUtils.toString(entity, <span class="string">"UTF-8"</span>);</div><div class="line">                JSONObject jsonObject = JSONObject.parseObject(result);</div><div class="line">                logger.debug(<span class="string">"errmsg:"</span> + jsonObject.getString(<span class="string">"errmsg"</span>));</div><div class="line">                logger.debug(<span class="string">"statusCode:"</span> + statusCode);</div><div class="line"></div><div class="line">                httpPost.abort();</div><div class="line">            &#125;</div><div class="line">        &#125; <span class="keyword">else</span> &#123;</div><div class="line"></div><div class="line">            <span class="comment">// close entity</span></div><div class="line">            <span class="keyword">if</span> (entity != <span class="keyword">null</span>) &#123;</div><div class="line">                result = EntityUtils.toString(entity, <span class="string">"UTF-8"</span>);</div><div class="line">                logger.debug(result);</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line"></div><div class="line"></div><div class="line">    &#125; <span class="keyword">catch</span> (UnsupportedEncodingException e) &#123;</div><div class="line">        e.printStackTrace();</div><div class="line">        logger.error(<span class="string">"UnsupportedEncodingException"</span>);</div><div class="line">        <span class="keyword">return</span>;</div><div class="line">    &#125; <span class="keyword">catch</span> (ClientProtocolException e) &#123;</div><div class="line">        e.printStackTrace();</div><div class="line">        logger.error(<span class="string">"ClientProtocolException"</span>);</div><div class="line">        <span class="keyword">return</span>;</div><div class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</div><div class="line">        e.printStackTrace();</div><div class="line">        logger.error(<span class="string">"IOException"</span>);</div><div class="line">        <span class="keyword">return</span>;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    <span class="keyword">return</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>服务端代码：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">bigContinuePostHandle</span><span class="params">(w http.ResponseWriter, r *http.Request, params httprouter.Params)</span></span> &#123;</div><div class="line">	contentLen := r.ContentLength</div><div class="line">	MaxMsgSize := <span class="keyword">int64</span>(<span class="number">512</span> * <span class="number">1024</span>)</div><div class="line"></div><div class="line">	log4go.Debug(<span class="string">"bigSupportContinue"</span>)</div><div class="line">	log4go.Debug(<span class="string">"contentLen:%d"</span>, contentLen)</div><div class="line"></div><div class="line">	<span class="comment">// check content-length</span></div><div class="line">	<span class="keyword">if</span> contentLen &gt; MaxMsgSize &#123;</div><div class="line">		log4go.Error(<span class="string">"too big content, contentLen:%d, max:%d"</span>, contentLen, MaxMsgSize)</div><div class="line"></div><div class="line">		<span class="comment">// reject big contentLen</span></div><div class="line">		errStr := <span class="string">"too big message"</span></div><div class="line">		errCode := http.StatusRequestEntityTooLarge</div><div class="line">		w.Header().Set(<span class="string">"Connection"</span>, <span class="string">"close"</span>)</div><div class="line">		writeError(w, errStr, errCode)</div><div class="line">		<span class="keyword">return</span></div><div class="line">	&#125; <span class="keyword">else</span> &#123;</div><div class="line">		<span class="comment">// check Expect: 100-continue</span></div><div class="line">		<span class="keyword">if</span> r.Header.Get(<span class="string">"Expect"</span>) == <span class="string">"100-continue"</span> &#123;</div><div class="line"></div><div class="line">			log4go.Info(<span class="string">"expect, len: %d, header:%+v"</span>, contentLen, w.Header())</div><div class="line"></div><div class="line">			conn, _, err := w.(http.Hijacker).Hijack()</div><div class="line">			<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">				<span class="keyword">return</span></div><div class="line">			&#125;</div><div class="line"></div><div class="line">			constinueMsg := <span class="string">"HTTP/1.1 100 Continue\r\n\r\n"</span></div><div class="line">			conn.Write([]<span class="keyword">byte</span>(constinueMsg))</div><div class="line"></div><div class="line">			<span class="comment">// read all data and return</span></div><div class="line">			msgContent := <span class="built_in">make</span>([]<span class="keyword">byte</span>, contentLen+<span class="number">1</span>, contentLen+<span class="number">1</span>)</div><div class="line">			lbr := io.LimitReader(conn, MaxMsgSize+<span class="number">1</span>)</div><div class="line">			<span class="keyword">if</span> x, err := io.ReadAtLeast(lbr, msgContent, <span class="keyword">int</span>(contentLen)); err != <span class="literal">nil</span> &#123;</div><div class="line">				log4go.Error(<span class="string">"contentLen: %d, x:%d, ioReader error, %+v"</span>, contentLen, x, err)</div><div class="line"></div><div class="line">				errMsg := <span class="string">"HTTP/1.1 400 Bad Request\r\nConnection: close\r\nDate: Sat, 08 Jul 2017 06:06:20 GMT\r\nContent-Length: 28\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n&#123;\"errmsg\":\"read body error\"&#125;"</span></div><div class="line">				conn.Write([]<span class="keyword">byte</span>(errMsg))</div><div class="line">				conn.Close()</div><div class="line">				<span class="keyword">return</span></div><div class="line">			&#125;</div><div class="line"></div><div class="line">			log4go.Debug(<span class="string">"msgContent:%s"</span>, msgContent)</div><div class="line"></div><div class="line">			<span class="comment">// return ok response</span></div><div class="line">			okMsg := <span class="string">"HTTP/1.1 201 Created\r\nDate: Sat, 08 Jul 2017 06:06:20 GMT\r\nContent-Length: 8\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n&#123;\"ok\":1&#125;"</span></div><div class="line">			conn.Write([]<span class="keyword">byte</span>(okMsg))</div><div class="line">			conn.Close()</div><div class="line">			<span class="keyword">return</span></div><div class="line">			<span class="comment">//conn.</span></div><div class="line">		&#125; <span class="keyword">else</span> &#123;</div><div class="line">			<span class="comment">// read all data and return</span></div><div class="line">			msgContent := <span class="built_in">make</span>([]<span class="keyword">byte</span>, contentLen+<span class="number">1</span>, contentLen+<span class="number">1</span>)</div><div class="line">			lbr := io.LimitReader(r.Body, MaxMsgSize+<span class="number">1</span>)</div><div class="line">			<span class="keyword">if</span> x, err := io.ReadAtLeast(lbr, msgContent, <span class="keyword">int</span>(contentLen)); err != <span class="literal">nil</span> &#123;</div><div class="line">				log4go.Error(<span class="string">"contentLen: %d, x:%d, ioReader error, %+v"</span>, contentLen, x, err)</div><div class="line"></div><div class="line">				<span class="comment">// read error</span></div><div class="line">				errStr := <span class="string">"read body error"</span></div><div class="line">				errCode := http.StatusInternalServerError</div><div class="line">				w.Header().Set(<span class="string">"Connection"</span>, <span class="string">"close"</span>)</div><div class="line">				writeError(w, errStr, errCode)</div><div class="line"></div><div class="line">				<span class="keyword">return</span></div><div class="line">			&#125;</div><div class="line"></div><div class="line">			log4go.Info(<span class="string">"len: %d, content:[%s], header:%+v"</span>, contentLen, msgContent, w.Header())</div><div class="line"></div><div class="line">			<span class="comment">// return 201 resp</span></div><div class="line">			w.WriteHeader(http.StatusCreated)</div><div class="line">			log4go.Info(<span class="string">"final code:%+v"</span>, w.Header())</div><div class="line">			<span class="keyword">if</span> _, err := w.Write(ResponseOk); err != <span class="literal">nil</span> &#123;</div><div class="line">				log4go.Error(<span class="string">"resp: %v"</span>, err)</div><div class="line">				<span class="keyword">return</span></div><div class="line">			&#125;</div><div class="line">		&#125;</div><div class="line">	&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>在有nginx前置反向代理的环境，对nginx进行配置：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div></pre></td><td class="code"><pre><div class="line">http &#123;</div><div class="line"></div><div class="line">    ...</div><div class="line"></div><div class="line">    server &#123;</div><div class="line">        listen       80;</div><div class="line">        server_name  localhost;</div><div class="line">        </div><div class="line">        </div><div class="line">        client_max_body_size 512k;</div><div class="line">        </div><div class="line">        ...</div><div class="line">        </div><div class="line">        location /bigForward &#123;</div><div class="line">            proxy_pass http://192.168.149.150:8080/bigSupportContinue;</div><div class="line">        &#125;</div><div class="line">        </div><div class="line">        ...</div><div class="line">        </div><div class="line">    &#125;</div><div class="line">    </div><div class="line">    ...</div><div class="line">    </div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>从上面的代码我们可以看到，client端打开了expect的配置：<code>params.setBooleanParameter(&quot;http.protocol.expect-continue&quot;,true);</code>。同时，server端为了支持100 continue的两段式交互，在遇到<code>r.Header.Get(&quot;Expect&quot;) == &quot;100-continue&quot;</code>时，将对http连接进行hijack（<code>conn, _, err := w.(http.Hijacker).Hijack()</code>），基于hijack的连接，发送两段响应：</p>
+<ol>
+<li><p>100 continue</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">constinueMsg := <span class="string">"HTTP/1.1 100 Continue\r\n\r\n"</span></div><div class="line">conn.Write([]<span class="keyword">byte</span>(constinueMsg))</div></pre></td></tr></table></figure>
+</li>
+<li><p>最终处理ok</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">okMsg := <span class="string">"HTTP/1.1 201 Created\r\nDate: Sat, 08 Jul 2017 06:06:20 GMT\r\nContent-Length: 8\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n&#123;\"ok\":1&#125;"</span></div><div class="line">conn.Write([]<span class="keyword">byte</span>(okMsg))</div><div class="line">conn.Close()</div></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>通过wireshark抓包，我们可以进一步观察支持expect: 100-continue的整个逻辑</p>
+<ol>
+<li><p>对于未超出长度大小的请求，将通过两段式交互完成消息处理</p>
+<p><img src="http://og43lpuu1.bkt.clouddn.com/why_not_413/png/07_wireshark_client_small_msg_100_continue.png" alt=""></p>
+</li>
+<li><p>对于超出长度大小的请求，server端会直接413，client端不会发送数据</p>
+<p><img src="http://og43lpuu1.bkt.clouddn.com/why_not_413/png/08_wireshark_client_too_big_expect_continue.png" alt=""></p>
+</li>
+</ol>
+<h2 id="方案三：客户端sdk控制"><a href="#方案三：客户端sdk控制" class="headerlink" title="方案三：客户端sdk控制"></a>方案三：客户端sdk控制</h2><p>回到最初的问题，我们遇到的问题，实际上是因为客户端提交的消息体过大，如果采用最简单粗暴的做法，我们实际上可以直接通过在客户端sdk上判断带提交的消息体大小，当消息体大小过大时，直接拒绝提交。当然这种方法的缺点也比较明显，不够灵活，必须得写死（或者是配死），因为客户端sdk是部署在客户端侧，相对于服务端而言，我们对客户端sdk的控制力是比较弱的，如果遇到消息体最大大小的调整，这类写死在客户端sdk中的方法就相对笨拙了。</p>
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>通过分析本次618遇到的问题，我们分析了为什么无法如预期般收到413状态码的问题。进一步的我们尝试通过三种方案来解决该问题。目前线上的这个问题，我们并没有去解决，原因是，虽然没能收到413的状态码，但实际上客户端只要没有收到2xx的状态码，就已经认为处理失败了，没能收到413，影响到的点是有限的（确切的说只是不知道是什么原因导致了失败），基于上述理由，我们并没有立刻尝试解决该问题。</p>
+<p>对比三个方案，我个人更倾向于选择方案三：客户端sdk控制。</p>
+<p>方案一：异步处理</p>
+<ol>
+<li>改动点可控；从示例代码可以看出来，调整为异步模式，sdk的修改点还是较少的；</li>
+<li>没有写死，对于后续控制调整，更为灵活。</li>
+</ol>
+<p>方案二：遵循RFC标准的同步交互流程</p>
+<ol>
+<li>需要前后端调整，涉及到的改动点较多</li>
+<li>如果前端不使用sdk，不遵循expect: 100-continue的模式，实际上也还是无法达到效果</li>
+<li>多了异步交互流程，引入了更多的处理延时</li>
+</ol>
+<p>方案三：客户端SDK控制</p>
+<ol>
+<li>够简单，其实也够用（毕竟MaxMsgSize的调整需求不会很多，且即使引起了Exception，也不会影响处理逻辑，是指错误原因丢失）</li>
+<li>写死在客户端，不是那么灵活</li>
+</ol>
+<p>虽然，我觉得选择方案三更为合理，但对问题的原因进行深入分析，并针对性的给出不同方案的尝试，我觉得还是挺有意义的事情。</p>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2017/07/11/0009_why_not_413/">为什么没有收到预期的413状态码</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">lday</a></p>
+        <p><span>发布时间:</span>2017-07-11, 21:21:21</p>
+        <p><span>最后更新:</span>2017-07-11, 21:33:00</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2017/07/11/0009_why_not_413/" title="为什么没有收到预期的413状态码">http://lday.me/2017/07/11/0009_why_not_413/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://lday.me/2017/07/11/0009_why_not_413/　　作者: lday" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2017/06/27/0008_kafka_vs_tranditional_mq/">
+                    Kafka与传统消息中间件的差异
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+        <strong class="toc-title">文章目录</strong>
+        
+            <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#问题描述"><span class="toc-number">1.</span> <span class="toc-text">问题描述</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#原因分析"><span class="toc-number">2.</span> <span class="toc-text">原因分析</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#解决方案"><span class="toc-number">3.</span> <span class="toc-text">解决方案</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#方案一：异步处理"><span class="toc-number">3.1.</span> <span class="toc-text">方案一：异步处理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#方案二：遵循RFC标准的同步交互流程"><span class="toc-number">3.2.</span> <span class="toc-text">方案二：遵循RFC标准的同步交互流程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#具体方案"><span class="toc-number">3.2.1.</span> <span class="toc-text">具体方案</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#方案三：客户端sdk控制"><span class="toc-number">3.3.</span> <span class="toc-text">方案三：客户端sdk控制</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#结论"><span class="toc-number">3.4.</span> <span class="toc-text">结论</span></a></li></ol></li></ol>
+        
+    </div>
+    <style>
+        .left-col .switch-btn,
+        .left-col .switch-area {
+            display: none;
+        }
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+    <input type="button" id="tocButton" value="隐藏目录"  title="点击按钮隐藏或者显示文章目录">
+
+    <script>
+        yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+    </script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"为什么没有收到预期的413状态码　| lday的博客　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+        <section id="comments">
+    <style> aside.comment-bar { margin: auto 30px; }</style>
+    <div id="disqus_thread"></div>
+    <script>
+        var disqus_config = function(){
+            this.page.url = 'http://lday.me/2017/07/11/0009_why_not_413/';
+            this.page.identifier = '2017/07/11/0009_why_not_413/';
+        };
+        var loadComment = function(){
+            var d = document, s = d.createElement('script');
+            s.src = '//lday.disqus.com/embed.js';
+            s.setAttribute('data-timestamp', +new Date());
+            (d.head || d.body).appendChild(s);
+        }
+    </script>
+    
+    <script> loadComment(); </script>
+
+</section>
+
+
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/" title="回到主页"><i class="fa fa-home"></i></a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2017/06/27/0008_kafka_vs_tranditional_mq/" title="下一篇: Kafka与传统消息中间件的差异">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2017/07/11/0009_why_not_413/">为什么没有收到预期的413状态码</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/27/0008_kafka_vs_tranditional_mq/">Kafka与传统消息中间件的差异</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/22/0007_elasticsearch_summary/">ElasticSearch总结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/03/19/0006_boost-multi-index-container/">多维索引容器(multi_index_container)的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/27/0005_gdb-vs-dlv/">Golang程序调试工具介绍(gdb vs dlv)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/25/0004_golang-slice-depth/">细看Go中的切片(slice)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/01/0003_seri-stm-etcd3/">基于etcd3的访问序列化及分布式软事务内存</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/11/04/0002_hi/">你好，世界</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/11/03/0001_hello-world/">Hello World</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016-2017 lday
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" title="本站到访数"><i class="fa fa-user" aria-hidden="true"></i><span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>| </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit"  title="本页阅读量"><i class="fa fa-eye animated infinite pulse" aria-hidden="true"></i><span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script>
+    // Open in New Window
+    
+        var oOpenInNew = {
+            
+            
+            
+            
+            
+            
+             archives: ".archive-article-title", 
+             miniArchives: "a.post-list-link", 
+            
+             friends: "#js-friends a", 
+             socail: ".social a" 
+        }
+        for (var x in oOpenInNew) {
+            $(oOpenInNew[x]).attr("target", "_blank");
+        }
+    
+</script>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>
