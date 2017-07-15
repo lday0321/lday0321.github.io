@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://lday.me/"/>
-  <updated>2017-07-11T13:33:00.443Z</updated>
+  <updated>2017-07-15T06:05:31.209Z</updated>
   <id>http://lday.me/</id>
   
   <author>
@@ -14,6 +14,24 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Kafka Procuder小结</title>
+    <link href="http://lday.me/2017/07/15/0010_kafka_producer_analysis_01/"/>
+    <id>http://lday.me/2017/07/15/0010_kafka_producer_analysis_01/</id>
+    <published>2017-07-15T06:05:05.000Z</published>
+    <updated>2017-07-15T06:05:31.209Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;理解Kafka 0.10.0.1版本的Procuder代码，对Producer的整体逻辑进行小结。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="Kafka" scheme="http://lday.me/tags/Kafka/"/>
+    
+  </entry>
   
   <entry>
     <title>为什么没有收到预期的413状态码</title>
