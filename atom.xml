@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://lday.me/"/>
-  <updated>2017-07-15T06:05:31.209Z</updated>
+  <updated>2017-07-24T15:25:11.742Z</updated>
   <id>http://lday.me/</id>
   
   <author>
@@ -14,6 +14,25 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Kafka Consumer Rebalance的演进</title>
+    <link href="http://lday.me/2017/07/24/0011_kafka_consumer_rebalance_evolution/"/>
+    <id>http://lday.me/2017/07/24/0011_kafka_consumer_rebalance_evolution/</id>
+    <published>2017-07-24T15:25:14.000Z</published>
+    <updated>2017-07-24T15:25:11.742Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;Kafka引入了Consumer Group的概念。在一个Consumer Group中的若干Consumer，会按照一定规则（均匀）分配同一topic下的所有partition，各自在相应partition上执行sub工作。当一个Group中有Consumer退出时，Group中的其他Consumer会对topic下的partition进行重新分配，并基于重新分配的结果继续执行sub工作。这个重新分配的过程被称为Rebalance。&lt;/p&gt;
+&lt;p&gt;对于Sub方的应用而言，Rebalance过程是透明的，Consumer Group Rebalance实现也经历了几个版本的演进，本文对Rebalance的实现方案进行大致的梳理和总结&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="Kafka" scheme="http://lday.me/tags/Kafka/"/>
+    
+  </entry>
   
   <entry>
     <title>Kafka Procuder小结</title>

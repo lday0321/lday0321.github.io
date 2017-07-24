@@ -266,6 +266,71 @@
 </nav>
       <div class="body-wrap">
   
+    <article id="post-0011_kafka_consumer_rebalance_evolution" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2017/07/24/0011_kafka_consumer_rebalance_evolution/" class="article-date">
+      <time datetime="2017-07-24T15:25:14.000Z" itemprop="datePublished">2017-07-24</time>
+</a>
+
+
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2017/07/24/0011_kafka_consumer_rebalance_evolution/">Kafka Consumer Rebalance的演进</a>
+    </h1>
+  
+
+      </header>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+              <p>Kafka引入了Consumer Group的概念。在一个Consumer Group中的若干Consumer，会按照一定规则（均匀）分配同一topic下的所有partition，各自在相应partition上执行sub工作。当一个Group中有Consumer退出时，Group中的其他Consumer会对topic下的partition进行重新分配，并基于重新分配的结果继续执行sub工作。这个重新分配的过程被称为Rebalance。</p>
+<p>对于Sub方的应用而言，Rebalance过程是透明的，Consumer Group Rebalance实现也经历了几个版本的演进，本文对Rebalance的实现方案进行大致的梳理和总结</p>
+          
+      
+    </div>
+    
+    <div class="article-info article-info-index">
+      
+      
+
+      
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kafka/">Kafka</a></li></ul>
+    </div>
+
+      
+        <p class="article-more-link">
+          <a href="/2017/07/24/0011_kafka_consumer_rebalance_evolution/#more">阅读全文 >></a>
+        </p>
+      
+      <div class="clearfix"></div>
+    </div>
+    
+  </div>
+  
+</article>
+
+
+
+
+
+
+
+
+
+  
     <article id="post-0010_kafka_producer_analysis_01" class="article article-type-post" itemscope itemprop="blogPost">
   
     <div class="article-meta">
@@ -846,70 +911,10 @@
 
 
   
-    <article id="post-0001_hello-world" class="article article-type-post" itemscope itemprop="blogPost">
   
-    <div class="article-meta">
-      <a href="/2016/11/03/0001_hello-world/" class="article-date">
-      <time datetime="2016-11-03T15:55:00.000Z" itemprop="datePublished">2016-11-03</time>
-</a>
-
-
-    </div>
-  
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/11/03/0001_hello-world/">Hello World</a>
-    </h1>
-  
-
-      </header>
-      
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-          
-              <p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-          
-      
-    </div>
-    
-    <div class="article-info article-info-index">
-      
-      
-
-      
-    <div class="article-tag tagcloud">
-        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/hello/">hello</a></li></ul>
-    </div>
-
-      
-        <p class="article-more-link">
-          <a href="/2016/11/03/0001_hello-world/#more">阅读全文 >></a>
-        </p>
-      
-      <div class="clearfix"></div>
-    </div>
-    
-  </div>
-  
-</article>
-
-
-
-
-
-
-
-
-
-  
+    <nav id="page-nav">
+      <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
+    </nav>
   
 </div>
       <footer id="footer">
