@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://lday.me/"/>
-  <updated>2017-07-24T15:25:11.742Z</updated>
+  <updated>2017-09-01T19:12:01.146Z</updated>
   <id>http://lday.me/</id>
   
   <author>
@@ -14,6 +14,24 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>一次Golang程序内存泄漏分析之旅</title>
+    <link href="http://lday.me/2017/09/02/0012_a_memory_leak_detection_procedure/"/>
+    <id>http://lday.me/2017/09/02/0012_a_memory_leak_detection_procedure/</id>
+    <published>2017-09-01T18:49:14.000Z</published>
+    <updated>2017-09-01T19:12:01.146Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;最近在开发升级PubSub系统，目标是支持更新版本的kafka（从原来的支持kafka 0.8.2.2升级到支持较新版本的kafka 0.10.1.1）。由于kafka在0.9版本上对consumer group相关的结构进行了&lt;a href=&quot;https://cwiki.apache.org/confluence/display/KAFKA/Kafka+Client-side+Assignment+Proposal&quot;&gt;重构&lt;/a&gt;，原来使用的基于zk进行rebalance的&lt;a href=&quot;https://github.com/wvanbergen/kafka&quot;&gt;consumer group client:wvanbergen/kafka&lt;/a&gt;已经不再适用。为此，我们调研并最终选用了支持新版kafka consumer rebalance的&lt;a href=&quot;https://github.com/bsm/sarama-cluster&quot;&gt;consumer group client:sarama-cluster&lt;/a&gt;。功能开发已基本结束，目前已进入系统压力测试阶段。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="golang" scheme="http://lday.me/tags/golang/"/>
+    
+  </entry>
   
   <entry>
     <title>Kafka Consumer Rebalance的演进</title>

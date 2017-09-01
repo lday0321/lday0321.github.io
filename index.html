@@ -266,6 +266,70 @@
 </nav>
       <div class="body-wrap">
   
+    <article id="post-0012_a_memory_leak_detection_procedure" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2017/09/02/0012_a_memory_leak_detection_procedure/" class="article-date">
+      <time datetime="2017-09-01T18:49:14.000Z" itemprop="datePublished">2017-09-02</time>
+</a>
+
+
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2017/09/02/0012_a_memory_leak_detection_procedure/">一次Golang程序内存泄漏分析之旅</a>
+    </h1>
+  
+
+      </header>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+              <p>最近在开发升级PubSub系统，目标是支持更新版本的kafka（从原来的支持kafka 0.8.2.2升级到支持较新版本的kafka 0.10.1.1）。由于kafka在0.9版本上对consumer group相关的结构进行了<a href="https://cwiki.apache.org/confluence/display/KAFKA/Kafka+Client-side+Assignment+Proposal">重构</a>，原来使用的基于zk进行rebalance的<a href="https://github.com/wvanbergen/kafka">consumer group client:wvanbergen/kafka</a>已经不再适用。为此，我们调研并最终选用了支持新版kafka consumer rebalance的<a href="https://github.com/bsm/sarama-cluster">consumer group client:sarama-cluster</a>。功能开发已基本结束，目前已进入系统压力测试阶段。</p>
+          
+      
+    </div>
+    
+    <div class="article-info article-info-index">
+      
+      
+
+      
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/golang/">golang</a></li></ul>
+    </div>
+
+      
+        <p class="article-more-link">
+          <a href="/2017/09/02/0012_a_memory_leak_detection_procedure/#more">阅读全文 >></a>
+        </p>
+      
+      <div class="clearfix"></div>
+    </div>
+    
+  </div>
+  
+</article>
+
+
+
+
+
+
+
+
+
+  
     <article id="post-0011_kafka_consumer_rebalance_evolution" class="article article-type-post" itemscope itemprop="blogPost">
   
     <div class="article-meta">
@@ -829,70 +893,6 @@
       
         <p class="article-more-link">
           <a href="/2017/02/01/0003_seri-stm-etcd3/#more">阅读全文 >></a>
-        </p>
-      
-      <div class="clearfix"></div>
-    </div>
-    
-  </div>
-  
-</article>
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-0002_hi" class="article article-type-post" itemscope itemprop="blogPost">
-  
-    <div class="article-meta">
-      <a href="/2016/11/04/0002_hi/" class="article-date">
-      <time datetime="2016-11-04T09:18:59.000Z" itemprop="datePublished">2016-11-04</time>
-</a>
-
-
-    </div>
-  
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2016/11/04/0002_hi/">你好，世界</a>
-    </h1>
-  
-
-      </header>
-      
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-          
-              <p>中文版，hello world, from mac</p>
-          
-      
-    </div>
-    
-    <div class="article-info article-info-index">
-      
-      
-
-      
-    <div class="article-tag tagcloud">
-        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/hello1/">hello1</a></li></ul>
-    </div>
-
-      
-        <p class="article-more-link">
-          <a href="/2016/11/04/0002_hi/#more">阅读全文 >></a>
         </p>
       
       <div class="clearfix"></div>
