@@ -266,6 +266,70 @@
 </nav>
       <div class="body-wrap">
   
+    <article id="post-0014_kafka_data_loss_and_new_mechanism" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2017/10/08/0014_kafka_data_loss_and_new_mechanism/" class="article-date">
+      <time datetime="2017-10-08T14:46:14.000Z" itemprop="datePublished">2017-10-08</time>
+</a>
+
+
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2017/10/08/0014_kafka_data_loss_and_new_mechanism/">Kafka数据丢失及最新改进策略</a>
+    </h1>
+  
+
+      </header>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+              <p>上周在测试环境，无意间连续把两台kafka的磁盘打爆，导致broker相继挂掉。当我清理完磁盘，重启两台broker后，发现很有意思的现象：<strong>kafka数据丢失！</strong>从我们的处理日志上， 我们观察到有向一个topic的两个partition，分别写入了3条和7条，共计10条消息。但是，当我们恢复两台broker后，通过命令查看，发现这时该topic两个partition消息数量竟然都是0，而从zk上consumer group记录的信息来看，有cg的确已经消费过该topic的数据，且cg在对应partition上的offset分别为3,7。</p>
+          
+      
+    </div>
+    
+    <div class="article-info article-info-index">
+      
+      
+
+      
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kafka/">Kafka</a></li></ul>
+    </div>
+
+      
+        <p class="article-more-link">
+          <a href="/2017/10/08/0014_kafka_data_loss_and_new_mechanism/#more">阅读全文 >></a>
+        </p>
+      
+      <div class="clearfix"></div>
+    </div>
+    
+  </div>
+  
+</article>
+
+
+
+
+
+
+
+
+
+  
     <article id="post-0013_a_latency_identification_procedure" class="article article-type-post" itemscope itemprop="blogPost">
   
     <div class="article-meta">
@@ -828,70 +892,6 @@
       
         <p class="article-more-link">
           <a href="/2017/02/27/0005_gdb-vs-dlv/#more">阅读全文 >></a>
-        </p>
-      
-      <div class="clearfix"></div>
-    </div>
-    
-  </div>
-  
-</article>
-
-
-
-
-
-
-
-
-
-  
-    <article id="post-0004_golang-slice-depth" class="article article-type-post" itemscope itemprop="blogPost">
-  
-    <div class="article-meta">
-      <a href="/2017/02/25/0004_golang-slice-depth/" class="article-date">
-      <time datetime="2017-02-25T04:24:11.000Z" itemprop="datePublished">2017-02-25</time>
-</a>
-
-
-    </div>
-  
-  <div class="article-inner">
-    
-      <input type="hidden" class="isFancy" />
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="article-title" href="/2017/02/25/0004_golang-slice-depth/">细看Go中的切片(slice)</a>
-    </h1>
-  
-
-      </header>
-      
-    
-    <div class="article-entry" itemprop="articleBody">
-      
-          
-              <h1 id="讨论群中关于切片的一个问题"><a href="#讨论群中关于切片的一个问题" class="headerlink" title="讨论群中关于切片的一个问题"></a>讨论群中关于切片的一个问题</h1><h2 id="Q1：对slice的append无效"><a href="#Q1：对slice的append无效" class="headerlink" title="Q1：对slice的append无效"></a>Q1：对slice的append无效</h2><p>在群里有人提问，下述<a href="https://play.golang.org/p/jWy3kP2A25">代码</a>对slice的append无效</p>
-          
-      
-    </div>
-    
-    <div class="article-info article-info-index">
-      
-      
-
-      
-    <div class="article-tag tagcloud">
-        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/golang/">golang</a></li></ul>
-    </div>
-
-      
-        <p class="article-more-link">
-          <a href="/2017/02/25/0004_golang-slice-depth/#more">阅读全文 >></a>
         </p>
       
       <div class="clearfix"></div>

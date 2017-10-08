@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://lday.me/"/>
-  <updated>2017-09-13T14:43:41.907Z</updated>
+  <updated>2017-10-08T14:46:12.393Z</updated>
   <id>http://lday.me/</id>
   
   <author>
@@ -14,6 +14,24 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Kafka数据丢失及最新改进策略</title>
+    <link href="http://lday.me/2017/10/08/0014_kafka_data_loss_and_new_mechanism/"/>
+    <id>http://lday.me/2017/10/08/0014_kafka_data_loss_and_new_mechanism/</id>
+    <published>2017-10-08T14:46:14.000Z</published>
+    <updated>2017-10-08T14:46:12.393Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;上周在测试环境，无意间连续把两台kafka的磁盘打爆，导致broker相继挂掉。当我清理完磁盘，重启两台broker后，发现很有意思的现象：&lt;strong&gt;kafka数据丢失！&lt;/strong&gt;从我们的处理日志上， 我们观察到有向一个topic的两个partition，分别写入了3条和7条，共计10条消息。但是，当我们恢复两台broker后，通过命令查看，发现这时该topic两个partition消息数量竟然都是0，而从zk上consumer group记录的信息来看，有cg的确已经消费过该topic的数据，且cg在对应partition上的offset分别为3,7。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="Kafka" scheme="http://lday.me/tags/Kafka/"/>
+    
+  </entry>
   
   <entry>
     <title>一次Golang程序延迟过大问题的定位过程</title>
