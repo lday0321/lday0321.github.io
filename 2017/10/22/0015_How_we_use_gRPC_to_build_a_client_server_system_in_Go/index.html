@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no" />
+<meta name="author" content="lday" />
+
+
+
+<meta name="description" content="RPC作为分布式系统节点中较为主流的一种通信方式，因其简单、方便的调用模式而深受开发者的喜爱。gRPC作为google推出的RPC调用框架，更是受到大家的关注。gRPC原生提供了对Golang的支持，最近，我也在关注gRPC的使用，本文是我整理的《How we use gRPC to build a client/server system in Go》翻译:">
+<meta property="og:type" content="article">
+<meta property="og:title" content="我们如何在Go中使用gRPC构建C/S结构系统">
+<meta property="og:url" content="http://lday.me/2017/10/22/0015_How_we_use_gRPC_to_build_a_client_server_system_in_Go/index.html">
+<meta property="og:site_name" content="lday的博客">
+<meta property="og:description" content="RPC作为分布式系统节点中较为主流的一种通信方式，因其简单、方便的调用模式而深受开发者的喜爱。gRPC作为google推出的RPC调用框架，更是受到大家的关注。gRPC原生提供了对Golang的支持，最近，我也在关注gRPC的使用，本文是我整理的《How we use gRPC to build a client/server system in Go》翻译:">
+<meta property="og:updated_time" content="2017-10-22T15:37:39.994Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="我们如何在Go中使用gRPC构建C/S结构系统">
+<meta name="twitter:description" content="RPC作为分布式系统节点中较为主流的一种通信方式，因其简单、方便的调用模式而深受开发者的喜爱。gRPC作为google推出的RPC调用框架，更是受到大家的关注。gRPC原生提供了对Golang的支持，最近，我也在关注gRPC的使用，本文是我整理的《How we use gRPC to build a client/server system in Go》翻译:">
+
+<link rel="apple-touch-icon" href= "/apple-touch-icon.png">
+
+
+    <link rel="alternate" href="/atom.xml" title="lday的博客" type="application/atom+xml">
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+    <link href="//cdn.bootcss.com/animate.css/3.5.1/animate.min.css" rel="stylesheet">
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>我们如何在Go中使用gRPC构建C/S结构系统 | lday的博客</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: true,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: undefined
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/assets/blogImg/donkey.jpg" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">lday</a></h1>
+        </hgroup>
+
+        
+        <p class="header-subtitle">Life, Coding, Funning</p>
+        
+
+        
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>菜单</li>
+                        <li>标签</li>
+                        
+                        <li>友情链接</li>
+                        
+                        
+                        <li>关于我</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" href="mailto:oneday0321@gmail.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" href="https://github.com/lday0321" title="GitHub"></a>
+                            
+                                <a class="fa RSS" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/HTTP/">HTTP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kafka/">Kafka</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/boost/">boost</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cpp/">cpp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/">elasticsearch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/etcd/">etcd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/gRPC/">gRPC</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/golang/">golang</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hello/">hello</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hello1/">hello1</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/java/">java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/分布式/">分布式</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">lday, 80后IT码农一枚. 白羊座，喜热闹</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">lday</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/assets/blogImg/donkey.jpg" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">lday</a></h1>
+            </hgroup>
+            
+            <p class="header-subtitle">Life, Coding, Funning</p>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:oneday0321@gmail.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/lday0321" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
+</nav>
+      <div class="body-wrap"><article id="post-0015_How_we_use_gRPC_to_build_a_client_server_system_in_Go" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2017/10/22/0015_How_we_use_gRPC_to_build_a_client_server_system_in_Go/" class="article-date">
+      <time datetime="2017-10-22T15:14:14.000Z" itemprop="datePublished">2017-10-22</time>
+</a>
+
+
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      我们如何在Go中使用gRPC构建C/S结构系统
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/gRPC/">gRPC</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/golang/">golang</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <p>RPC作为分布式系统节点中较为主流的一种通信方式，因其简单、方便的调用模式而深受开发者的喜爱。gRPC作为google推出的RPC调用框架，更是受到大家的关注。gRPC原生提供了对Golang的支持，最近，我也在关注gRPC的使用，本文是我整理的<em><a href="https://medium.com/pantomath/how-we-use-grpc-to-build-a-client-server-system-in-go-dd20045fa1c2" target="_blank" rel="external">《How we use gRPC to build a client/server system in Go》</a></em>翻译:</p>
+<a id="more"></a>
+<p>这篇文章是一篇关于我们如何在Go中使用<a href="https://grpc.io/" target="_blank" rel="external">gRPC</a>(和<a href="https://developers.google.com/protocol-buffers/" target="_blank" rel="external">Protobuf</a>)构建鲁棒的C/S结构系统的技术介绍。</p>
+<p>我不会详细介绍为什么我们选择gRPC作为我们的客户端与服务器端之间的主要通信协议，已经有很多非常好的文章涵盖了这一主题（像是<a href="https://grpc.io/blog/vendastagrpc" target="_blank" rel="external">这一篇</a>，<a href="https://stackoverflow.com/questions/43682366/how-is-grpc-different-from-rest" target="_blank" rel="external">这一篇</a>，或是<a href="https://thenewstack.io/grpc-lean-mean-communication-protocol-microservices/" target="_blank" rel="external">这一篇</a>）。但我们可以从整体上来看一看：我们正在使用Go构建我们的C/S结构系统，我们需要他足够快，足够可靠，足够具有伸缩性（这也是为什么我们选择gRPC）。我们希望客户端与服务端之间的通信越小越好，越安全越好，同时，C/S两端的使用模式要一致（这也是为什么我们选择Protobuf）</p>
+<p>我们也希望能够在服务端暴露其他类型的接口，以防有些客户端类型无法使用gRPC：例如暴露传统的REST接口。我们希望这一要求（几乎）没有额外的代价。</p>
+<h2 id="说明"><a href="#说明" class="headerlink" title="说明"></a>说明</h2><p>我们将开始使用Go构建一个非常简单的C/S系统，系统将会在客户端、服务端之间交换虚拟的消息。在完成第一步，客户端、服务端之间理解了对方的消息后，我们将会加入其它的特性，例如TLS支持，认证，以及一个REST API。</p>
+<p>文章的接下去部分假设你具有基本的Go语言编程能力。同时，也假设你已经安装了<code>protobuf</code>包，<code>protoc</code>命令是可用的（再次说明，已经有很多文章涵盖了介绍如何安装的主题，同时，这里也有一份<a href="https://developers.google.com/protocol-buffers/docs/proto3" target="_blank" rel="external">官方文档</a>）。</p>
+<p>你也需要安装Go依赖库，例如<a href="http://github.com/golang/protobuf" target="_blank" rel="external">protobuf的go实现</a>，还有<a href="https://github.com/grpc-ecosystem/grpc-gateway" target="_blank" rel="external">gRPC网关</a></p>
+<p>这篇文章中的所有代码在：<a href="https://gitlab.com/pantomath-io/demo-grpc" target="_blank" rel="external">https://gitlab.com/pantomath-io/demo-grpc</a>。你可以随意使用这个仓库，并通过标签来导航、定位。这个仓库应当放置在你<code>$GOPATH</code>的<code>src</code>目录:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">$ go get -v <span class="_">-d</span> gitlab.com/pantomath-io/demo-grpc</div><div class="line">$ <span class="built_in">cd</span> <span class="variable">$GOPATH</span>/src/gitlab.com/pantomath-io/demo-grpc</div></pre></td></tr></table></figure>
+<h2 id="定义协议"><a href="#定义协议" class="headerlink" title="定义协议"></a>定义协议</h2><p>首先，我们需要定义协议。例如，定义在客户端和服务端我们能交互些什么，以及如何交互。这就是Protobuf发挥作用的地方。它让你定义两类东西：服务(Service)和消息(Message)。一个<code>service</code>是服务端的一组动作集合，服务端针对客户端的请求执行并产生不同的响应。一个<code>message</code>就是一个客户端请求的内容。简单来说，你可以认为<code>service</code>定义了<strong>动作</strong>，而<code>message</code>定义了<strong>对象</strong></p>
+<p>在<a href="https://gitlab.com/pantomath-io/demo-grpc/blob/init-protobuf-definition/api/api.proto" target="_blank" rel="external">api/api.proto</a>中写入如下内容：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">syntax = &quot;proto3&quot;;</div><div class="line">package api;</div><div class="line">message PingMessage &#123;</div><div class="line">  string greeting = 1;</div><div class="line">&#125;</div><div class="line">service Ping &#123;</div><div class="line">  rpc SayHello(PingMessage) returns (PingMessage) &#123;&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>你定义了两个东西：一个叫做Ping的<code>service</code>，他暴露一个<code>SayHello</code>的方法，该方法接收一个<code>PingMessage</code>的输入参数，并返回一个<code>PingMessage</code>；一个叫做<code>PingMessage</code>的<code>message</code>，这个消息由一个单一的域<code>greeting</code>组成，这个域的类型为<code>string</code></p>
+<p>你也同时说明了，你使用<code>proto3</code>语法，与<code>proto2</code>语法想区别（参考<a href="https://developers.google.com/protocol-buffers/docs/proto3" target="_blank" rel="external">文档</a>）</p>
+<p>实际上，上述这个文件现在是不可用的：他需要被编译。编译proto文件的意思是生成你选择的目标语言的代码，你的目标语言也就是你的应用中实际使用的编程语言。</p>
+<p>在shell中，<code>cd</code>到你项目的根目录，并执行如下命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$ protoc -I api/ \</div><div class="line">    -I<span class="variable">$&#123;GOPATH&#125;</span>/src \</div><div class="line">    --go_out=plugins=grpc:api \</div><div class="line">    api/api.proto</div></pre></td></tr></table></figure>
+<p>这条命令会生成文件<code>api/api.pb.go</code>，一个实现了你的应用需要的gRPC代码的Go源代码，你可以查看并使用它，但是你不能去人工修改他（因为，每次你执行<code>protoc</code>命令，他都将被覆盖掉）</p>
+<p>你也需要定义一个供<code>service Ping</code>调用的函数，所以创建一个文件<code>api/handler.go</code>:</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> api</div><div class="line"></div><div class="line"><span class="keyword">import</span> (</div><div class="line">  <span class="string">"log"</span></div><div class="line">  <span class="string">"golang.org/x/net/context"</span></div><div class="line">)</div><div class="line"></div><div class="line"><span class="comment">// Server represents the gRPC server</span></div><div class="line"><span class="keyword">type</span> Server <span class="keyword">struct</span> &#123;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// SayHello generates response to a Ping request</span></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(s *Server)</span> <span class="title">SayHello</span><span class="params">(ctx context.Context, in *PingMessage)</span> <span class="params">(*PingMessage, error)</span></span> &#123;</div><div class="line">  log.Printf(<span class="string">"Receive message %s"</span>, in.Greeting)</div><div class="line">  <span class="keyword">return</span> &amp;PingMessage&#123;Greeting: <span class="string">"bar"</span>&#125;, <span class="literal">nil</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p><code>Server struct</code>仅仅是服务器的一个抽象。他允许你的server”附加”一些资源，使得这些资源在RPC调用过程中可用。</p>
+<p><code>SayHello</code>函数就是Protobuf文件中定义的<code>Ping service</code>的接口实现，如果你不实现该接口，你就无法创建gRPC server。</p>
+<p><code>SayHello</code>以一个<code>PingMessage</code>作为输入参数，并且会返回一个<code>PingMessage</code>。<code>PingMessage struct</code>定义在从<code>api.proto</code>自动生成的<code>api.pb.go</code>文件中。这个函数还有一个<code>Context</code>参数（想进一步了解原因，可参见<a href="https://blog.golang.org/context" target="_blank" rel="external">官方文档</a>）。后续你会知道通过<code>Context</code>我们能做什么。另一方面，这个函数还返回一个<code>error</code>，以防一些糟糕的情况发生。</p>
+<h2 id="创建一个最简单的服务端"><a href="#创建一个最简单的服务端" class="headerlink" title="创建一个最简单的服务端"></a>创建一个最简单的服务端</h2><p>现在，你已经有了一个适当的协议，你可以创建一个简单的服务器实现这个<code>service</code>，并理解他的<code>message</code>。用你最喜欢的编辑器，创建文件<code>server/main.go</code>:</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> main</div><div class="line"></div><div class="line"><span class="keyword">import</span> (</div><div class="line">  <span class="string">"fmt"</span></div><div class="line">  <span class="string">"log"</span></div><div class="line">  <span class="string">"net"</span></div><div class="line">  <span class="string">"gitlab.com/pantomath-io/demo-grpc/api"</span></div><div class="line">  <span class="string">"google.golang.org/grpc"</span></div><div class="line">)</div><div class="line"></div><div class="line"><span class="comment">// main start a gRPC server and waits for connection</span></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</div><div class="line">  <span class="comment">// create a listener on TCP port 7777</span></div><div class="line">  lis, err := net.Listen(<span class="string">"tcp"</span>, fmt.Sprintf(<span class="string">":%d"</span>, <span class="number">7777</span>))</div><div class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">    log.Fatalf(<span class="string">"failed to listen: %v"</span>, err)</div><div class="line">  &#125;</div><div class="line">  </div><div class="line">  <span class="comment">// create a server instance</span></div><div class="line">  s := api.Server&#123;&#125;</div><div class="line">  </div><div class="line">  <span class="comment">// create a gRPC server object</span></div><div class="line">  grpcServer := grpc.NewServer()</div><div class="line">  </div><div class="line">  <span class="comment">// attach the Ping service to the server</span></div><div class="line">  api.RegisterPingServer(grpcServer, &amp;s)</div><div class="line">  </div><div class="line">  <span class="comment">// start the server</span></div><div class="line">  <span class="keyword">if</span> err := grpcServer.Serve(lis); err != <span class="literal">nil</span> &#123;</div><div class="line">    log.Fatalf(<span class="string">"failed to serve: %s"</span>, err)</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>让我分解一下代码，使得理解更清晰：</p>
+<ul>
+<li>注意你需要引入<code>api</code>包，使得Protobuf的<code>service</code>处理句柄以及<code>Server struct</code>是可用的</li>
+<li><code>main</code>函数以创建一个TCP侦听端口开始，这个侦听端口将由你绑定到你的gRPC服务器上</li>
+<li>后续部分就是很直接的了：你创建一个你的<code>Server</code>的实例，创建一个gRCP服务实例，并在gRPC服务实例上注册你的<code>service</code>，并启动gRPC服务</li>
+</ul>
+<p>你可以编译你的代码，并获得你服务端的二进制：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ go build -i -v -o bin/server gitlab.com/pantomath-io/demo-grpc/server</div></pre></td></tr></table></figure>
+<h2 id="创建一个最简单的客户端"><a href="#创建一个最简单的客户端" class="headerlink" title="创建一个最简单的客户端"></a>创建一个最简单的客户端</h2><p>客户端也引入<code>api</code>包，使得<code>message</code>和<code>service</code>可用，因此创建文件<code>client/main.go</code>:</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> main</div><div class="line"></div><div class="line"><span class="keyword">import</span> (</div><div class="line">  <span class="string">"log"</span></div><div class="line">  <span class="string">"gitlab.com/pantomath-io/demo-grpc/api"</span></div><div class="line">  <span class="string">"golang.org/x/net/context"</span></div><div class="line">  <span class="string">"google.golang.org/grpc"</span></div><div class="line">)</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</div><div class="line">  <span class="keyword">var</span> conn *grpc.ClientConn</div><div class="line">  </div><div class="line">  conn, err := grpc.Dial(<span class="string">":7777"</span>, grpc.WithInsecure())</div><div class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">    log.Fatalf(<span class="string">"did not connect: %s"</span>, err)</div><div class="line">  &#125;</div><div class="line">  <span class="keyword">defer</span> conn.Close()</div><div class="line">  </div><div class="line">  c := api.NewPingClient(conn)</div><div class="line">  </div><div class="line">  response, err := c.SayHello(context.Background(), &amp;api.PingMessage&#123;Greeting: <span class="string">"foo"</span>&#125;)</div><div class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">    log.Fatalf(<span class="string">"Error when calling SayHello: %s"</span>, err)</div><div class="line">  &#125;</div><div class="line">  log.Printf(<span class="string">"Response from server: %s"</span>, response.Greeting)</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>再一次，代码的分解很直观：</p>
+<ul>
+<li><code>main</code>函数实例化一个客户端链接，端口指向服务端绑定的端口</li>
+<li>注意<code>defer</code>调用，用于在函数返回时正确的关闭链接</li>
+<li><code>c</code>变量是<code>Ping</code>服务的一个客户端，他能够调用<code>SayHello</code>方法，并向他传递<code>PingMessage</code>参数</li>
+</ul>
+<p>你可以编译你的代码并获得客户端的二级制文件<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ go build -i -v -o bin/client gitlab.com/pantomath-io/demo-grpc/client</div></pre></td></tr></table></figure></p>
+<h2 id="让他们交流"><a href="#让他们交流" class="headerlink" title="让他们交流"></a>让他们交流</h2><p>你已经构建了客户端和服务端，那么就在两个终端里分别启动他们，测试他们：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">$ bin/server</div><div class="line">2006/01/02 15:04:05 Receive message foo</div><div class="line"></div><div class="line">$ bin/client</div><div class="line">2006/01/02 15:04:05 Response from server: bar</div></pre></td></tr></table></figure>
+<h2 id="使用工具让你的工作更轻松"><a href="#使用工具让你的工作更轻松" class="headerlink" title="使用工具让你的工作更轻松"></a>使用工具让你的工作更轻松</h2><p>现在，API、客户端、服务端都已经可以工作了，你可能想要一个Makefile来编译你的代码，清理你的文件夹，管理你的依赖，等等。</p>
+<p>所以在项目根目录创建一个<a href="https://gitlab.com/pantomath-io/demo-grpc/blob/init-makefile/Makefile" target="_blank" rel="external"><code>Makefile</code></a>。解释这个文件超出了这篇文章的范围，它主要使用以前已经产生的编译命令。</p>
+<p>要使用这个文件<code>Makefile</code>，尝试使用下面的命令：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">$ make <span class="built_in">help</span></div><div class="line">api                            Auto-generate grpc go sources</div><div class="line">build_client                   Build the binary file <span class="keyword">for</span> client</div><div class="line">build_server                   Build the binary file <span class="keyword">for</span> server</div><div class="line">clean                          Remove previous builds</div><div class="line">dep                            Get the dependencies</div><div class="line"><span class="built_in">help</span>                           Display this <span class="built_in">help</span> screen</div></pre></td></tr></table></figure>
+<h2 id="让通信更安全"><a href="#让通信更安全" class="headerlink" title="让通信更安全"></a>让通信更安全</h2><p>客户端与服务端之间的通信基于<a href="https://http2.github.io/" target="_blank" rel="external">HTTP/2</a>(gRPC的传输层)。消息都是二进制数据（多亏了Protobuf)，但是整个交互是明文的。幸运的是，gRPC集成了SSL/TLS，可用于对服务器进行身份验证（从客户端的角度），并加密消息交换。</p>
+<p>你不需要在协议上做任何改变：他保持原样。只是在客户端以及服务端各自创建gRPC对象时要做些改变。需要注意的是，如果你只在客户端或者服务端一段做了改变，那整个链接将无法工作。</p>
+<p>在改变你的代码之前， 你需要先创建一个<a href="https://en.wikipedia.org/wiki/Self-signed_certificate" target="_blank" rel="external">自签名的SSL证书</a>。这篇文章的目的不是来教你如何创建这个证书，<a href="https://www.openssl.org/docs/manmaster/man1/" target="_blank" rel="external">OpenSSL的官方文档</a>(genrsa, req, x509)可以回答你关于自签名SSL证书的问题。（DigitalOcean也有一个关于这部分内容的<a href="https://www.digitalocean.com/community/tutorials/openssl-essentials-working-with-ssl-certificates-private-keys-and-csrs" target="_blank" rel="external">非常好，非常完整的教程</a>）。当然，你也可以直接使用<code>cert</code>目录下提供的文件。下面的命令用于生成这些文件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">$ openssl genrsa -out cert/server.key 2048</div><div class="line">$ openssl req -new -x509 -sha256 -key cert/server.key -out cert/server.crt -days 3650</div><div class="line">$ openssl req -new -sha256 -key cert/server.key -out cert/server.csr</div><div class="line">$ openssl x509 -req -sha256 -in cert/server.csr -signkey cert/server.key -out cert/server.crt -days 3650</div></pre></td></tr></table></figure>
+<p>您可以继续并更新服务器定义以使用证书和密钥:</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> main</div><div class="line"></div><div class="line"><span class="keyword">import</span> (</div><div class="line">  <span class="string">"fmt"</span></div><div class="line">  <span class="string">"log"</span></div><div class="line">  <span class="string">"net"</span></div><div class="line">  <span class="string">"gitlab.com/pantomath-io/demo-grpc/api"</span></div><div class="line">  <span class="string">"google.golang.org/grpc"</span></div><div class="line">  <span class="string">"google.golang.org/grpc/credentials"</span></div><div class="line">)</div><div class="line"></div><div class="line"><span class="comment">// main starts a gRPC server and waits for connection</span></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</div><div class="line">  <span class="comment">// create a listener on TCP port 7777</span></div><div class="line">  lis, err := net.Listen(<span class="string">"tcp"</span>, fmt.Sprintf(<span class="string">"%s:%d"</span>, <span class="string">"localhost"</span>, <span class="number">7777</span>))</div><div class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">    log.Fatalf(<span class="string">"failed to listen: %v"</span>, err)</div><div class="line">  &#125;</div><div class="line">  </div><div class="line">  <span class="comment">// create a server instance</span></div><div class="line">  s := api.Server&#123;&#125;</div><div class="line">  </div><div class="line">  <span class="comment">// Create the TLS credentials</span></div><div class="line">  creds, err := credentials.NewServerTLSFromFile(<span class="string">"cert/server.crt"</span>, <span class="string">"cert/server.key"</span>)</div><div class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">    log.Fatalf(<span class="string">"could not load TLS keys: %s"</span>, err)</div><div class="line">  &#125;</div><div class="line">  </div><div class="line">  <span class="comment">// Create an array of gRPC options with the credentials</span></div><div class="line">  opts := []grpc.ServerOption&#123;grpc.Creds(creds)&#125;</div><div class="line">  </div><div class="line">  <span class="comment">// create a gRPC server object</span></div><div class="line">  grpcServer := grpc.NewServer(opts...)</div><div class="line">  </div><div class="line">  <span class="comment">// attach the Ping service to the server</span></div><div class="line">  api.RegisterPingServer(grpcServer, &amp;s)</div><div class="line">  </div><div class="line">  <span class="comment">// start the server</span></div><div class="line">  <span class="keyword">if</span> err := grpcServer.Serve(lis); err != <span class="literal">nil</span> &#123;</div><div class="line">    log.Fatalf(<span class="string">"failed to serve: %s"</span>, err)</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>那么，有哪些变化呢？</p>
+<ul>
+<li>通过你的证书和秘钥，你创建了一个<a href="https://godoc.org/google.golang.org/grpc/credentials" target="_blank" rel="external"><code>credentials</code></a>对象（叫做<code>creds</code>）</li>
+<li>你创建了一个<a href="https://godoc.org/google.golang.org/grpc#ServerOption" target="_blank" rel="external"><code>grpc.ServerOption</code></a>数组，并将你的<code>credentials</code>对象置于其中。</li>
+<li>当创建grpc server的时候，你向构造函数提供了你的<code>grpc.ServerOption</code>数组</li>
+<li>你需要注意，你得正确提供你的server需要绑定的IP地址，这个地址要和你证书中FQDN使用的地址匹配</li>
+</ul>
+<p>注意<code>grpc.NewServer()</code>是一个变参函数，你可以向他传入任意数量的参数。你创建了一个选项数组，后续你可以向这个数组中添加其他参数。</p>
+<p>如果你现在编译你的服务端程序，并使用之前编译好的客户端程序，那他们两者之间的连接将无法工作，他们两边都会抛出error</p>
+<ul>
+<li>服务端报错说客户端没有执行带TLS的握手</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">2006/01/02 15:04:05 grpc: Server.Serve failed to complete security handshake from <span class="string">"localhost:64018"</span>: tls: first record does not look like a TLS handshake</div></pre></td></tr></table></figure>
+<ul>
+<li>客户端则是在他可以做任何事之前连接被关闭</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">2006/01/02 15:04:05 transport: http2Client.notifyError got notified that the client transport was broken <span class="built_in">read</span> tcp localhost:64018-&gt;127.0.0.1:7777: <span class="built_in">read</span>: connection reset by peer.</div><div class="line">2006/01/02 15:04:05 Error when calling SayHello: rpc error: code = Internal desc = transport is closing</div></pre></td></tr></table></figure>
+<p>你需要在客户端使用同样的证书文件。那么编辑你的<code>client/main.go</code>文件：</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> main</div><div class="line"></div><div class="line"><span class="keyword">import</span> (</div><div class="line">  <span class="string">"log"</span></div><div class="line">  <span class="string">"gitlab.com/pantomath-io/demo-grpc/api"</span></div><div class="line">  <span class="string">"golang.org/x/net/context"</span></div><div class="line">  <span class="string">"google.golang.org/grpc"</span></div><div class="line">  <span class="string">"google.golang.org/grpc/credentials"</span></div><div class="line">)</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</div><div class="line"></div><div class="line">  <span class="keyword">var</span> conn *grpc.ClientConn</div><div class="line"><span class="comment">// Create the client TLS credentials</span></div><div class="line">  creds, err := credentials.NewClientTLSFromFile(<span class="string">"cert/server.crt"</span>, <span class="string">""</span>)</div><div class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">    log.Fatalf(<span class="string">"could not load tls cert: %s"</span>, err)</div><div class="line">  &#125;</div><div class="line">  </div><div class="line">  <span class="comment">// Initiate a connection with the server</span></div><div class="line">  conn, err = grpc.Dial(<span class="string">"localhost:7777"</span>, grpc.WithTransportCredentials(creds))</div><div class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">    log.Fatalf(<span class="string">"did not connect: %s"</span>, err)</div><div class="line">  &#125;</div><div class="line">  <span class="keyword">defer</span> conn.Close()</div><div class="line">  </div><div class="line">  c := api.NewPingClient(conn)</div><div class="line">  </div><div class="line">  response, err := c.SayHello(context.Background(), &amp;api.PingMessage&#123;Greeting: <span class="string">"foo"</span>&#125;)</div><div class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">    log.Fatalf(<span class="string">"error when calling SayHello: %s"</span>, err)</div><div class="line">  &#125;</div><div class="line">  log.Printf(<span class="string">"Response from server: %s"</span>, response.Greeting)</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>客户端做出的改变和服务端做出的改变非常类似：</p>
+<ul>
+<li>你通过证书文件创建了一个<a href="https://godoc.org/google.golang.org/grpc/credentials" target="_blank" rel="external"><code>credentials</code></a>对象，注意客户端<strong>没有使用</strong>证书密钥，密钥是服务端私有的。</li>
+<li>你在<code>grpc.Dial()</code>函数上增添了选项：使用你的credentials对象。注意<code>grpc.Dial()</code>函数同样是一个可变参数的函数，他可以接受任意数量的选项。</li>
+<li>与服务端一样，同样需要注意的是：你需要使用证书FQDN中相同的地址来链接服务端，否则传输层认证的握手过程将会失败</li>
+</ul>
+<p>两边都使用了credentials，因此他们能像之前一样，相互通信了。但是现在是以加密的方式实现的。你可以编译你的代码：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ make</div></pre></td></tr></table></figure>
+<p>并在各自的终端中执行：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">$ bin/server</div><div class="line">2006/01/02 15:04:05 Receive message foo</div><div class="line"></div><div class="line">$ bin/client</div><div class="line">2006/01/02 15:04:05 Response from server: bar</div></pre></td></tr></table></figure></p>
+<h2 id="识别客户端"><a href="#识别客户端" class="headerlink" title="识别客户端"></a>识别客户端</h2><p>gRPC服务的另外一个有趣的特性是他具有从客户端拦截请求的能力。客户端可以在传输层插入一些信息。你可以使用这个特性来识别你的客户端，因为SSL的实现仅仅认证了服务端（通过证书），而没有认证客户端（所有的客户端使用了相同的证书）</p>
+<p>因此你将更新你的客户端，在每一个调用上插入元数据信息，由服务端在处理每一个进来的调用时校验这些认证信息。</p>
+<p>在客户端，你仅仅需要在你的<code>grpc.Dial()</code>上设置一个<code>DialOption</code>。但是，这个<code>DialOption</code>有一些限制，编辑你的<code>client/main.go</code>文件：</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> main</div><div class="line"></div><div class="line"><span class="keyword">import</span> (</div><div class="line">  <span class="string">"log"</span></div><div class="line">  <span class="string">"gitlab.com/pantomath-io/demo-grpc/api"</span></div><div class="line">  <span class="string">"golang.org/x/net/context"</span></div><div class="line">  <span class="string">"google.golang.org/grpc"</span></div><div class="line">  <span class="string">"google.golang.org/grpc/credentials"</span></div><div class="line">)</div><div class="line"></div><div class="line"><span class="comment">// Authentication holds the login/password</span></div><div class="line"><span class="keyword">type</span> Authentication <span class="keyword">struct</span> &#123;</div><div class="line">  Login    <span class="keyword">string</span></div><div class="line">  Password <span class="keyword">string</span></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// GetRequestMetadata gets the current request metadata</span></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(a *Authentication)</span> <span class="title">GetRequestMetadata</span><span class="params">(context.Context, ...<span class="keyword">string</span>)</span> <span class="params">(<span class="keyword">map</span>[<span class="keyword">string</span>]<span class="keyword">string</span>, error)</span></span> &#123;</div><div class="line">  <span class="keyword">return</span> <span class="keyword">map</span>[<span class="keyword">string</span>]<span class="keyword">string</span>&#123;</div><div class="line">    <span class="string">"login"</span>:    a.Login,</div><div class="line">    <span class="string">"password"</span>: a.Password,</div><div class="line">  &#125;, <span class="literal">nil</span></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// RequireTransportSecurity indicates whether the credentials requires transport security</span></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="params">(a *Authentication)</span> <span class="title">RequireTransportSecurity</span><span class="params">()</span> <span class="title">bool</span></span> &#123;</div><div class="line">  <span class="keyword">return</span> <span class="literal">true</span></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</div><div class="line">  <span class="keyword">var</span> conn *grpc.ClientConn</div><div class="line">  </div><div class="line"><span class="comment">// Create the client TLS credentials</span></div><div class="line">  creds, err := credentials.NewClientTLSFromFile(<span class="string">"cert/server.crt"</span>, <span class="string">""</span>)</div><div class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">    log.Fatalf(<span class="string">"could not load tls cert: %s"</span>, err)</div><div class="line"> &#125;</div><div class="line"> </div><div class="line">  <span class="comment">// Setup the login/pass</span></div><div class="line">  auth := Authentication&#123;</div><div class="line">    Login:    <span class="string">"john"</span>,</div><div class="line">    Password: <span class="string">"doe"</span>,</div><div class="line">  &#125;</div><div class="line">  </div><div class="line">  <span class="comment">// Initiate a connection with the server</span></div><div class="line">  conn, err = grpc.Dial(<span class="string">"localhost:7777"</span>, grpc.WithTransportCredentials(creds), grpc.WithPerRPCCredentials(&amp;auth))</div><div class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">    log.Fatalf(<span class="string">"did not connect: %s"</span>, err)</div><div class="line">   &#125;</div><div class="line">   <span class="keyword">defer</span> conn.Close()</div><div class="line">   </div><div class="line">  c := api.NewPingClient(conn)</div><div class="line">  </div><div class="line">  response, err := c.SayHello(context.Background(), &amp;api.PingMessage&#123;Greeting: <span class="string">"foo"</span>&#125;)</div><div class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">    log.Fatalf(<span class="string">"error when calling SayHello: %s"</span>, err)</div><div class="line">  &#125;</div><div class="line">  log.Printf(<span class="string">"Response from server: %s"</span>, response.Greeting)</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>你定义了一个接口来存放你想要插入到rpc调用中的所有字段信息。在我们的示例中，仅仅是login和password，但你能定义任何你想要的字段</li>
+<li><code>auth</code>变量存放了你用到的内容</li>
+<li>你使用<code>grpc.WithPerRPCCredentials()</code>函数来创建<code>DialOption</code>对象，这个对象将在<code>grpc.Dial()</code>调用上使用</li>
+<li>注意<code>grpc.WithPerRPCCredentials()</code>以一个接口作为参数，所以你的<code>Authentication</code>接口必须实现这个接口，从<a href="https://godoc.org/google.golang.org/grpc/credentials#PerRPCCredentials" target="_blank" rel="external">文档</a>中，你知道你需要在你的结构上实现两个方法：<code>GetRequestMetadata</code>和<code>RequireTransportSecurity</code></li>
+<li>因此，你定义了<code>GetRequestMetadata</code>方法，他返回你<code>Authentication</code>结构的一个map</li>
+<li>最后，你定义了<code>RequireTransportSecurity</code>方法，他告诉你的grpc client是否需要将元数据插入到传输层。在我们当前的示例中，他始终返回true，但是你可以让他根据配置信息返回不同的值。</li>
+</ul>
+<p>客户端已经更新，在他想服务端发起rpc调用时，会将额外的数据一起推送过去，但是服务端目前还不知道有这些额外信息。因此，我们需要告诉服务端，让他去校验这些元数据信息。</p>
+<p>打开<code>server/maingo</code>，并更新他：</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> main</div><div class="line"></div><div class="line"><span class="keyword">import</span> (</div><div class="line">  <span class="string">"fmt"</span></div><div class="line">  <span class="string">"log"</span></div><div class="line">  <span class="string">"net"</span></div><div class="line">  <span class="string">"strings"</span></div><div class="line">  <span class="string">"golang.org/x/net/context"</span></div><div class="line">  <span class="string">"gitlab.com/pantomath-io/demo-grpc/api"</span></div><div class="line">  <span class="string">"google.golang.org/grpc"</span></div><div class="line">  <span class="string">"google.golang.org/grpc/credentials"</span></div><div class="line">  <span class="string">"google.golang.org/grpc/metadata"</span></div><div class="line">)</div><div class="line"></div><div class="line"><span class="comment">// private type for Context keys</span></div><div class="line"><span class="keyword">type</span> contextKey <span class="keyword">int</span></div><div class="line"></div><div class="line"><span class="keyword">const</span> (</div><div class="line">  clientIDKey contextKey = <span class="literal">iota</span></div><div class="line">)</div><div class="line"></div><div class="line"><span class="comment">// authenticateAgent check the client credentials</span></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">authenticateClient</span><span class="params">(ctx context.Context, s *api.Server)</span> <span class="params">(<span class="keyword">string</span>, error)</span></span> &#123;</div><div class="line">  <span class="keyword">if</span> md, ok := metadata.FromIncomingContext(ctx); ok &#123;</div><div class="line">    clientLogin := strings.Join(md[<span class="string">"login"</span>], <span class="string">""</span>)</div><div class="line">    clientPassword := strings.Join(md[<span class="string">"password"</span>], <span class="string">""</span>)</div><div class="line">    </div><div class="line">    <span class="keyword">if</span> clientLogin != <span class="string">"john"</span> &#123;</div><div class="line">      <span class="keyword">return</span> <span class="string">""</span>, fmt.Errorf(<span class="string">"unknown user %s"</span>, clientLogin)</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">if</span> clientPassword != <span class="string">"doe"</span> &#123;</div><div class="line">      <span class="keyword">return</span> <span class="string">""</span>, fmt.Errorf(<span class="string">"bad password %s"</span>, clientPassword)</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">    log.Printf(<span class="string">"authenticated client: %s"</span>, clientLogin)</div><div class="line">    <span class="keyword">return</span> <span class="string">"42"</span>, <span class="literal">nil</span></div><div class="line">  &#125;</div><div class="line">  </div><div class="line">  <span class="keyword">return</span> <span class="string">""</span>, fmt.Errorf(<span class="string">"missing credentials"</span>)</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// unaryInterceptor calls authenticateClient with current context</span></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">unaryInterceptor</span><span class="params">(ctx context.Context, req <span class="keyword">interface</span>&#123;&#125;, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler)</span> <span class="params">(<span class="keyword">interface</span>&#123;&#125;, error)</span></span> &#123;</div><div class="line">  s, ok := info.Server.(*api.Server)</div><div class="line">  <span class="keyword">if</span> !ok &#123;</div><div class="line">    <span class="keyword">return</span> <span class="literal">nil</span>, fmt.Errorf(<span class="string">"unable to cast server"</span>)</div><div class="line">  &#125;</div><div class="line">  clientID, err := authenticateClient(ctx, s)</div><div class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">    <span class="keyword">return</span> <span class="literal">nil</span>, err</div><div class="line">  &#125;</div><div class="line">  </div><div class="line">  ctx = context.WithValue(ctx, clientIDKey, clientID)</div><div class="line">  <span class="keyword">return</span> handler(ctx, req)</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// main start a gRPC server and waits for connection</span></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</div><div class="line">  <span class="comment">// create a listener on TCP port 7777</span></div><div class="line">  lis, err := net.Listen(<span class="string">"tcp"</span>, fmt.Sprintf(<span class="string">"%s:%d"</span>, <span class="string">"localhost"</span>, <span class="number">7777</span>))</div><div class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">    log.Fatalf(<span class="string">"failed to listen: %v"</span>, err)</div><div class="line">  &#125;</div><div class="line">  </div><div class="line">  <span class="comment">// create a server instance</span></div><div class="line">  s := api.Server&#123;&#125;</div><div class="line">  </div><div class="line">  <span class="comment">// Create the TLS credentials</span></div><div class="line">  creds, err := credentials.NewServerTLSFromFile(<span class="string">"cert/server.crt"</span>, <span class="string">"cert/server.key"</span>)</div><div class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">    log.Fatalf(<span class="string">"could not load TLS keys: %s"</span>, err)</div><div class="line">  &#125;</div><div class="line">  </div><div class="line">  <span class="comment">// Create an array of gRPC options with the credentials</span></div><div class="line">  opts := []grpc.ServerOption&#123;grpc.Creds(creds),</div><div class="line">    grpc.UnaryInterceptor(unaryInterceptor)&#125;</div><div class="line">    </div><div class="line">  <span class="comment">// create a gRPC server object</span></div><div class="line">  grpcServer := grpc.NewServer(opts...)</div><div class="line">  </div><div class="line">  <span class="comment">// attach the Ping service to the server</span></div><div class="line">  api.RegisterPingServer(grpcServer, &amp;s)</div><div class="line">  </div><div class="line">  <span class="comment">// start the server</span></div><div class="line">  <span class="keyword">if</span> err := grpcServer.Serve(lis); err != <span class="literal">nil</span> &#123;</div><div class="line">    log.Fatalf(<span class="string">"failed to serve: %s"</span>, err)</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>再一次，让我来为你分解一下：</p>
+<ul>
+<li>你在你之前创建的数组里面添加了一个新的<code>grpc.ServerOption</code>(现在知道为什么他是一个数组了吧？)：<code>grpc.UnaryInterceptor</code>。并且，你想那个函数传入了一个<a href="https://godoc.org/google.golang.org/grpc#UnaryServerInterceptor" target="_blank" rel="external">函数引用</a>，这样他就知道去调用谁。main函数的剩余部分没有变化。</li>
+<li><p>你必须要定义一个<code>unaryInterceptor</code>函数，他接收一堆参数</p>
+<ol>
+<li>一个<a href="https://godoc.org/golang.org/x/net/context" target="_blank" rel="external"><code>context.Context</code></a>对象，包含了你的数据，他在整个请求生命周期内都存在</li>
+<li>一个<code>interface{}</code>，他是rpc调用的入参接口</li>
+<li>一个<a href="https://godoc.org/google.golang.org/grpc#UnaryServerInfo" target="_blank" rel="external"><code>UnaryServerInfo</code></a>结构，他包含了若干关于本地调用的信息（例如，<code>Server</code>抽象对象，以及客户端调用的具体方法）</li>
+<li>一个<a href="https://godoc.org/google.golang.org/grpc#UnaryHandler" target="_blank" rel="external"><code>UnaryHandler</code></a>结构，他被<code>UnaryServerInterceptor</code>调用用于完成正常的一元RPC调用（例如：在<code>UnaryInterceptor</code>返回前进行一些处理）</li>
+</ol>
+</li>
+<li><p><code>unaryInterceptor</code>函数确保<code>grpc.UnaryServerInfo</code>拥有正确的server抽象，并且会调用认证函数<code>authenticateClient</code></p>
+</li>
+<li><p>你定义了包含你认证逻辑的认证函数：<code>authenticateClient</code>函数–在这个示例中非常非常简单。你可以看到，他接收一个<code>context.Context</code>参数，并从该参数中抽取元数据信息。他校验用户信息，并且返回他的ID（以<code>string</code>的形式，和一个错误，如果有的话）</p>
+</li>
+<li><p>如果<code>unaryInterceptor</code>从<code>authenticateClient</code>调用中返回一切正常，他会将<code>clientID</code>信息写入到<code>context.Context</code>对象，这样的话，后续的调用链上的函数都能够使用它（记得吗，<code>handler</code>都以<code>context.Context</code>作为入参）</p>
+</li>
+<li><p>注意，你创建了你自己的<code>type</code>和<code>const</code>，用于在<code>context.Context</code>的映射表中引用<code>clientID</code>。这只是为避免命名冲突，并允许不断引用的一种方便的方法。</p>
+</li>
+</ul>
+<p>你能用这样来编译代码：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ make</div></pre></td></tr></table></figure>
+<p>并在各自终端中运行客户端和服务端：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line">$ bin/server</div><div class="line">2006/01/02 15:04:05 authenticated client: john</div><div class="line">2006/01/02 15:04:05 Receive message foo</div><div class="line"></div><div class="line">$ bin/client</div><div class="line">2006/01/02 15:04:05 Response from server: bar</div></pre></td></tr></table></figure>
+<p>显然，你的认证逻辑可以是更加聪明的，可以使用数据库，而不是使用凭证。方便的做法是，你的认真该函数获取到你的<code>Server</code>对象，而在你的这个<code>Server</code>结构中，能够保存了你数据库的句柄。</p>
+<h2 id="向REST开放"><a href="#向REST开放" class="headerlink" title="向REST开放"></a>向REST开放</h2><p>你已经拥有了一个非常漂亮、简洁的服务端，客户端以及协议；有序列化，加解密以及认证。但还有最后一点事情，也是一个很重要的限制：你的客户端需要是gRPC兼容的，也就是说，你必须在这份<a href="https://grpc.io/about/#osp" target="_blank" rel="external">支持平台列表</a>中，为了避免这个限制，我们可以向一个REST的网关开放我们的服务，允许REST客户端向我们发起请求。幸运的是，有这么一个gRPC的<a href="https://github.com/grpc-ecosystem/grpc-gateway" target="_blank" rel="external">protoc插件</a>，它能够生成一个方向代理服务端，通过这个服务端将一个RESTFul的JSON API请求转换成一个gRPC调用，我们可以使用少量的Go代码就能实现一个这样的反向代理服务</p>
+<p>让我们在你的<code>api/api.proto</code>文件中加入一些额外信息</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">syntax = &quot;proto3&quot;;</div><div class="line">package api;</div><div class="line">import &quot;google/api/annotations.proto&quot;;</div><div class="line">message PingMessage &#123;</div><div class="line">  string greeting = 1;</div><div class="line">&#125;</div><div class="line">service Ping &#123;</div><div class="line">  rpc SayHello(PingMessage) returns (PingMessage) &#123;</div><div class="line">    option (google.api.http) = &#123;</div><div class="line">      post: &quot;/1/ping&quot;</div><div class="line">      body: &quot;*&quot;</div><div class="line">    &#125;;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>引入的<code>annotations.proto</code>能够让<code>protoc</code>能够理解在文件后面设置的<code>option</code>。<code>option</code>则定义了这个方法对应方法调用路径</p>
+<p>更新<code>Makefile</code>文件，加入新的编译目标：</p>
+<figure class="highlight makefile"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div></pre></td><td class="code"><pre><div class="line">SERVER_OUT := "bin/server"</div><div class="line">CLIENT_OUT := "bin/client"</div><div class="line">API_OUT := "api/api.pb.go"</div><div class="line">API_REST_OUT := "api/api.pb.gw.go"</div><div class="line">PKG := "gitlab.com/pantomath-io/demo-grpc"</div><div class="line">SERVER_PKG_BUILD := "$&#123;PKG&#125;/server"</div><div class="line">CLIENT_PKG_BUILD := "$&#123;PKG&#125;/client"</div><div class="line">PKG_LIST := <span class="variable">$(shell go list $&#123;PKG&#125;/... | grep -v /vendor/)</span></div><div class="line"></div><div class="line"><span class="meta"><span class="meta-keyword">.PHONY</span>: all api server client</span></div><div class="line"></div><div class="line">all: server client</div><div class="line"></div><div class="line">api/api.pb.go: api/api.proto</div><div class="line">  @protoc -I api/ \</div><div class="line">    -I$&#123;GOPATH&#125;/src \</div><div class="line">    -I$&#123;GOPATH&#125;/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \</div><div class="line">    --go_out=plugins=grpc:api \</div><div class="line">    api/api.proto</div><div class="line">    </div><div class="line">api/api.pb.gw.go: api/api.proto</div><div class="line">  @protoc -I api/ \</div><div class="line">    -I$&#123;GOPATH&#125;/src \</div><div class="line">    -I$&#123;GOPATH&#125;/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \</div><div class="line">    --grpc-gateway_out=logtostderr=true:api \</div><div class="line">    api/api.proto</div><div class="line">    </div><div class="line">api: api/api.pb.go api/api.pb.gw.go <span class="comment">## Auto-generate grpc go sources</span></div><div class="line"></div><div class="line">dep: <span class="comment">## Get the dependencies</span></div><div class="line">  @go get -v -d ./...</div><div class="line">  </div><div class="line">server: dep api <span class="comment">## Build the binary file for server</span></div><div class="line">  @go build -i -v -o $(SERVER_OUT) $(SERVER_PKG_BUILD)</div><div class="line">  </div><div class="line">client: dep api <span class="comment">## Build the binary file for client</span></div><div class="line">  @go build -i -v -o $(CLIENT_OUT) $(CLIENT_PKG_BUILD)</div><div class="line">  </div><div class="line">clean: <span class="comment">## Remove previous builds</span></div><div class="line">  @rm $(SERVER_OUT) $(CLIENT_OUT) $(API_OUT) $(API_REST_OUT)</div><div class="line">  </div><div class="line">help: <span class="comment">## Display this help screen</span></div><div class="line">  @grep -E '^[a-zA-Z_-]+:.*?<span class="comment">## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN &#123;FS = ":.*?## "&#125;; &#123;printf "\033[36m%-30s\033[0m %s\n", $$1, $$2&#125;'</span></div></pre></td></tr></table></figure>
+<p>生成为gateway准备的Go代码（和<code>api/api.pb.go</code>类似，将会生成<code>api/api.pb.gw.go</code>文件 – 不要编辑它，在编译的时候他会自动更新）</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ make api</div></pre></td></tr></table></figure>
+<p>服务端的改变更重要。<code>grpc.Server()</code>是一个阻塞型调用，他只会在发生错误时返回（或者是被信号kill掉的时候）。因为我们需要启动另外一个服务端（提供REST服务），因此我们需要是的这个调用是非阻塞的。幸运的是，我们可以使用<strong>goroutines</strong>来达到这个目的。并且在认证的时候，也有一些小技巧。因为，REST gateway仅仅是一个反向代理，在gRPC的角度来看，他实际上是一个gRPC的客户端，因此，当他与服务端建立链接的时候，也需要使用<code>WithPerRPCCredentials</code>选项。</p>
+<p>下面是你的<code>server/main.go</code>:</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div><div class="line">61</div><div class="line">62</div><div class="line">63</div><div class="line">64</div><div class="line">65</div><div class="line">66</div><div class="line">67</div><div class="line">68</div><div class="line">69</div><div class="line">70</div><div class="line">71</div><div class="line">72</div><div class="line">73</div><div class="line">74</div><div class="line">75</div><div class="line">76</div><div class="line">77</div><div class="line">78</div><div class="line">79</div><div class="line">80</div><div class="line">81</div><div class="line">82</div><div class="line">83</div><div class="line">84</div><div class="line">85</div><div class="line">86</div><div class="line">87</div><div class="line">88</div><div class="line">89</div><div class="line">90</div><div class="line">91</div><div class="line">92</div><div class="line">93</div><div class="line">94</div><div class="line">95</div><div class="line">96</div><div class="line">97</div><div class="line">98</div><div class="line">99</div><div class="line">100</div><div class="line">101</div><div class="line">102</div><div class="line">103</div><div class="line">104</div><div class="line">105</div><div class="line">106</div><div class="line">107</div><div class="line">108</div><div class="line">109</div><div class="line">110</div><div class="line">111</div><div class="line">112</div><div class="line">113</div><div class="line">114</div><div class="line">115</div><div class="line">116</div><div class="line">117</div><div class="line">118</div><div class="line">119</div><div class="line">120</div><div class="line">121</div><div class="line">122</div><div class="line">123</div><div class="line">124</div><div class="line">125</div><div class="line">126</div><div class="line">127</div><div class="line">128</div><div class="line">129</div><div class="line">130</div><div class="line">131</div><div class="line">132</div><div class="line">133</div><div class="line">134</div><div class="line">135</div><div class="line">136</div><div class="line">137</div><div class="line">138</div><div class="line">139</div><div class="line">140</div><div class="line">141</div><div class="line">142</div><div class="line">143</div><div class="line">144</div><div class="line">145</div><div class="line">146</div><div class="line">147</div><div class="line">148</div><div class="line">149</div><div class="line">150</div><div class="line">151</div><div class="line">152</div><div class="line">153</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">package</span> main</div><div class="line"></div><div class="line"><span class="keyword">import</span> (</div><div class="line">  <span class="string">"fmt"</span></div><div class="line">  <span class="string">"log"</span></div><div class="line">  <span class="string">"net"</span></div><div class="line">  <span class="string">"net/http"</span></div><div class="line">  <span class="string">"strings"</span></div><div class="line">  <span class="string">"github.com/grpc-ecosystem/grpc-gateway/runtime"</span></div><div class="line">  <span class="string">"golang.org/x/net/context"</span></div><div class="line">  <span class="string">"gitlab.com/pantomath-io/demo-grpc/api"</span></div><div class="line">  <span class="string">"google.golang.org/grpc"</span></div><div class="line">  <span class="string">"google.golang.org/grpc/credentials"</span></div><div class="line">  <span class="string">"google.golang.org/grpc/metadata"</span></div><div class="line">)</div><div class="line"></div><div class="line"><span class="comment">// private type for Context keys</span></div><div class="line"><span class="keyword">type</span> contextKey <span class="keyword">int</span></div><div class="line"></div><div class="line"><span class="keyword">const</span> (</div><div class="line">  clientIDKey contextKey = <span class="literal">iota</span></div><div class="line">)</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">credMatcher</span><span class="params">(headerName <span class="keyword">string</span>)</span> <span class="params">(mdName <span class="keyword">string</span>, ok <span class="keyword">bool</span>)</span></span> &#123;</div><div class="line">  <span class="keyword">if</span> headerName == <span class="string">"Login"</span> || headerName == <span class="string">"Password"</span> &#123;</div><div class="line">    <span class="keyword">return</span> headerName, <span class="literal">true</span></div><div class="line">  &#125;</div><div class="line">  <span class="keyword">return</span> <span class="string">""</span>, <span class="literal">false</span></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// authenticateAgent check the client credentials</span></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">authenticateClient</span><span class="params">(ctx context.Context, s *api.Server)</span> <span class="params">(<span class="keyword">string</span>, error)</span></span> &#123;</div><div class="line">  <span class="keyword">if</span> md, ok := metadata.FromIncomingContext(ctx); ok &#123;</div><div class="line">    clientLogin := strings.Join(md[<span class="string">"login"</span>], <span class="string">""</span>)</div><div class="line">    clientPassword := strings.Join(md[<span class="string">"password"</span>], <span class="string">""</span>)</div><div class="line">    </div><div class="line">    <span class="keyword">if</span> clientLogin != <span class="string">"john"</span> &#123;</div><div class="line">      <span class="keyword">return</span> <span class="string">""</span>, fmt.Errorf(<span class="string">"unknown user %s"</span>, clientLogin)</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">if</span> clientPassword != <span class="string">"doe"</span> &#123;</div><div class="line">      <span class="keyword">return</span> <span class="string">""</span>, fmt.Errorf(<span class="string">"bad password %s"</span>, clientPassword)</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">    log.Printf(<span class="string">"authenticated client: %s"</span>, clientLogin)</div><div class="line">    <span class="keyword">return</span> <span class="string">"42"</span>, <span class="literal">nil</span></div><div class="line">  &#125;</div><div class="line">  <span class="keyword">return</span> <span class="string">""</span>, fmt.Errorf(<span class="string">"missing credentials"</span>)</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// unaryInterceptor call authenticateClient with current context</span></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">unaryInterceptor</span><span class="params">(ctx context.Context, req <span class="keyword">interface</span>&#123;&#125;, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler)</span> <span class="params">(<span class="keyword">interface</span>&#123;&#125;, error)</span></span> &#123;</div><div class="line">  s, ok := info.Server.(*api.Server)</div><div class="line">  <span class="keyword">if</span> !ok &#123;</div><div class="line">    <span class="keyword">return</span> <span class="literal">nil</span>, fmt.Errorf(<span class="string">"unable to cast server"</span>)</div><div class="line">  &#125;</div><div class="line">  clientID, err := authenticateClient(ctx, s)</div><div class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">    <span class="keyword">return</span> <span class="literal">nil</span>, err</div><div class="line">  &#125;</div><div class="line">  </div><div class="line">  ctx = context.WithValue(ctx, clientIDKey, clientID)</div><div class="line">  <span class="keyword">return</span> handler(ctx, req)</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">startGRPCServer</span><span class="params">(address, certFile, keyFile <span class="keyword">string</span>)</span> <span class="title">error</span></span> &#123;</div><div class="line">  <span class="comment">// create a listener on TCP port</span></div><div class="line">  lis, err := net.Listen(<span class="string">"tcp"</span>, address)</div><div class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">    <span class="keyword">return</span> fmt.Errorf(<span class="string">"failed to listen: %v"</span>, err)</div><div class="line">  &#125;</div><div class="line">  </div><div class="line">  <span class="comment">// create a server instance</span></div><div class="line">  s := api.Server&#123;&#125;</div><div class="line">  </div><div class="line">  <span class="comment">// Create the TLS credentials</span></div><div class="line">  creds, err := credentials.NewServerTLSFromFile(certFile, keyFile)</div><div class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">    <span class="keyword">return</span> fmt.Errorf(<span class="string">"could not load TLS keys: %s"</span>, err)</div><div class="line">  &#125;</div><div class="line">  </div><div class="line">  <span class="comment">// Create an array of gRPC options with the credentials</span></div><div class="line">  opts := []grpc.ServerOption&#123;grpc.Creds(creds),</div><div class="line">    grpc.UnaryInterceptor(unaryInterceptor)&#125;</div><div class="line">    </div><div class="line">  <span class="comment">// create a gRPC server object</span></div><div class="line">  grpcServer := grpc.NewServer(opts...)</div><div class="line">  </div><div class="line">  <span class="comment">// attach the Ping service to the server</span></div><div class="line">  api.RegisterPingServer(grpcServer, &amp;s)</div><div class="line">  </div><div class="line">  <span class="comment">// start the server</span></div><div class="line">  log.Printf(<span class="string">"starting HTTP/2 gRPC server on %s"</span>, address)</div><div class="line">  <span class="keyword">if</span> err := grpcServer.Serve(lis); err != <span class="literal">nil</span> &#123;</div><div class="line">    <span class="keyword">return</span> fmt.Errorf(<span class="string">"failed to serve: %s"</span>, err)</div><div class="line">  &#125;</div><div class="line">  </div><div class="line">  <span class="keyword">return</span> <span class="literal">nil</span></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">startRESTServer</span><span class="params">(address, grpcAddress, certFile <span class="keyword">string</span>)</span> <span class="title">error</span></span> &#123;</div><div class="line">  ctx := context.Background()</div><div class="line">  ctx, cancel := context.WithCancel(ctx)</div><div class="line">  <span class="keyword">defer</span> cancel()</div><div class="line">  </div><div class="line">  mux := runtime.NewServeMux(runtime.WithIncomingHeaderMatcher(credMatcher))</div><div class="line">  </div><div class="line">  creds, err := credentials.NewClientTLSFromFile(certFile, <span class="string">""</span>)</div><div class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">    <span class="keyword">return</span> fmt.Errorf(<span class="string">"could not load TLS certificate: %s"</span>, err)</div><div class="line">  &#125;</div><div class="line">  </div><div class="line">  <span class="comment">// Setup the client gRPC options</span></div><div class="line">  opts := []grpc.DialOption&#123;grpc.WithTransportCredentials(creds)&#125;</div><div class="line">  </div><div class="line">  <span class="comment">// Register ping</span></div><div class="line">  err = api.RegisterPingHandlerFromEndpoint(ctx, mux, grpcAddress, opts)</div><div class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">    <span class="keyword">return</span> fmt.Errorf(<span class="string">"could not register service Ping: %s"</span>, err)</div><div class="line">  &#125;</div><div class="line">  </div><div class="line">  log.Printf(<span class="string">"starting HTTP/1.1 REST server on %s"</span>, address)</div><div class="line">  http.ListenAndServe(address, mux)</div><div class="line">  </div><div class="line">  <span class="keyword">return</span> <span class="literal">nil</span></div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="comment">// main start a gRPC server and waits for connection</span></div><div class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</div><div class="line">  grpcAddress := fmt.Sprintf(<span class="string">"%s:%d"</span>, <span class="string">"localhost"</span>, <span class="number">7777</span>)</div><div class="line">  restAddress := fmt.Sprintf(<span class="string">"%s:%d"</span>, <span class="string">"localhost"</span>, <span class="number">7778</span>)</div><div class="line">  certFile := <span class="string">"cert/server.crt"</span></div><div class="line">  keyFile := <span class="string">"cert/server.key"</span></div><div class="line">  </div><div class="line">  <span class="comment">// fire the gRPC server in a goroutine</span></div><div class="line">  <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</div><div class="line">    err := startGRPCServer(grpcAddress, certFile, keyFile)</div><div class="line">    <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">      log.Fatalf(<span class="string">"failed to start gRPC server: %s"</span>, err)</div><div class="line">    &#125;</div><div class="line">  &#125;()</div><div class="line">  </div><div class="line">  <span class="comment">// fire the REST server in a goroutine</span></div><div class="line">  <span class="keyword">go</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</div><div class="line">    err := startRESTServer(restAddress, grpcAddress, certFile)</div><div class="line">    <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</div><div class="line">      log.Fatalf(<span class="string">"failed to start gRPC server: %s"</span>, err)</div><div class="line">    &#125;</div><div class="line">  &#125;()</div><div class="line">  </div><div class="line">  <span class="comment">// infinite loop</span></div><div class="line">  log.Printf(<span class="string">"Entering infinite loop"</span>)</div><div class="line">  <span class="keyword">select</span> &#123;&#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>那究竟发生了什么呢？</p>
+<ul>
+<li><p>你将gRPC服务端创建需要的所有代码一到了一个goroutine中，并使用一个函数包装（<code>startGRPCServer</code>)，这样他就不会阻塞<code>main</code>。</p>
+</li>
+<li><p>你也创建了一个goroutine，使用了一个包装函数（<code>startRESTServer</code>），在这个函数里面，你创建了一个HTTP/1.1服务</p>
+</li>
+<li><p>在你创建的REST gateway的<code>startRESTServer</code>函数中，你首先获得了一个<code>context.Context</code>对象（例如，context树的根）。接着你创建了一个请求复用器对象，<code>mux</code>，并使用了一个参数:<code>runtime.WithIncomingHeaderMatcher</code>。这个参数已一个函数引用作为参数，<code>credMatch</code>，这个函数将在每一个进入的请求针对HTTP头被调用。这个函数用于判断对应的HTTP头信息是否应该装换成gRPC的上下文context</p>
+</li>
+<li><p>你定义了一个<code>credMatch</code>函数，用于匹配证书头，允许他们成为gRPC上下文中的元数据。这也是为什么你的认证能工作的原因，因为反向代理在于后端gRPC服务连接时，使用HTTP头转换成gRPC的上线文元数据，</p>
+</li>
+<li><p>你也创建了一个<code>credentials.NewClientTLSFromFile</code>，用于<code>grpc.DialOption</code>，正如你之前在客户端做的一样</p>
+</li>
+<li><p>你注册你的api访问路径，例如，你让你的请求复用器和你的gRPC服务通过上下文context和gRPC选项给连接起来</p>
+</li>
+<li><p>最后，你启动你了的HTTP服务，并等待有连接请求进来</p>
+</li>
+<li><p>除了使用goroutine，你还是用了一个阻塞的<code>select</code>调用，这样做可以防止你的程序立马退出</p>
+</li>
+</ul>
+<p>现在，构建你的整个项目，你可以测试你的REST接口了：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">$ make</div></pre></td></tr></table></figure>
+<p>在不用的终端中分别运行客户端和服务端：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">$ bin/server</div><div class="line">2006/01/02 15:04:05 Entering infinite loop</div><div class="line">2006/01/02 15:04:05 starting HTTP/1.1 REST server on localhost:7778</div><div class="line">2006/01/02 15:04:05 starting HTTP/2 gRPC server on localhost:7777</div><div class="line">2006/01/02 15:04:05 authenticated client: john</div><div class="line">2006/01/02 15:04:05 Receive message foo</div><div class="line"></div><div class="line">$ curl -H <span class="string">"login:john"</span> -H <span class="string">"password:doe"</span> -X POST <span class="_">-d</span> <span class="string">'&#123;"greeting":"foo"&#125;'</span> <span class="string">'http://localhost:7778/1/ping'</span></div><div class="line">&#123;<span class="string">"greeting"</span>:<span class="string">"bar"</span>&#125;</div></pre></td></tr></table></figure>
+<h2 id="最后是swag…"><a href="#最后是swag…" class="headerlink" title="最后是swag…"></a>最后是swag…</h2><p>REST形式的网关是很cool的，但是，如果能直接从他生成文档，岂不是更cool，对吗？</p>
+<p>通过使用<a href="https://github.com/grpc-ecosystem/grpc-gateway" target="_blank" rel="external"><code>protoc</code>插件</a>来生成<a href="https://swagger.io/" target="_blank" rel="external">swagger</a>json文件，你可以很容易的做到：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">protoc -I api/ \</div><div class="line">  -I<span class="variable">$&#123;GOPATH&#125;</span>/src \</div><div class="line">  -I<span class="variable">$&#123;GOPATH&#125;</span>/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \</div><div class="line">  --swagger_out=logtostderr=<span class="literal">true</span>:api \</div><div class="line">  api/api.proto</div></pre></td></tr></table></figure>
+<p>这将会生成<code>api/api.swagger.json</code>文件。像其他有Protobuf编译生成的文件一样，你不应该手动编辑它，但你可以使用它，同时，你也可以通过修改你的定义文件来编译更新他。</p>
+<p>你可以把上述编译命令放入到<code>Makefile</code>中。</p>
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>你已经拥有了一个完整功能的gRPC客户端和服务端，他具有SSL加密、身份认证、客户端标识，以及REST网关（并包含swagger文件）等功能。那接下来，应该干什么呢？</p>
+<p>你可以在REST网关上再添加一些新的功能，让他支持HTTPS，而不是HTTP。显然，你还可以在你的Protobuf上添加更加复杂的数据结构，增加更多的<code>service</code>。你也可以从HTTP/2的特性中获益，例如从客户端到服务端，或者从服务端到客户端，甚至是双向的<a href="https://grpc.io/docs/guides/concepts.html#bidirectional-streaming-rpc" target="_blank" rel="external">流式</a>特性。（当然，这个特性是仅仅针对gRPC的，REST是基于HTTP/1.1，无此特性）</p>
+<p>非常感谢<a href="https://medium.com/@loderunnr" target="_blank" rel="external">Charles Francoise</a>，他和我一同完成这篇文章，并编写了示例代码：<a href="https://gitlab.com/pantomath-io/demo-grpc" target="_blank" rel="external">https://gitlab.com/pantomath-io/demo-grpc</a>.</p>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2017/10/22/0015_How_we_use_gRPC_to_build_a_client_server_system_in_Go/">我们如何在Go中使用gRPC构建C/S结构系统</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">lday</a></p>
+        <p><span>发布时间:</span>2017-10-22, 23:14:14</p>
+        <p><span>最后更新:</span>2017-10-22, 23:37:39</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2017/10/22/0015_How_we_use_gRPC_to_build_a_client_server_system_in_Go/" title="我们如何在Go中使用gRPC构建C/S结构系统">http://lday.me/2017/10/22/0015_How_we_use_gRPC_to_build_a_client_server_system_in_Go/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://lday.me/2017/10/22/0015_How_we_use_gRPC_to_build_a_client_server_system_in_Go/　　作者: lday" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2017/10/08/0014_kafka_data_loss_and_new_mechanism/">
+                    Kafka数据丢失及最新改进策略
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+        <strong class="toc-title">文章目录</strong>
+        
+            <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#说明"><span class="toc-number">1.</span> <span class="toc-text">说明</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#定义协议"><span class="toc-number">2.</span> <span class="toc-text">定义协议</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#创建一个最简单的服务端"><span class="toc-number">3.</span> <span class="toc-text">创建一个最简单的服务端</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#创建一个最简单的客户端"><span class="toc-number">4.</span> <span class="toc-text">创建一个最简单的客户端</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#让他们交流"><span class="toc-number">5.</span> <span class="toc-text">让他们交流</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#使用工具让你的工作更轻松"><span class="toc-number">6.</span> <span class="toc-text">使用工具让你的工作更轻松</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#让通信更安全"><span class="toc-number">7.</span> <span class="toc-text">让通信更安全</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#识别客户端"><span class="toc-number">8.</span> <span class="toc-text">识别客户端</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#向REST开放"><span class="toc-number">9.</span> <span class="toc-text">向REST开放</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#最后是swag…"><span class="toc-number">10.</span> <span class="toc-text">最后是swag…</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#结论"><span class="toc-number">11.</span> <span class="toc-text">结论</span></a></li></ol>
+        
+    </div>
+    <style>
+        .left-col .switch-btn,
+        .left-col .switch-area {
+            display: none;
+        }
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+    <input type="button" id="tocButton" value="隐藏目录"  title="点击按钮隐藏或者显示文章目录">
+
+    <script>
+        yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+    </script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"我们如何在Go中使用gRPC构建C/S结构系统　| lday的博客　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+        <section id="comments">
+    <style> aside.comment-bar { margin: auto 30px; }</style>
+    <div id="disqus_thread"></div>
+    <script>
+        var disqus_config = function(){
+            this.page.url = 'http://lday.me/2017/10/22/0015_How_we_use_gRPC_to_build_a_client_server_system_in_Go/';
+            this.page.identifier = '2017/10/22/0015_How_we_use_gRPC_to_build_a_client_server_system_in_Go/';
+        };
+        var loadComment = function(){
+            var d = document, s = d.createElement('script');
+            s.src = '//lday.disqus.com/embed.js';
+            s.setAttribute('data-timestamp', +new Date());
+            (d.head || d.body).appendChild(s);
+        }
+    </script>
+    
+    <script> loadComment(); </script>
+
+</section>
+
+
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/" title="回到主页"><i class="fa fa-home"></i></a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2017/10/08/0014_kafka_data_loss_and_new_mechanism/" title="下一篇: Kafka数据丢失及最新改进策略">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2017/10/22/0015_How_we_use_gRPC_to_build_a_client_server_system_in_Go/">我们如何在Go中使用gRPC构建C/S结构系统</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/10/08/0014_kafka_data_loss_and_new_mechanism/">Kafka数据丢失及最新改进策略</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/09/13/0013_a_latency_identification_procedure/">一次Golang程序延迟过大问题的定位过程</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/09/02/0012_a_memory_leak_detection_procedure/">一次Golang程序内存泄漏分析之旅</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/24/0011_kafka_consumer_rebalance_evolution/">Kafka Consumer Rebalance的演进</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/15/0010_kafka_producer_analysis_01/">Kafka Procuder小结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/11/0009_why_not_413/">为什么没有收到预期的413状态码</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/27/0008_kafka_vs_tranditional_mq/">Kafka与传统消息中间件的差异</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/22/0007_elasticsearch_summary/">ElasticSearch总结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/03/19/0006_boost-multi-index-container/">多维索引容器(multi_index_container)的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/27/0005_gdb-vs-dlv/">Golang程序调试工具介绍(gdb vs dlv)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/25/0004_golang-slice-depth/">细看Go中的切片(slice)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/01/0003_seri-stm-etcd3/">基于etcd3的访问序列化及分布式软事务内存</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/11/04/0002_hi/">你好，世界</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/11/03/0001_hello-world/">Hello World</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016-2017 lday
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" title="本站到访数"><i class="fa fa-user" aria-hidden="true"></i><span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>| </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit"  title="本页阅读量"><i class="fa fa-eye animated infinite pulse" aria-hidden="true"></i><span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script>
+    // Open in New Window
+    
+        var oOpenInNew = {
+            
+            
+            
+            
+            
+            
+             archives: ".archive-article-title", 
+             miniArchives: "a.post-list-link", 
+            
+             friends: "#js-friends a", 
+             socail: ".social a" 
+        }
+        for (var x in oOpenInNew) {
+            $(oOpenInNew[x]).attr("target", "_blank");
+        }
+    
+</script>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>
