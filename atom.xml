@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://lday.me/"/>
-  <updated>2017-10-22T15:37:39.994Z</updated>
+  <updated>2017-11-04T10:51:24.701Z</updated>
   <id>http://lday.me/</id>
   
   <author>
@@ -14,6 +14,25 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>什么是内存屏障(Memory Barriers)</title>
+    <link href="http://lday.me/2017/11/04/0016_what_is_memory_barriers/"/>
+    <id>http://lday.me/2017/11/04/0016_what_is_memory_barriers/</id>
+    <published>2017-11-04T11:25:14.000Z</published>
+    <updated>2017-11-04T10:51:24.701Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;内存屏障是一种底层原语，在不同计算机架构下有不同的实现细节。本文主要在x86_64处理器下，通过Linux及其内核代码来分析和使用内存屏障&lt;/p&gt;
+&lt;p&gt;对大多数应用层开发者来说，“内存屏障”（memory barrier）是一种陌生，甚至有些诡异的技术。实际上，他常被用在操作系统内核中，用于实现同步机制、驱动程序等。利用它，能实现高效的无锁数据结构，提高多线程程序的性能表现。本文首先探讨了内存屏障的必要性，之后介绍如何使用内存屏障实现一个无锁唤醒缓冲区（队列），用于在多个线程间进行高效的数据交换。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="memory barriers" scheme="http://lday.me/tags/memory-barriers/"/>
+    
+  </entry>
   
   <entry>
     <title>我们如何在Go中使用gRPC构建C/S结构系统</title>
