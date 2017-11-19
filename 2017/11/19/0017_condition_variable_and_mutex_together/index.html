@@ -15,23 +15,18 @@
 
 
 
-<meta name="description" content="因工作关系，之前稍微接触、了解过一些传统的消息中间件（RabbitMQ, ActiveMQ, ZeroMQ, Tibco EMS/FTL, IBM MQ/LLM以及我们自研的消息中间件）。最近的工作则一直是基于Kafka展开的。Kafka的很多设计和理念和传统的消息中间件不太一样，谈谈自己的浅薄认识。">
+<meta name="description" content="在Linux下合用Condition Variable和Mutex有些小细节。为什么需要这么做，总结于此。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Kafka与传统消息中间件的差异">
-<meta property="og:url" content="http://lday.me/2017/06/27/0008_kafka_vs_tranditional_mq/index.html">
+<meta property="og:title" content="Linux下Condition Vairable和Mutext合用的小细节">
+<meta property="og:url" content="http://lday.me/2017/11/19/0017_condition_variable_and_mutex_together/index.html">
 <meta property="og:site_name" content="lday的博客">
-<meta property="og:description" content="因工作关系，之前稍微接触、了解过一些传统的消息中间件（RabbitMQ, ActiveMQ, ZeroMQ, Tibco EMS/FTL, IBM MQ/LLM以及我们自研的消息中间件）。最近的工作则一直是基于Kafka展开的。Kafka的很多设计和理念和传统的消息中间件不太一样，谈谈自己的浅薄认识。">
-<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/kafka_vs_tranditional_mq/01_tranditional_mq_01.png">
-<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/kafka_vs_tranditional_mq/02_tranditional_mq_02.png">
-<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/kafka_vs_tranditional_mq/03_tranditional_mq_03.png">
-<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/kafka_vs_tranditional_mq/04_tranditional_mq_04.png">
-<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/kafka_vs_tranditional_mq/05_kafka_replica.png">
-<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/kafka_vs_tranditional_mq/06_kafka_consumer_group.png">
-<meta property="og:updated_time" content="2017-06-27T14:21:59.839Z">
+<meta property="og:description" content="在Linux下合用Condition Variable和Mutex有些小细节。为什么需要这么做，总结于此。">
+<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/condition_variable_and_mutex_together/img01_condidition_variable_producer_seq.png">
+<meta property="og:updated_time" content="2017-11-19T06:34:51.815Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Kafka与传统消息中间件的差异">
-<meta name="twitter:description" content="因工作关系，之前稍微接触、了解过一些传统的消息中间件（RabbitMQ, ActiveMQ, ZeroMQ, Tibco EMS/FTL, IBM MQ/LLM以及我们自研的消息中间件）。最近的工作则一直是基于Kafka展开的。Kafka的很多设计和理念和传统的消息中间件不太一样，谈谈自己的浅薄认识。">
-<meta name="twitter:image" content="http://og43lpuu1.bkt.clouddn.com/kafka_vs_tranditional_mq/01_tranditional_mq_01.png">
+<meta name="twitter:title" content="Linux下Condition Vairable和Mutext合用的小细节">
+<meta name="twitter:description" content="在Linux下合用Condition Variable和Mutex有些小细节。为什么需要这么做，总结于此。">
+<meta name="twitter:image" content="http://og43lpuu1.bkt.clouddn.com/condition_variable_and_mutex_together/img01_condidition_variable_producer_seq.png">
 
 <link rel="apple-touch-icon" href= "/apple-touch-icon.png">
 
@@ -63,7 +58,7 @@
 <link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
 
 
-<title>Kafka与传统消息中间件的差异 | lday的博客</title>
+<title>Linux下Condition Vairable和Mutext合用的小细节 | lday的博客</title>
 
 <script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
 <script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
@@ -267,11 +262,11 @@
     </div>
     <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
 </nav>
-      <div class="body-wrap"><article id="post-0008_kafka_vs_tranditional_mq" class="article article-type-post" itemscope itemprop="blogPost">
+      <div class="body-wrap"><article id="post-0017_condition_variable_and_mutex_together" class="article article-type-post" itemscope itemprop="blogPost">
   
     <div class="article-meta">
-      <a href="/2017/06/27/0008_kafka_vs_tranditional_mq/" class="article-date">
-      <time datetime="2017-06-27T14:21:21.000Z" itemprop="datePublished">2017-06-27</time>
+      <a href="/2017/11/19/0017_condition_variable_and_mutex_together/" class="article-date">
+      <time datetime="2017-11-19T06:04:14.000Z" itemprop="datePublished">2017-11-19</time>
 </a>
 
 
@@ -286,7 +281,7 @@
         
   
     <h1 class="article-title" itemprop="name">
-      Kafka与传统消息中间件的差异
+      Linux下Condition Vairable和Mutext合用的小细节
     </h1>
   
 
@@ -297,7 +292,7 @@
 
         
     <div class="article-tag tagcloud">
-        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kafka/">Kafka</a></li></ul>
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/concurrency/">concurrency</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/linux/">linux</a></li></ul>
     </div>
 
         <div class="clearfix"></div>
@@ -307,43 +302,34 @@
     <div class="article-entry" itemprop="articleBody">
       
           
-        <p>因工作关系，之前稍微接触、了解过一些传统的消息中间件（RabbitMQ, ActiveMQ, ZeroMQ, Tibco EMS/FTL, IBM MQ/LLM以及我们自研的消息中间件）。最近的工作则一直是基于Kafka展开的。Kafka的很多设计和理念和传统的消息中间件不太一样，谈谈自己的浅薄认识。</p>
+        <p>在Linux下合用Condition Variable和Mutex有些小细节。为什么需要这么做，总结于此。</p>
 <a id="more"></a>
-<h1 id="Kafka与传统消息中间件的差异特性"><a href="#Kafka与传统消息中间件的差异特性" class="headerlink" title="Kafka与传统消息中间件的差异特性"></a>Kafka与传统消息中间件的差异特性</h1><p>我认为Kafka与传统消息中间件的差异主要体现在一下几方面：</p>
-<ul>
-<li>分布式的架构设计理念</li>
-<li>容错性的考虑</li>
-<li>同主题并行消费的思想</li>
-<li>适合不同场景的可配置性</li>
-<li>基于日志的消息存储</li>
-<li>对慢消费者的处理方式</li>
-</ul>
-<h2 id="分布式的架构设计理念"><a href="#分布式的架构设计理念" class="headerlink" title="分布式的架构设计理念"></a>分布式的架构设计理念</h2><p>Kafka诞生在“大数据”时代，显然，他具有很强的大数据烙印：分布式、水平可扩展。这是Kafka明显区别与传统消息中间件的地方。我接触的生产环境Kafka集群，往往会在十几台到几十台机器之间，集群规模相对于传统消息中间件而言，普遍偏大。传统的消息中间件，往往面对的是企业级应用，从整体架构来看，多数情况下，每个client都会与消息中间件的某个broker建立连接，所有的消息，都经由这个broker推送至client，同时client发送的消息也经由这个broker投递至目标节点。</p>
-<p>最基本的传统消息中间件架构类似如下：</p>
-<p><img src="http://og43lpuu1.bkt.clouddn.com/kafka_vs_tranditional_mq/01_tranditional_mq_01.png" alt=""></p>
-<p>当然，在这种基础架构之下，也会演化出更加鲁棒的架构来</p>
-<p><img src="http://og43lpuu1.bkt.clouddn.com/kafka_vs_tranditional_mq/02_tranditional_mq_02.png" alt=""></p>
-<p>如上图所示，在原有broker的基础上，引入了热备的standby节点，当broker出现故障时，能够顺利接管，并继续提供服务。当然，传统消息中间件也在朝着分布式的方向发展，节点不再局限于一个，同样，也是有一个集群来为外界提供服务。</p>
-<p><img src="http://og43lpuu1.bkt.clouddn.com/kafka_vs_tranditional_mq/03_tranditional_mq_03.png" alt=""></p>
-<p>但是，即使这样，我们也会看出，从client的角度出发，他始终是与其中一个broker建立连接，基于这个连接完成所有消息的接收与发送。</p>
-<p>这与Kafka的架构设计是非常不同的，在Kafka集群中，topic是被“打散”分布在集群的不同节点上进行处理的，换言之，当用户需要pub或者sub不同topic时，client不再对着唯一的一个broker，他将根据topic的“位置”不同，向不同的broker发起连接，并执行pub,sub动作。</p>
-<p><img src="http://og43lpuu1.bkt.clouddn.com/kafka_vs_tranditional_mq/04_tranditional_mq_04.png" alt=""></p>
-<p>这种打散的架构设计，使得Kafka集群的平行扩展变得更加容易。不同的客户端，针对不同的topic/partition，可以向不同的broker发起连接，这样整个系统的整体并发度就大大提高了。</p>
-<h2 id="容错性的考虑"><a href="#容错性的考虑" class="headerlink" title="容错性的考虑"></a>容错性的考虑</h2><p>和大多数传统的消息中间件不同，Kafka引入了replica的概念，对于一个topic上的每个partition，kafka会将数据根据配置复制到多个broker上，每个broker的这份数据，被称作该topic/partition的一个副本(replica)。当集群中该partition的leader broker挂掉后，会从replica slave中选择一个broker继续对外提供服务。基于replica机制，在topic层面，用户可以灵活选择容错级别，对于可靠性要求较高的topic，设置较大的replica，对于可靠性要求不那么高，而对延时，吞吐量要求更高的topic，则可以设置较小的replica。</p>
-<p><img src="http://og43lpuu1.bkt.clouddn.com/kafka_vs_tranditional_mq/05_kafka_replica.png" alt=""></p>
-<p>目前，最新的Kafka版本，还引入了针对容错需求的分机架的replica分布策略，使得同一partition的多个replica，能够尽可能均匀的分布在不同的机架上，避免同一时间，由于硬件故障导致的同一机架上多server同时挂掉时，Kafka topic不可用问题。</p>
-<h2 id="同主题并行消费的思想"><a href="#同主题并行消费的思想" class="headerlink" title="同主题并行消费的思想"></a>同主题并行消费的思想</h2><p>传统的消息中间件，同样提供pub/sub模式的消息发送，但是对于订阅方sub而言，一个主题只会有一个sub。如果pub速度过快，sub则会出现处理不及时的情况。在传统消息中间件上，要解决这个办法，则是主动的将消息pub到不同的topic，实际上是将这些不同的topic组成一个topic组，由pub方负责“均匀”的将消息推送到这一组topic组中，同时，在sub方则针对topic组中的每一个topic，启动sub端进行处理，通过这种方式来提供消息处理的并行度。这层处理逻辑，实际上是可以抽象的，抽象的结构，就是kafka中的topic/partition关系，以及消费端的consumer group的处理逻辑。Kafka中的topic/partition关系，就好比上面提到的传统消息中间件中的topic组。但在传统消息中间件上，pub端需手动的来分配将消息写入到哪个topic。Kafka中，这个分配过程被称作partitioning，用户只需提供Partitioner接口，用于确认消息应该推送到哪个partition，后续的处理逻辑，都将由kafka提供的producer库完成。而consumer group则好比上面提到的接收topic组中个topic数据的消费端。在一个consumer grouop中的消费端(sub端)，被看做地位均等的，各sub端会负责处理该topic中的一个或者多个partition。整个partition分配过程对于用户而言是透明的。用户只关注通过sub端接收消息，然后执行处理。Kafka在架构层面为sub端提供了自动调整逻辑。当同一个group中的consumer数发生变化，当该topic的partition数据发生变化时，整个consumer group上的rebalance便被触发，rebalance的过程，则是该group中的所有consumer重新分配partition的过程，整个过程对于上层应用而言完全透明。正式基于这种框架型的设计，使得Kafka的上层用户，可以不关心partition、rebalance的具体实现，他只需关注在业务消息的发送，以及业务消息的接收处理。</p>
-<p><img src="http://og43lpuu1.bkt.clouddn.com/kafka_vs_tranditional_mq/06_kafka_consumer_group.png" alt=""></p>
-<p>由上图可以看出，基于传统消息中间件，也可以构建与Kafka topic/partition-consumer group类似的关系。但是，用户在使用Kafka时，只需提供简单的partitioner接口，只需简单的制定加入同一个consumer group，即可完成整个关系构建，而传统消息中间件，则需要自己手动去完成整个dispatcher，以及rebalance的过程。Kafka将这层关系的组织和调整，加入到了Kafka的整体架构设计及实现中，使得Kafka的使用方方便不少。</p>
-<h2 id="适合不同场景的可配置性"><a href="#适合不同场景的可配置性" class="headerlink" title="适合不同场景的可配置性"></a>适合不同场景的可配置性</h2><p>Kafka已经被验证可以用于不同体量、不同规模的系统中。之所以Kafka可以应用于各类场景，很重要的一点是：Kafka开放了众多的可配置项。对Procuder的配置，对Consumer的配置，以及更多的，针对Broker的配置。用户在使用Kafka时，可以针对自身的需求调整Kafka的配置项：</p>
-<ul>
-<li>在最求高吞吐量的场景下，用户可以采用异步的发送模式，同时，在牺牲一定可靠性的基础上，进一步调整副本复制因子，进一步提升发送性能，调整partition数，提高sub端的并发度等等…</li>
-<li>在对可靠性要求很高的场景，则正好反过来，使用完全的同步模式，ack=all设置，等等</li>
-<li>…</li>
-</ul>
-<p>结合自身需求，对Kafka进行参数调整，适应自身的业务需求。传统的消息中间件也提供一定的可配置性，但和Kafka相比，其可定制的程度，显然要低很多。</p>
-<h2 id="基于日志的消息存储"><a href="#基于日志的消息存储" class="headerlink" title="基于日志的消息存储"></a>基于日志的消息存储</h2><p>Kafka核心的数据存储是基于日志(commit log)的，这一点非常不同于传统的消息中间件。传统的消息中间件往往是基于内存的，当消息抵达目的地之后，内存中的消息便“消失”了。而Kafka却不同，消息在被broker接收后会被写入到以topic/partition为单元的log segment中，并持久化保留下来。后续的读取动作，将基于这些持久化的log segment来完成。基于log的处理方式，给kafka的功能扩展带来了很多便利，例如数据流的回放，Broker的快速恢复等。commit log并非Kafka独创，实际上，在数据库系统中，广泛使用commit log作为数据库备份的底层机制。</p>
-<h2 id="对慢消费者的处理方式"><a href="#对慢消费者的处理方式" class="headerlink" title="对慢消费者的处理方式"></a>对慢消费者的处理方式</h2><p>消息的传递一般分为两种模式：1). pull模式，由客户端主动拉取数据；2). push模式，由Broker端主动推送数据。pull模式的好处是作为实际消费者的客户端，可以根据自身的处理能力来选择何时获取消息，处理能力强，则以更大的速率拉取消息，处理能力弱，则低速拉取消息，这样，sub端不会因为pub端发送过快而被压垮。push模式的好处，则是消息处理更及时，因为不需要等待客户端主动发起请求，broker就会将到达的消息推送至客户端。传统的消息中间件往往是以push模式为主，我认为，这和传统消息中间件主要基于内存的消息存放方式有关。在传统消息中间的概念里，中间件只是消息的传送者，他不负责消息的存储，因此，当消息从一个点发往另一个点，消息中间件会以最快的方式转发过去，至于消息的存储，或者说持久化，不在传统消息中间件的优先考量范围内。而Kafka是基于日志的消息存储，他天生就能够对消息持久化，他也不担心慢消费者会占用大量的消息资源，因此Kafka选择的是pull模式，这种模式对慢消费者而言是非常友好的，慢消费者并不会 因为生产者速度很快而被打爆，压力被Kafka挡住。</p>
+<p>mutex用于上锁，condition variable用于等待，这两种不同类型的同步，都是我们所需要的。对于条件变量，它提供的操作接口主要为：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;pthread.h&gt;</span></span></div><div class="line"></div><div class="line"><span class="keyword">pthread_cond_t</span> cond = PTHREAD_COND_INITIALIZER;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">pthread_cond_signal</span><span class="params">(<span class="keyword">pthread_cond_t</span> *cond)</span></span>;</div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">pthread_cond_broadcast</span><span class="params">(<span class="keyword">pthread_cond_t</span> *cond)</span></span>;</div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">pthread_cond_wait</span><span class="params">(<span class="keyword">pthread_cond_t</span> *cond, <span class="keyword">pthread_mutex_t</span> *mutex)</span></span>;</div><div class="line"></div><div class="line"><span class="comment">// All return 0 on success, or a positive error number on error</span></div></pre></td></tr></table></figure>
+<p>pthread_cond_signal的作用是通知那些wait在cond上的线程，有事件达到。而pthread_cond_wait的作用实际上包含3部分：</p>
+<ol>
+<li>将与之绑定的mutex解锁(unlock)</li>
+<li>让自己进入等待状态，直至被signal唤醒</li>
+<li>在被唤醒之后再次拿到与之绑定的mutex</li>
+</ol>
+<p>从pthread_cond_wait返回，实际上是他重新又拿到了mutex</p>
+<p>基于mutex + cond的生产者往往如下所示：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">s = pthread_mutex_lock(&amp;mtx);			<span class="comment">//加锁，执行生产动作</span></div><div class="line"><span class="keyword">if</span> (s != <span class="number">0</span>)</div><div class="line">	errExitEN(s, <span class="string">"pthread_mutex_lock"</span>);</div><div class="line"></div><div class="line">avail++;  							<span class="comment">//实际的生产相应数据</span></div><div class="line"></div><div class="line">s = pthread_mutex_unlock(&amp;mtx);		<span class="comment">//完成生产之后，首先将mutex释放</span></div><div class="line"><span class="keyword">if</span> (s != <span class="number">0</span>)</div><div class="line">	errExitEN(s, <span class="string">"pthread_mutex_unlock"</span>);</div><div class="line"></div><div class="line"></div><div class="line">s = pthread_cond_signal(&amp;cond); 		<span class="comment">//之后，再通过signal，通知消费者</span></div><div class="line"><span class="keyword">if</span> (s != <span class="number">0</span>)</div><div class="line">	errExitEN(s, <span class="string">"pthread_cond_signal"</span>);</div></pre></td></tr></table></figure></p>
+<p>先unlock，再执行signal，这种操作顺序，我认为是比较符合习惯的。但在《Unix网络编程，卷2》的7.5章节中，我们看到了另外一种写法，先signal，再unlock。</p>
+<p><img src="http://og43lpuu1.bkt.clouddn.com/condition_variable_and_mutex_together/img01_condidition_variable_producer_seq.png" alt=""></p>
+<p><strong>我直观的认为这样不合适，毕竟signal之后，那些在等待的线程就唤醒，而此时如果没法拿到锁，就会进入竞争，而且是不是有可能这个时候没有一个人拿到锁，都又睡去呢？</strong>（因为生产者mutex还没能unlock时，所有消费者都拿不到锁，都又睡去了，有没有可能？）– 虽然这种最终没有消费者唤醒的情况不会存在，但的确还是有些影响，根据《The Linux Programming Interface》中的描述：</p>
+<blockquote>
+<p>on some implementations, <font color="#FF0000">unlocking the mutex and then signaling the condition variable may yield better performance than performing these steps in the reverse sequence.</font> If the mutex is unlocked only after the condition variable is signaled, the thread performing pthread_cond_wait() may wake up while the mutex is still locked, and then immediately go back to sleep again when it finds that the mutex is locked. <font color="#FF0000">This results in two superfluous context switches.</font> Some implementations eliminate this problem by employing a technique called <font color="#0000FF"><strong>wait morphing</strong></font>, which moves the signaled thread from the condition variable wait queue to the mutex wait queue without performing a context switch if the mutex is locked.</p>
+</blockquote>
+<p>所以，还是按照上面，先放锁，再signal会比较好。</p>
+<p>看完生产者的实现，我们再看看消费者的实现：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">for</span> (;;) &#123;</div><div class="line">	<span class="comment">//消费者首先加锁查看资源情况</span></div><div class="line">	s = pthread_mutex_lock(&amp;mtx);</div><div class="line">	<span class="keyword">if</span> (s != <span class="number">0</span>)</div><div class="line">		errExitEN(s, <span class="string">"pthread_mutex_lock"</span>);</div><div class="line">	</div><div class="line">	<span class="keyword">while</span> (avail == <span class="number">0</span>) &#123; 	<span class="comment">//循环等待有可用资源进行消费，</span></div><div class="line">		<span class="comment">//在没有可用资源进行消费时，就放锁，进入休眠</span></div><div class="line">		s = pthread_cond_wait(&amp;cond, &amp;mtx);		</div><div class="line">		<span class="keyword">if</span> (s != <span class="number">0</span>)</div><div class="line">			errExitEN(s, <span class="string">"pthread_cond_wait"</span>);</div><div class="line">	&#125;</div><div class="line">	</div><div class="line">	<span class="comment">//循环等待出来之后，是实际上有资源可消费，同时自己持有了mutex</span></div><div class="line">	<span class="keyword">while</span> (avail &gt; <span class="number">0</span>) &#123; 	<span class="comment">//进行消费</span></div><div class="line">		<span class="comment">//扣减资源，进行消费</span></div><div class="line">		avail--;</div><div class="line">	&#125;</div><div class="line">	</div><div class="line">	<span class="comment">//完成消费后，释放mutex</span></div><div class="line">	s = pthread_mutex_unlock(&amp;mtx);</div><div class="line">	<span class="keyword">if</span> (s != <span class="number">0</span>)</div><div class="line">		errExitEN(s, <span class="string">"pthread_mutex_unlock"</span>);</div><div class="line">	</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>这里有一点需要注意的是：<font color="#0000FF">pthread_cond_wait(…)是被包裹在一个while(…)判断语句中的，判断是否有资源，并不是用的if，而是用的while。</font>之所以用while，<strong>是因为即使在被pthread_cond_wait(…)唤醒，拿到了mutex，也存在实际上并没有资源的情况</strong>。</p>
+<ol>
+<li><p>其他线程先于你被唤醒，并将资源消费完了，你才被唤醒。“pthread_cond_signal(), we are simply guaranteed that <strong>at least</strong> one of the blocked threads is woken up;”从这里就可以看出，也许有多个线程被唤醒，并以此拿到了mutex，因为前面拿到mutex的线程可能已经消费完了资源，此时你被唤醒，实际上是没有用处了，此时就应该再读进入wait，因此需要通过while()而不是if()来控制是否能够进入真正的消费阶段</p>
+</li>
+<li><p>可能发生惊群。在一些pthread_cond_wait(…)的实现中，即使没有人调用signal，一个线程也有可能在pthread_cond_wait(…)上被唤醒，这种惊群现象是一些多核处理器技术实现的后果，而这种惊群现象在SUSv3中是被显式允许的，因此我们不能假设从wait中醒来就一定有资源可消费，还必须再探测一下。</p>
+</li>
+</ol>
 
       
     </div>
@@ -352,13 +338,13 @@
   
     
     <div class="copyright">
-        <p><span>本文标题:</span><a href="/2017/06/27/0008_kafka_vs_tranditional_mq/">Kafka与传统消息中间件的差异</a></p>
+        <p><span>本文标题:</span><a href="/2017/11/19/0017_condition_variable_and_mutex_together/">Linux下Condition Vairable和Mutext合用的小细节</a></p>
         <p><span>文章作者:</span><a href="/" title="回到主页">lday</a></p>
-        <p><span>发布时间:</span>2017-06-27, 22:21:21</p>
-        <p><span>最后更新:</span>2017-06-27, 22:21:59</p>
+        <p><span>发布时间:</span>2017-11-19, 14:04:14</p>
+        <p><span>最后更新:</span>2017-11-19, 14:34:51</p>
         <p>
-            <span>原始链接:</span><a class="post-url" href="/2017/06/27/0008_kafka_vs_tranditional_mq/" title="Kafka与传统消息中间件的差异">http://lday.me/2017/06/27/0008_kafka_vs_tranditional_mq/</a>
-            <span class="copy-path" data-clipboard-text="原文: http://lday.me/2017/06/27/0008_kafka_vs_tranditional_mq/　　作者: lday" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <span>原始链接:</span><a class="post-url" href="/2017/11/19/0017_condition_variable_and_mutex_together/" title="Linux下Condition Vairable和Mutext合用的小细节">http://lday.me/2017/11/19/0017_condition_variable_and_mutex_together/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://lday.me/2017/11/19/0017_condition_variable_and_mutex_together/　　作者: lday" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
             <script> var clipboard = new Clipboard('.copy-path'); </script>
         </p>
         <p>
@@ -370,16 +356,10 @@
 
     <nav id="article-nav">
         
-            <div id="article-nav-newer" class="article-nav-title">
-                <a href="/2017/07/11/0009_why_not_413/">
-                    为什么没有收到预期的413状态码
-                </a>
-            </div>
-        
         
             <div id="article-nav-older" class="article-nav-title">
-                <a href="/2017/06/22/0007_elasticsearch_summary/">
-                    ElasticSearch总结
+                <a href="/2017/11/04/0016_what_is_memory_barriers/">
+                    什么是内存屏障(Memory Barriers)
                 </a>
             </div>
         
@@ -391,7 +371,7 @@
     <div id="toc" class="toc-article">
         <strong class="toc-title">文章目录</strong>
         
-            <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Kafka与传统消息中间件的差异特性"><span class="toc-number">1.</span> <span class="toc-text">Kafka与传统消息中间件的差异特性</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#分布式的架构设计理念"><span class="toc-number">1.1.</span> <span class="toc-text">分布式的架构设计理念</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#容错性的考虑"><span class="toc-number">1.2.</span> <span class="toc-text">容错性的考虑</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#同主题并行消费的思想"><span class="toc-number">1.3.</span> <span class="toc-text">同主题并行消费的思想</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#适合不同场景的可配置性"><span class="toc-number">1.4.</span> <span class="toc-text">适合不同场景的可配置性</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#基于日志的消息存储"><span class="toc-number">1.5.</span> <span class="toc-text">基于日志的消息存储</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#对慢消费者的处理方式"><span class="toc-number">1.6.</span> <span class="toc-text">对慢消费者的处理方式</span></a></li></ol></li></ol>
+            
         
     </div>
     <style>
@@ -427,7 +407,7 @@
         </div>
         <script>
             window._bd_share_config={
-                "common":{"bdSnsKey":{},"bdText":"Kafka与传统消息中间件的差异　| lday的博客　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+                "common":{"bdSnsKey":{},"bdText":"Linux下Condition Vairable和Mutext合用的小细节　| lday的博客　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
         </script>
     
 
@@ -446,8 +426,8 @@
     <div id="disqus_thread"></div>
     <script>
         var disqus_config = function(){
-            this.page.url = 'http://lday.me/2017/06/27/0008_kafka_vs_tranditional_mq/';
-            this.page.identifier = '2017/06/27/0008_kafka_vs_tranditional_mq/';
+            this.page.url = 'http://lday.me/2017/11/19/0017_condition_variable_and_mutex_together/';
+            this.page.identifier = '2017/11/19/0017_condition_variable_and_mutex_together/';
         };
         var loadComment = function(){
             var d = document, s = d.createElement('script');
@@ -469,15 +449,13 @@
 
     <div class="scroll" id="post-nav-button">
         
-            <a href="/2017/07/11/0009_why_not_413/" title="上一篇: 为什么没有收到预期的413状态码">
-                <i class="fa fa-angle-left"></i>
-            </a>
+            <a href="/" title="回到主页"><i class="fa fa-home"></i></a>
         
 
         <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
 
         
-            <a href="/2017/06/22/0007_elasticsearch_summary/" title="下一篇: ElasticSearch总结">
+            <a href="/2017/11/04/0016_what_is_memory_barriers/" title="下一篇: 什么是内存屏障(Memory Barriers)">
                 <i class="fa fa-angle-right"></i>
             </a>
         

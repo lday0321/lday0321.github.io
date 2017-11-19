@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://lday.me/"/>
-  <updated>2017-11-04T10:51:24.701Z</updated>
+  <updated>2017-11-19T06:34:51.815Z</updated>
   <id>http://lday.me/</id>
   
   <author>
@@ -14,6 +14,26 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Linux下Condition Vairable和Mutext合用的小细节</title>
+    <link href="http://lday.me/2017/11/19/0017_condition_variable_and_mutex_together/"/>
+    <id>http://lday.me/2017/11/19/0017_condition_variable_and_mutex_together/</id>
+    <published>2017-11-19T06:04:14.000Z</published>
+    <updated>2017-11-19T06:34:51.815Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;在Linux下合用Condition Variable和Mutex有些小细节。为什么需要这么做，总结于此。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="linux" scheme="http://lday.me/tags/linux/"/>
+    
+      <category term="concurrency" scheme="http://lday.me/tags/concurrency/"/>
+    
+  </entry>
   
   <entry>
     <title>什么是内存屏障(Memory Barriers)</title>
