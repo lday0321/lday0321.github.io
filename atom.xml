@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://lday.me/"/>
-  <updated>2017-11-19T06:34:51.815Z</updated>
+  <updated>2017-12-02T07:28:39.238Z</updated>
   <id>http://lday.me/</id>
   
   <author>
@@ -14,6 +14,26 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>C++内存屏障（内存顺序）总结</title>
+    <link href="http://lday.me/2017/12/02/0018_cpp_atomic_summary/"/>
+    <id>http://lday.me/2017/12/02/0018_cpp_atomic_summary/</id>
+    <published>2017-12-02T07:09:14.000Z</published>
+    <updated>2017-12-02T07:28:39.238Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;原子操作（atomic）是无锁编程(Lock-Free Programming)的基础。以往，要使用atomic操作，我们一般会使用&lt;a href=&quot;https://gcc.gnu.org/onlinedocs/gcc-4.9.2/gcc/_005f_005fatomic-Builtins.html&quot;&gt;gcc内置的原子操作接口&lt;/a&gt;，或者是基于指定平台硬件指令封装的&lt;a href=&quot;https://github.com/ivmai/libatomic_ops&quot;&gt;atomic库&lt;/a&gt;。c++11直接引入了&lt;a href=&quot;http://en.cppreference.com/w/cpp/atomic&quot;&gt;atomic库&lt;/a&gt;，为c++定义了原子类型操作接口以及内存模型，极大的方便了我们的使用。我尝试通过本文对C++11中内存屏障（内存顺序）的一些基本概念和使用情况进行总结。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="cpp" scheme="http://lday.me/tags/cpp/"/>
+    
+      <category term="atomic" scheme="http://lday.me/tags/atomic/"/>
+    
+  </entry>
   
   <entry>
     <title>Linux下Condition Vairable和Mutext合用的小细节</title>

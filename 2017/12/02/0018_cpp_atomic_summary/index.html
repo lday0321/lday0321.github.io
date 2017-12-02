@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no" />
+<meta name="author" content="lday" />
+
+
+
+<meta name="description" content="原子操作（atomic）是无锁编程(Lock-Free Programming)的基础。以往，要使用atomic操作，我们一般会使用gcc内置的原子操作接口，或者是基于指定平台硬件指令封装的atomic库。c++11直接引入了atomic库，为c++定义了原子类型操作接口以及内存模型，极大的方便了我们的使用。我尝试通过本文对C++11中内存屏障（内存顺序）的一些基本概念和使用情况进行总结。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="C++内存屏障（内存顺序）总结">
+<meta property="og:url" content="http://lday.me/2017/12/02/0018_cpp_atomic_summary/index.html">
+<meta property="og:site_name" content="lday的博客">
+<meta property="og:description" content="原子操作（atomic）是无锁编程(Lock-Free Programming)的基础。以往，要使用atomic操作，我们一般会使用gcc内置的原子操作接口，或者是基于指定平台硬件指令封装的atomic库。c++11直接引入了atomic库，为c++定义了原子类型操作接口以及内存模型，极大的方便了我们的使用。我尝试通过本文对C++11中内存屏障（内存顺序）的一些基本概念和使用情况进行总结。">
+<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/01_relax_mode.png">
+<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/02_release_mode_ok.png">
+<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/03_release_mode_not_ok.png">
+<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/04_acquire_mode_ok.png">
+<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/05_acquire_mode_not_ok.png">
+<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/06_release_acquire_protocol.png">
+<meta property="og:updated_time" content="2017-12-02T07:28:39.238Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="C++内存屏障（内存顺序）总结">
+<meta name="twitter:description" content="原子操作（atomic）是无锁编程(Lock-Free Programming)的基础。以往，要使用atomic操作，我们一般会使用gcc内置的原子操作接口，或者是基于指定平台硬件指令封装的atomic库。c++11直接引入了atomic库，为c++定义了原子类型操作接口以及内存模型，极大的方便了我们的使用。我尝试通过本文对C++11中内存屏障（内存顺序）的一些基本概念和使用情况进行总结。">
+<meta name="twitter:image" content="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/01_relax_mode.png">
+
+<link rel="apple-touch-icon" href= "/apple-touch-icon.png">
+
+
+    <link rel="alternate" href="/atom.xml" title="lday的博客" type="application/atom+xml">
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+    <link href="//cdn.bootcss.com/animate.css/3.5.1/animate.min.css" rel="stylesheet">
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>C++内存屏障（内存顺序）总结 | lday的博客</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: true,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: undefined
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/assets/blogImg/donkey.jpg" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">lday</a></h1>
+        </hgroup>
+
+        
+        <p class="header-subtitle">Life, Coding, Funning</p>
+        
+
+        
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>菜单</li>
+                        <li>标签</li>
+                        
+                        <li>友情链接</li>
+                        
+                        
+                        <li>关于我</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" href="mailto:oneday0321@gmail.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" href="https://github.com/lday0321" title="GitHub"></a>
+                            
+                                <a class="fa RSS" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/HTTP/">HTTP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kafka/">Kafka</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/atomic/">atomic</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/boost/">boost</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/concurrency/">concurrency</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cpp/">cpp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/">elasticsearch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/etcd/">etcd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/gRPC/">gRPC</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/golang/">golang</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hello/">hello</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hello1/">hello1</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/java/">java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/linux/">linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/memory-barriers/">memory barriers</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/分布式/">分布式</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">lday, 80后IT码农一枚. 白羊座，喜热闹</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">lday</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/assets/blogImg/donkey.jpg" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">lday</a></h1>
+            </hgroup>
+            
+            <p class="header-subtitle">Life, Coding, Funning</p>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:oneday0321@gmail.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/lday0321" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
+</nav>
+      <div class="body-wrap"><article id="post-0018_cpp_atomic_summary" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2017/12/02/0018_cpp_atomic_summary/" class="article-date">
+      <time datetime="2017-12-02T07:09:14.000Z" itemprop="datePublished">2017-12-02</time>
+</a>
+
+
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      C++内存屏障（内存顺序）总结
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/atomic/">atomic</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/cpp/">cpp</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <p>原子操作（atomic）是无锁编程(Lock-Free Programming)的基础。以往，要使用atomic操作，我们一般会使用<a href="https://gcc.gnu.org/onlinedocs/gcc-4.9.2/gcc/_005f_005fatomic-Builtins.html" target="_blank" rel="external">gcc内置的原子操作接口</a>，或者是基于指定平台硬件指令封装的<a href="https://github.com/ivmai/libatomic_ops" target="_blank" rel="external">atomic库</a>。c++11直接引入了<a href="http://en.cppreference.com/w/cpp/atomic" target="_blank" rel="external">atomic库</a>，为c++定义了原子类型操作接口以及内存模型，极大的方便了我们的使用。我尝试通过本文对C++11中内存屏障（内存顺序）的一些基本概念和使用情况进行总结。</p>
+<a id="more"></a>
+<h1 id="C-内存模型"><a href="#C-内存模型" class="headerlink" title="C++内存模型"></a>C++内存模型</h1><p>C++内存模型可以被看作是C++程序和计算机系统（包括编译器，多核CPU等可能对程序进行乱序优化的软硬件）之间的契约，它规定了多个线程访问同一个内存地址时的语义，以及某个线程对内存地址的更新何时能被其它线程看见。这个模型约定：没有数据竞争(data race)的程序是遵循顺序一致性的。该模型的核心思想就是由程序员用同步原语（例如，锁或者C++11中新引入的atomic类型的共享变量）来保证你程序是没有数据竞争的，这样CPU和编译器就会保证程序是按程序员所想的那样执行的（即顺序一致性）。换句话说，程序员只需要恰当地使用具有同步语义的指令来标记那些真正需要同步的变量和操作，就相当于告诉CPU和编译器不要对这些标记好的同步操作和变量做违反顺序一致性的优化，而其它未被标记的地方可以做原有的优化。编译器和CPU的大部分优化手段都可以继续实施，只是在同步原语处需要对优化做出相应的限制；而且程序员只需要保证正确地使用同步原语即可，因为它们最终表现出来的执行效果与顺序一致性模型一致。由此，C++多线程内存模型帮助我们在易编程性和性能之间取得了一个平衡。</p>
+<p>在C++11标准之前，C++是建立在单线程语义上的。为了进行多线程编程，C++程序员通过使用诸如Pthreads，Windows Thread等C++语言标准之外的线程库来完成代码设计。以Pthreads为例，它提供了类似pthread_mutex_lock这样的函数来保证对共享变量的互斥访问，以防止数据竞跑。人们不禁会问，Pthreads这样的线程库我用的好好的，干嘛需要C++引入的多线程，这不是多此一举么？其实，以线程库的形式进行多线程编程在绝大多数应用场景下都是没有问题的。然而，线程库的解决方案也有其先天缺陷。第一，如果没有在编程语言中定义内存模型的话，我们就不能清楚的定义到底什么样的编译器/CPU优化是合法的，而程序员也不能确定程序到底会怎么样被优化执行。例如，Pthreads标准中并未对什么是数据竞争做出精确定义，因此，<a href="https://dl.acm.org/citation.cfm?id=1065042" target="_blank" rel="external">C++编译器可能会进行一些错误优化从而导致数据竞争</a>。第二，绝大多数情况下线程库能正确的完成任务，而在极少数对性能有更高要求的情况下（尤其是需要利用底层的硬件特性来实现高性能Lock Free算法时）需要更精确的内存模型以规定好程序的行为。简而言之，把内存模型集成到编程语言中去是比线程库更好的选择。</p>
+<h1 id="C-11中的内存屏障（内存顺序）"><a href="#C-11中的内存屏障（内存顺序）" class="headerlink" title="C++11中的内存屏障（内存顺序）"></a>C++11中的内存屏障（内存顺序）</h1><h2 id="“松散”内存屏障"><a href="#“松散”内存屏障" class="headerlink" title="“松散”内存屏障"></a>“松散”内存屏障</h2><p>std::memory_order_relaxed，松散操作，<strong>没有同步或顺序制约</strong>，仅对此操作要求原子性。带标签 <code>memory_order_relaxed</code>的原子操作无同步操作；它们不会在并发的内存访问间强加顺序。它们只保证原子性和修改顺序一致性。</p>
+<p>例如，对于最初为零的<code>x</code>和<code>y</code>:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// 线程 1 ：</span></div><div class="line">r1 = y.load(memory_order_relaxed); <span class="comment">// A</span></div><div class="line">x.store(r1, memory_order_relaxed); <span class="comment">// B</span></div><div class="line"></div><div class="line"><span class="comment">// 线程 2 ：</span></div><div class="line">r2 = x.load(memory_order_relaxed); <span class="comment">// C </span></div><div class="line">y.store(<span class="number">42</span>, memory_order_relaxed); <span class="comment">// D</span></div></pre></td></tr></table></figure>
+<p>允许产生结果<code>r1 == 42 &amp;&amp; r2 == 42</code>，因为即使线程1中A先序于B且线程2中C先序于D ，却没有制约避免y的修改顺序中D先出现于A ，而x的修改顺序中B先出现于C。D在y上的副效应，可能可见于线程1中的加载A ，同时B在x上的副效应，可能可见于线程2中的加载C。</p>
+<p><img src="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/01_relax_mode.png" alt=""></p>
+<p>如上图所示，假设：a, b, c分别为普通变量，而x为atomic类型的变量，当在写入x时，设置memory_order_relaxed时，写入a，写入b的顺序，在另外的线程上看到的，完全可能是相互调换的，写入c的位置，完全也有可能由出现在写入x之前，而在另外一个线程上看到的，确实在写入x之后，同时，读出b的动作，完全有可能从写入x之后，编程在另外一个线程上看，是在写入x之前。也就是，各种乱序， 都是被允许的。</p>
+<p>松散内存顺序的典型使用是计数器自增，只要求原子性，但不要求顺序或同步</p>
+<h2 id="单向的”释放”内存屏障"><a href="#单向的”释放”内存屏障" class="headerlink" title="单向的”释放”内存屏障"></a>单向的”释放”内存屏障</h2><p>std::memory_order_release，释放操作，<strong>当前线程中的读或写不能被重排到此存储后</strong>。当前线程的所有写入，可见于<font color="#0000FF">加载</font><strong>该同一原子变量</strong>的其他线程。</p>
+<p><img src="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/02_release_mode_ok.png" alt=""></p>
+<p>如上图所示，在使用<code>memory_order_release</code>设置的原子操作写入的情况下，原子操作之后的读写操作，在另外的线程（加载了该原子变量的线程）看来，可以重排到原子操作之前（通俗点说，就是另外线程可能认为当前线程是先执行的写入的a操作，再执行的写入x操作）。但是，如下图所示，原子操作之前的读、写操作，计算机系统必须保证，在另外一个线程看来，他是在原子操作写入之前就被写入了， 不能是在原子操作之后才写入(通俗点说，也就是另外一个线程，不能认为当前线程先写入的x，再写入的c，他一定要看到的是先写入c，再写入的x)：</p>
+<p><img src="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/03_release_mode_not_ok.png" alt=""></p>
+<h2 id="单向的”加载”内存屏障"><a href="#单向的”加载”内存屏障" class="headerlink" title="单向的”加载”内存屏障"></a>单向的”加载”内存屏障</h2><p>std::memory_order_acquire，加载操作，<strong>当前线程中读或写不能被重排到此加载前</strong>。其他<font color="#0000FF">释放</font><strong>同一原子变量</strong>的线程的所有写入，为当前线程所可见。</p>
+<p><img src="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/04_acquire_mode_ok.png" alt=""></p>
+<p>如上图所示，在设置<code>memory_order_acquire</code>的对x的读操作前的读、写操作，在另外的线程看来（或者说实际的运行顺序），可以被重排到对x的读操作后，(通俗点说，就是其他线程可以是认为当前线程先读取的x，再写入的c)。然而如下图所示，对x的读操作后的读、写操作，在另外的线程看来不允许被重排到x的读操作前（不允许其他线程看到当前线程先写入的a，再读取的x）。</p>
+<p><img src="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/05_acquire_mode_not_ok.png" alt=""></p>
+<h2 id="单向“加载”-单向“释放”协议"><a href="#单向“加载”-单向“释放”协议" class="headerlink" title="单向“加载”+单向“释放”协议"></a>单向“加载”+单向“释放”协议</h2><p>往往<code>memory_order_acquire</code>和<code>memory_order_release</code>是配合着一起使用的：</p>
+<ol>
+<li>线程1使用<code>memory_order_release</code>写入<strong>原子变量x</strong></li>
+<li>线程2使用<code>memory_order_acquire</code>读出<strong>原子变量x</strong></li>
+</ol>
+<p>所有在线程1上，在写入x之前的写入操作，都将在线程2上，在读出x之后，被看到。使用单向“加载”+单向“释放”协议的场景往往是：</p>
+<ol>
+<li>线程1，写入一些实际数据，接着通过将原子变量x设置为某个值<code>A</code>（通过使用<code>memory_order_release</code>写入原子变量x）来“发布”这些数据。</li>
+<li>线程2，通过读取并判断x已被设置为<code>A</code>（通过使用<code>memory_order_acquire</code>来读取原子变量x），进而读取线程1实际“发布”的那些数据</li>
+</ol>
+<p><img src="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/06_release_acquire_protocol.png" alt=""></p>
+<p>如上图所示，thread_1在release写入x(值:<code>A</code>)之前，写入了待发布的a,b的数据，而thread_2，将在acquire读出x且为<code>A</code>之后，将读到thread_1发布的a,b的数据。同时，我们可以注意到，在thread_2上，在acquire读出x之前，如果对a进行读操作，我们是无法确认读到的a一定会thread_1在之前最后写入的a，这里的顺序是不会被保证的，重排是被允许的。同时，在之后，读取c，读到的是否为thread_1最后写入的c，也是不确定的，因为，在x写入之后，thread_1上又出现了一次写入，而如果在此之前，还有一次写入， 这两次写入之间，是不存在限制，可能会被重排的。</p>
+<p>thread_1上有了release_store，对于a，b的写入就一定会在x的改变之前，在thread_2上，就不会出现类似读出c，的不确定性。thread_2上有了acquire_load，右侧的读出a，就不会被重排读到左侧，而左侧读出a的不确定性，也不存在。thread_1卡住的是：对于数据a，b的写入不能排到x的写入之后，thread_2卡住的，是对于数据a，b的读取，不能排到读取x之前，这样，就保证了数据a，b，与”信号量”x，之间，在thread_1, thread_2上的同步关系。</p>
+<h2 id="双向的”加载-释放”内存屏障"><a href="#双向的”加载-释放”内存屏障" class="headerlink" title="双向的”加载-释放”内存屏障"></a>双向的”加载-释放”内存屏障</h2><p>std::memory_order_acq_rel，加载-释放操作，带此内存顺序的读-修改-写操作既是获得加载又是释放操作。没有操作能够从此操作之后被重排到此操作之前，也没有操作能够从此操作之前被重排到此操作之后，当然，具有这一限制的前提是，观察读写顺序的不同线程是使用的<strong>同一个原子变量</strong>并基于这一内存顺序。</p>
+<h2 id="最严的”顺序一致”内存屏障"><a href="#最严的”顺序一致”内存屏障" class="headerlink" title="最严的”顺序一致”内存屏障"></a>最严的”顺序一致”内存屏障</h2><p>std::memory_order_seq_cst，顺序一致操作，此内存顺序的操作既是加载操作又是释放操作，没有操作能够从此操作之后被重排到此操作之前，也没有操作能够从此操作之前被重排到此操作之后。带标签<code>memory_order_seq_cst</code>的原子操作不仅以与释放/加载顺序相同的方式排序内存（在一个线程中先发生于存储的任何结果都变成做加载的线程中的可见），还对<strong>所有拥有此标签</strong>的内存操作建立一个单独全序。<code>memory_order_seq_cst</code>比<code>memory_order_acq_rel</code>更强，<code>memory_order_acq_rel</code>的顺序保障，是要基于<strong>同一个原子变量</strong>的，也就是说，在这个原子变量之前的读写，不能重排到这个原子变量之后，同时这个原子变量之后的读写，也不能重排到这个原子变量之前。但是，如果两个线程基于<code>memory_order_acq_rel</code>使用了两个不同的原子变量x1, x2，那在x1之前的读写，重排到x2之后，是完全可能的，在x1之后的读写，重排到x2之前，也是被允许的。然而，如果两个原子变量x1,x2，是基于<code>memory_order_seq_cst</code>在操作，那么即使是x1之前的读写，也不能被重排到x2之后，x1之后的读写，也不能重排到x2之前，也就说，如果都用<code>memory_order_seq_cst</code>，那么程序代码顺序(Program Order)就将会是你在多个线程上都实际观察到的顺序(Observed Order)</p>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2017/12/02/0018_cpp_atomic_summary/">C++内存屏障（内存顺序）总结</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">lday</a></p>
+        <p><span>发布时间:</span>2017-12-02, 15:09:14</p>
+        <p><span>最后更新:</span>2017-12-02, 15:28:39</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2017/12/02/0018_cpp_atomic_summary/" title="C++内存屏障（内存顺序）总结">http://lday.me/2017/12/02/0018_cpp_atomic_summary/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://lday.me/2017/12/02/0018_cpp_atomic_summary/　　作者: lday" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2017/11/19/0017_condition_variable_and_mutex_together/">
+                    Linux下Condition Vairable和Mutext合用的小细节
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+        <strong class="toc-title">文章目录</strong>
+        
+            <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#C-内存模型"><span class="toc-number">1.</span> <span class="toc-text">C++内存模型</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#C-11中的内存屏障（内存顺序）"><span class="toc-number">2.</span> <span class="toc-text">C++11中的内存屏障（内存顺序）</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#“松散”内存屏障"><span class="toc-number">2.1.</span> <span class="toc-text">“松散”内存屏障</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#单向的”释放”内存屏障"><span class="toc-number">2.2.</span> <span class="toc-text">单向的”释放”内存屏障</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#单向的”加载”内存屏障"><span class="toc-number">2.3.</span> <span class="toc-text">单向的”加载”内存屏障</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#单向“加载”-单向“释放”协议"><span class="toc-number">2.4.</span> <span class="toc-text">单向“加载”+单向“释放”协议</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#双向的”加载-释放”内存屏障"><span class="toc-number">2.5.</span> <span class="toc-text">双向的”加载-释放”内存屏障</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#最严的”顺序一致”内存屏障"><span class="toc-number">2.6.</span> <span class="toc-text">最严的”顺序一致”内存屏障</span></a></li></ol></li></ol>
+        
+    </div>
+    <style>
+        .left-col .switch-btn,
+        .left-col .switch-area {
+            display: none;
+        }
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+    <input type="button" id="tocButton" value="隐藏目录"  title="点击按钮隐藏或者显示文章目录">
+
+    <script>
+        yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+    </script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"C++内存屏障（内存顺序）总结　| lday的博客　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+        <section id="comments">
+    <style> aside.comment-bar { margin: auto 30px; }</style>
+    <div id="disqus_thread"></div>
+    <script>
+        var disqus_config = function(){
+            this.page.url = 'http://lday.me/2017/12/02/0018_cpp_atomic_summary/';
+            this.page.identifier = '2017/12/02/0018_cpp_atomic_summary/';
+        };
+        var loadComment = function(){
+            var d = document, s = d.createElement('script');
+            s.src = '//lday.disqus.com/embed.js';
+            s.setAttribute('data-timestamp', +new Date());
+            (d.head || d.body).appendChild(s);
+        }
+    </script>
+    
+    <script> loadComment(); </script>
+
+</section>
+
+
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/" title="回到主页"><i class="fa fa-home"></i></a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2017/11/19/0017_condition_variable_and_mutex_together/" title="下一篇: Linux下Condition Vairable和Mutext合用的小细节">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2017/12/02/0018_cpp_atomic_summary/">C++内存屏障（内存顺序）总结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/11/19/0017_condition_variable_and_mutex_together/">Linux下Condition Vairable和Mutext合用的小细节</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/11/04/0016_what_is_memory_barriers/">什么是内存屏障(Memory Barriers)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/10/22/0015_How_we_use_gRPC_to_build_a_client_server_system_in_Go/">我们如何在Go中使用gRPC构建C/S结构系统</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/10/08/0014_kafka_data_loss_and_new_mechanism/">Kafka数据丢失及最新改进策略</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/09/13/0013_a_latency_identification_procedure/">一次Golang程序延迟过大问题的定位过程</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/09/02/0012_a_memory_leak_detection_procedure/">一次Golang程序内存泄漏分析之旅</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/24/0011_kafka_consumer_rebalance_evolution/">Kafka Consumer Rebalance的演进</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/15/0010_kafka_producer_analysis_01/">Kafka Procuder小结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/11/0009_why_not_413/">为什么没有收到预期的413状态码</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/27/0008_kafka_vs_tranditional_mq/">Kafka与传统消息中间件的差异</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/22/0007_elasticsearch_summary/">ElasticSearch总结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/03/19/0006_boost-multi-index-container/">多维索引容器(multi_index_container)的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/27/0005_gdb-vs-dlv/">Golang程序调试工具介绍(gdb vs dlv)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/25/0004_golang-slice-depth/">细看Go中的切片(slice)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/01/0003_seri-stm-etcd3/">基于etcd3的访问序列化及分布式软事务内存</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/11/04/0002_hi/">你好，世界</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/11/03/0001_hello-world/">Hello World</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016-2017 lday
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" title="本站到访数"><i class="fa fa-user" aria-hidden="true"></i><span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>| </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit"  title="本页阅读量"><i class="fa fa-eye animated infinite pulse" aria-hidden="true"></i><span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script>
+    // Open in New Window
+    
+        var oOpenInNew = {
+            
+            
+            
+            
+            
+            
+             archives: ".archive-article-title", 
+             miniArchives: "a.post-list-link", 
+            
+             friends: "#js-friends a", 
+             socail: ".social a" 
+        }
+        for (var x in oOpenInNew) {
+            $(oOpenInNew[x]).attr("target", "_blank");
+        }
+    
+</script>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>
