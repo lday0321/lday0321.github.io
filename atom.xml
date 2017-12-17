@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://lday.me/"/>
-  <updated>2017-12-02T07:28:39.238Z</updated>
+  <updated>2017-12-17T15:53:47.943Z</updated>
   <id>http://lday.me/</id>
   
   <author>
@@ -16,11 +16,35 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>共享内存(ipc)的使用</title>
+    <link href="http://lday.me/2017/12/17/0019_boost_share_memory_ipc/"/>
+    <id>http://lday.me/2017/12/17/0019_boost_share_memory_ipc/</id>
+    <published>2017-12-17T15:08:14.000Z</published>
+    <updated>2017-12-17T15:53:47.943Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;共享内存，是进程间数据传输的方式之一。数据发送方将数据放入共享内存中，数据接收方则从共享内存中将数据读出，进而完成整个数据的传输。这里我通过使用场景的方式简单总结&lt;code&gt;boost::interprocess share_memory&lt;/code&gt;的使用&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="cpp" scheme="http://lday.me/tags/cpp/"/>
+    
+      <category term="boost" scheme="http://lday.me/tags/boost/"/>
+    
+      <category term="share memory" scheme="http://lday.me/tags/share-memory/"/>
+    
+      <category term="ipc" scheme="http://lday.me/tags/ipc/"/>
+    
+  </entry>
+  
+  <entry>
     <title>C++内存屏障（内存顺序）总结</title>
     <link href="http://lday.me/2017/12/02/0018_cpp_atomic_summary/"/>
     <id>http://lday.me/2017/12/02/0018_cpp_atomic_summary/</id>
     <published>2017-12-02T07:09:14.000Z</published>
-    <updated>2017-12-02T07:28:39.238Z</updated>
+    <updated>2017-12-02T07:30:06.925Z</updated>
     
     <summary type="html">
     
@@ -30,6 +54,8 @@
     
     
       <category term="cpp" scheme="http://lday.me/tags/cpp/"/>
+    
+      <category term="concurrency" scheme="http://lday.me/tags/concurrency/"/>
     
       <category term="atomic" scheme="http://lday.me/tags/atomic/"/>
     
