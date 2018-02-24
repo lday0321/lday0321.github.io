@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://lday.me/"/>
-  <updated>2017-12-17T15:53:47.943Z</updated>
+  <updated>2018-02-24T15:09:11.737Z</updated>
   <id>http://lday.me/</id>
   
   <author>
@@ -14,6 +14,28 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>B-Tree数据结构总结</title>
+    <link href="http://lday.me/2018/02/21/0020_b_tree_summary/"/>
+    <id>http://lday.me/2018/02/21/0020_b_tree_summary/</id>
+    <published>2018-02-21T06:04:14.000Z</published>
+    <updated>2018-02-24T15:09:11.737Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;对B树的理解一直停留在概念阶段，一直也想了解一些细节。趁着过年这段时间，把《算法导论》关于B树的章节（第18章）整个过了一遍。结合书上的说明，自己实现了一把，留为总结。以下文字内容多摘自《算法导论》，伪代码部分根据我自己的理解添加了注释。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="cpp" scheme="http://lday.me/tags/cpp/"/>
+    
+      <category term="ds_algorithm" scheme="http://lday.me/tags/ds-algorithm/"/>
+    
+      <category term="b-tree" scheme="http://lday.me/tags/b-tree/"/>
+    
+  </entry>
   
   <entry>
     <title>共享内存(ipc)的使用</title>
@@ -55,9 +77,9 @@
     
       <category term="cpp" scheme="http://lday.me/tags/cpp/"/>
     
-      <category term="concurrency" scheme="http://lday.me/tags/concurrency/"/>
-    
       <category term="atomic" scheme="http://lday.me/tags/atomic/"/>
+    
+      <category term="concurrency" scheme="http://lday.me/tags/concurrency/"/>
     
   </entry>
   
@@ -75,9 +97,9 @@
     </summary>
     
     
-      <category term="linux" scheme="http://lday.me/tags/linux/"/>
-    
       <category term="concurrency" scheme="http://lday.me/tags/concurrency/"/>
+    
+      <category term="linux" scheme="http://lday.me/tags/linux/"/>
     
   </entry>
   
