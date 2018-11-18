@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no" />
+<meta name="author" content="lday" />
+
+
+
+<meta name="description" content="作为分布式系统的Kafka，在管理、协调分布式节点，处理各类分布式系统事件时，都依赖于Controller Broker来完成。Controller Broker的工作包括：
+
+Broker节点上、下线时，处理Broker节点的故障转移。
+Topic新建或删除时，Partition扩容时，处理Partition的分配。
+管理所有Partition的状态机，以及所有Replica的状态机，处理状态机">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Apache Kafka的分布式系统消防员(Controller Broker)">
+<meta property="og:url" content="http://lday.me/2018/11/06/0021_apache_kafka_firefighter/index.html">
+<meta property="og:site_name" content="lday的博客">
+<meta property="og:description" content="作为分布式系统的Kafka，在管理、协调分布式节点，处理各类分布式系统事件时，都依赖于Controller Broker来完成。Controller Broker的工作包括：
+
+Broker节点上、下线时，处理Broker节点的故障转移。
+Topic新建或删除时，Partition扩容时，处理Partition的分配。
+管理所有Partition的状态机，以及所有Replica的状态机，处理状态机">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0021_apache_kafka_firefighter/img/01_notify_leader_failure.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0021_apache_kafka_firefighter/img/02_broker_failure.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0021_apache_kafka_firefighter/img/03_isr_new_leader.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0021_apache_kafka_firefighter/img/04_high_watermark_offset.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0021_apache_kafka_firefighter/img/05_brain_split.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0021_apache_kafka_firefighter/img/06_new_leader_notification.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0021_apache_kafka_firefighter/img/07_old_controller_wake_up.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0021_apache_kafka_firefighter/img/08_epoch_number.png">
+<meta property="og:updated_time" content="2018-11-18T06:50:17.673Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Apache Kafka的分布式系统消防员(Controller Broker)">
+<meta name="twitter:description" content="作为分布式系统的Kafka，在管理、协调分布式节点，处理各类分布式系统事件时，都依赖于Controller Broker来完成。Controller Broker的工作包括：
+
+Broker节点上、下线时，处理Broker节点的故障转移。
+Topic新建或删除时，Partition扩容时，处理Partition的分配。
+管理所有Partition的状态机，以及所有Replica的状态机，处理状态机">
+<meta name="twitter:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0021_apache_kafka_firefighter/img/01_notify_leader_failure.png">
+
+<link rel="apple-touch-icon" href= "/apple-touch-icon.png">
+
+
+    <link rel="alternate" href="/atom.xml" title="lday的博客" type="application/atom+xml">
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+    <link href="//cdn.bootcss.com/animate.css/3.5.1/animate.min.css" rel="stylesheet">
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>Apache Kafka的分布式系统消防员(Controller Broker) | lday的博客</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: true,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: undefined
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/assets/blogImg/donkey.jpg" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">lday</a></h1>
+        </hgroup>
+
+        
+        <p class="header-subtitle">Life, Coding, Funning</p>
+        
+
+        
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>菜单</li>
+                        <li>标签</li>
+                        
+                        <li>友情链接</li>
+                        
+                        
+                        <li>关于我</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" href="mailto:oneday0321@gmail.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" href="https://github.com/lday0321" title="GitHub"></a>
+                            
+                                <a class="fa RSS" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/HTTP/">HTTP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kafka/">Kafka</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/atomic/">atomic</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/b-tree/">b-tree</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/boost/">boost</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/concurrency/">concurrency</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cpp/">cpp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ds-algorithm/">ds_algorithm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/">elasticsearch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/etcd/">etcd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/gRPC/">gRPC</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/golang/">golang</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hello/">hello</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hello1/">hello1</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ipc/">ipc</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/java/">java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kafka/">kafka</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/linux/">linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/memory-barriers/">memory barriers</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/share-memory/">share memory</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/分布式/">分布式</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">lday, 80后IT码农一枚. 白羊座，喜热闹</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">lday</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/assets/blogImg/donkey.jpg" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">lday</a></h1>
+            </hgroup>
+            
+            <p class="header-subtitle">Life, Coding, Funning</p>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:oneday0321@gmail.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/lday0321" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
+</nav>
+      <div class="body-wrap"><article id="post-0021_apache_kafka_firefighter" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2018/11/06/0021_apache_kafka_firefighter/" class="article-date">
+      <time datetime="2018-11-06T14:52:14.000Z" itemprop="datePublished">2018-11-06</time>
+</a>
+
+
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Apache Kafka的分布式系统消防员(Controller Broker)
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/kafka/">kafka</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <p>作为分布式系统的Kafka，在管理、协调分布式节点，处理各类分布式系统事件时，都依赖于Controller Broker来完成。Controller Broker的工作包括：</p>
+<ol>
+<li>Broker节点上、下线时，处理Broker节点的故障转移。</li>
+<li>Topic新建或删除时，Partition扩容时，处理Partition的分配。</li>
+<li>管理所有Partition的状态机，以及所有Replica的状态机，处理状态机的变化。</li>
+</ol>
+<p>以下内容介绍了Controller Broker的具体功能、逻辑，它翻译自：<a href="https://hackernoon.com/apache-kafkas-distributed-system-firefighter-the-controller-broker-1afca1eae302" target="_blank" rel="external">Apache Kafka’s Distributed System Firefighter</a></p>
+<a id="more"></a>
+<h1 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h1><p>Kafka是一个在不断发展的分布式流式处理平台。他是构建可维护、可扩展的数据管道的首选解决方案。如果你还不太熟悉Kafka，确保你先阅读过我的另外一篇文章<a href="https://hackernoon.com/thorough-introduction-to-apache-kafka-6fbf2989bbc1" target="_blank" rel="external">《Kafka详细介绍》</a></p>
+<p>接上述文章，我认为，如果我们能更深入的了解Kafka的内部工作机理将会更有裨益。</p>
+<p>今天我想向你介绍的是Controller，Kafka集群的重要节点。他用于保证整个分布式Kafka系统的健康和功能正确。</p>
+<h1 id="Controller-Broker"><a href="#Controller-Broker" class="headerlink" title="Controller Broker"></a>Controller Broker</h1><p>分布式系统是需要被协调的。当有事件发生时，系统中的节点需要有组织的行动。最终，需要某个人能够决定集群如何做出反应以及向Brokers发布一些指令。</p>
+<p>这里的某个人，被叫做Controller。Controller也不是太复杂，他就是在一个普通的Broker之上，附加了一些额外的责任。也就是说，他仍然需要负责分区，仍然有读写请求经由他处理，也仍然负责备份数据。</p>
+<p>他的额外责任中最重要的部分，就是跟踪集群中其他节点的状态，并且在有节点离开、加入、或者失效的时候，采取适当的措施。这些措施就包括重新平衡partition分布以及安排新的partition leader。</p>
+<p>一个Kafka集群中，总是只有一个Controller。</p>
+<h2 id="职责"><a href="#职责" class="headerlink" title="职责"></a>职责</h2><p>一个Controller Broker具有很多额外的职责。这些职责主要是一些管理类工作。其中就包括：创建/删除topic，增加partition（分配partition的leader）以及处理Brokers退出集群的场景。</p>
+<h3 id="处理节点离开集群"><a href="#处理节点离开集群" class="headerlink" title="处理节点离开集群"></a>处理节点离开集群</h3><p>当一个节点因事故或者主动关闭而离开Kafka集群时，曾由该节点作为leader的partition，将变得不再可用（记住，client只从partition的leader读取或者写入数据）。因此，为了能尽量减少不可服务时间，尽快选出一个替代的leader就变得非常重要。</p>
+<p>Controller就是那个会去响应其他broker失败事件的broker。他从ZK的watch上获得通知。ZK的一个watch是zk上针对某一数据的订阅。当这个数据发生变化时，zk将会通知那些订阅了该数据的所有人。zk的watch对于Kafka而言是至关重要的–他是Controller的输入。</p>
+<p>这里，被跟踪的数据，就是集群的broker集合。</p>
+<p>如下图所示，因为超过了zk会话出错时间(每一个Kafka节点都和Zk之间保持心跳，以确保他们和Zk之间的会话是存活的，一旦心跳停止，会话就过期)，Broker#2的id被从列表中删除。</p>
+<p>Controller收到了这个通知，并且对该事件作出响应。他决定哪些节点将成为那些受影响partition的新的leader。他接着通知那些相关节点，他们应当成为新的leader，或者开始从新的leader处通过<code>LeaderAndIsr</code>请求来复制数据。</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0021_apache_kafka_firefighter/img/01_notify_leader_failure.png" alt=""></p>
+<h3 id="处理节点再次加入集群"><a href="#处理节点再次加入集群" class="headerlink" title="处理节点再次加入集群"></a>处理节点再次加入集群</h3><p>合理的partition leader设置对于集群的负载均衡至关重要。如上图所示，当有节点故障退出后，一些节点接管了故障节点的工作，并成为比原来更多partition的leader。这些工作将会给各broker带来额外的负担，而这给集群的性能及整体运行状况带来了潜在的风险。</p>
+<p>Kafka假设原来的leader分配设置是产生最佳平衡集群的最佳设置（当每个节点都存活时）。这些节点是所谓的<strong>首选leaders</strong> – 指的是这些作为分区原始leader的Broker节点。由于Kafka还支持机架感知的leader选举算法（它试图将partition的leader和follower分配在不同的机架上，以提高对机架故障的容错能力），leader的放置位置与集群的可靠性紧密相关。</p>
+<p>默认情况下(<code>auto.leader.rebalance.enabled=true</code>)，Kafka会去校验replica的当前leader是否为首选leader，如果首选节点是存活的，则会重新把他选为leader。</p>
+<p>常见的Broker失败场景都是短暂失败场景，也就是说，Broker通常是过一段时间就会恢复。这就是为什么当一个节点退出集群时，这个节点元数据信息并不会被删除，同时，他作为follower的partition，也不会被重新分配给其他follower。</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0021_apache_kafka_firefighter/img/02_broker_failure.png" alt=""></p>
+<p>当Controller发现有一个Broker加入到集群中时，他会通过该Broker的ID来确认，是否在该Broker已经存在partition了。如果有，Controller会将该状态、信息变化的事件通知新加入的以及原有的Broker。新的Broker将从当前leader那开始复制消息。</p>
+<p>因为Controller是知道重新加入集群的broker原来的那些parition(曾经作为leader的partition)，为了达到集群尽可能平衡的目的，Controller会尝试将这些partition的leader角色重新分配给该Broker，</p>
+<p>但是，请注意，重新加入的节点不能立即回收其过去的leader角色，因为，目前他还没有资格。</p>
+<h3 id="保持同步状态的副本"><a href="#保持同步状态的副本" class="headerlink" title="保持同步状态的副本"></a>保持同步状态的副本</h3><p>一个保持同步状态的副本(ISR)，是一个Broker，他完全追上了他跟踪的partition。换句话说，对于该partition而言，他不会落在最新消息后面。partition的leader他们自己有责任来维护哪些Broker是ISR，而哪些Broker不是。他们将这些信息存在ZooKeeper上。</p>
+<p>在线时刻保持有足够的ISR是非常重要的。Kafka主要的可靠性和持久性保证依赖于数据复制。</p>
+<p>对于将要从follower提升为leader的Broker而言，他首先必须是一个ISR。每一个partition都有一个ISR列表，这个列表由partition leader和Controller来维护更新。</p>
+<p>从ISR中竞选出一个partition leader的过程被称作<strong>干净leader选举</strong>(clean leader选举)。如果有需要，用户也可以选择退出这种机制，在没有ISR存活，且leader又失败的特殊场景下，为了追求可用性而放弃了一致性，用户可以选择一个不在ISR中的副本Broker作为leader。</p>
+<p>请记住，客户端仅仅会向leader生产消息，也仅仅会从leader消费消息。如果我们选择不具备最新数据的Broker作为leader，那么将会导致集群丢失消息！不仅仅是我们可能丢失消息，我们还有可能在consumer端造成消息冲突，因为被丢失的消息的offset，可能又会被新来的消息所使用。（<em>这样，就有可能造成，之前读到这个offset的消息是A，而non-ISR接管之后，再读该offset，读到的消息却可能是B，这是因为在non-ISR接管之后，该offset被写入了新的消息所致</em>）</p>
+<p>不幸的是，即使是干净leader选举，这类冲突也还是有可能出现。（提示：不会出现相同offset的数据不一致，但是会比原来的消息多）一个ISR副本，也不是完全同步的。我的意思是，如果leader的最后一条消息的offset是100，一个ISR副本也许还没有拿到这条消息，副本的最后一条offset可能到达95或者99，亦或者80 – 具体会达到哪个offset，取决于很多因素。因为，复制的过程是异步完成的，不可能确保follower正好拿到最后一条最新消息。</p>
+<p>判定一个partition的follower是否与该分区的leader保持同步的条件如下：</p>
+<ul>
+<li><p>他在最近的X秒内(通过<code>replica.lag.time.max.ms</code>配置)有通过partition的leader获取消息。仅仅是获取消息是不够的，获取消息的请求必须获取了达到leader日志最末尾offset的所有消息。这就确保了他尽可能的保持同步。</p>
+</li>
+<li><p>在最近的X秒内，他有向Zookeeper发起心跳（通过<code>zookeeper.session.timeout.ms</code>来配置）</p>
+</li>
+</ul>
+<h3 id="不一致的持久性？"><a href="#不一致的持久性？" class="headerlink" title="不一致的持久性？"></a>不一致的持久性？</h3><p>显然，存在这样一个可能的事件先后序列，leader挂掉，一个ISR副本作为替代，被选为leader，而我们丢失了一小部分消息。举例来说，如果一个leader在响应了一个follower的获取请求<strong>之后</strong>又保存了一些新的消息，这就有一个时间窗口，在这个窗口内，这些新的消息还没来得及被复制到follower。如果leader在这个时间窗口内挂掉，这些副本将任然被认为是同步的（也许，这个时间还未超过X秒），并被选举为新的leader。</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0021_apache_kafka_firefighter/img/03_isr_new_leader.png" alt=""></p>
+<h3 id="Producer的acks设置"><a href="#Producer的acks设置" class="headerlink" title="Producer的acks设置"></a>Producer的acks设置</h3><p>在上面的例子中，leader broker在将producer发来的消息保存到本地之后，便向producer返回了ack（producer设置了<code>acks=1</code>）。正好在他确认了新到的消息后，他便挂掉了。因为Broker 2是一个ISR副本。即使他此时缺失了offset为100的最新消息，Controller也将会选举他作为partition 1的新leader。</p>
+<p>我们可以通过设置<code>acks=all</code>理论上来表明上述问题。<code>acks=all</code>的意思是，只有当所有ISR副本都已经成功复制了这条消息时，leader才能向producer确认该消息。不幸的事，这个设置将会降低集群的性能 – 它将限制最大吞吐。partition的leader只有在他知道发来的消息被那些ISR follower都复制之后，他才能向producer确认消息写入成功。</p>
+<p>因为副本使用拉模式，因此，leader只有在接收到该follower的第二次拉请求时，他才能确定消息已经被该副本保存。这也就导致producer需要在发起下一批消息发送之前等待更多的时间。</p>
+<p>有些Kafka的使用场景，为了拥有更好的附加性能，他们会选择不采用上述配置(<code>acks=all</code>)</p>
+<p>如果我们不想设置<code>acks=all</code>，会出现什么情况呢？我们会丢数据吗？某些consumers会不会读到那些丢失的消息？</p>
+<p>长话短说–<strong>不会</strong>，不会发生这种事情。一些<strong>已经生产</strong>的消息也许会被丢失，但是这些消息绝对不会对consumer可见。这将确保端到端系统的一致性。</p>
+<h3 id="高水位Offset"><a href="#高水位Offset" class="headerlink" title="高水位Offset"></a>高水位Offset</h3><p>Leader Broker不会将那些还未被所有ISR复制的消息返回回去。所有Broker自己都会跟踪一个所谓的<strong>高水位offset</strong> – 就是所有ISR都完成复制的最新的offset。Kafka只会将小于等于高水位offset的消息返回给消费者，通过这种方式Kafka能够保证一致性，不可重复的读也不会发生。</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0021_apache_kafka_firefighter/img/04_high_watermark_offset.png" alt=""></p>
+<h3 id="脑裂"><a href="#脑裂" class="headerlink" title="脑裂"></a>脑裂</h3><p>想象一下，Controller Broker挂掉了，Kafka集群必须迅速找到替代者，否则，当没有人来承担Controller角色时，集群健康状况将迅速恶化。</p>
+<p>有一个问题是，你无法确切地知道一个Broker是完整的停止了，还是经历着一个间歇性的失败。无论如何，集群都必须继续运行，并且挑选一个新的Controller。当前，我们会发现我们有一个所谓的僵尸Controller。一个僵尸Controller是被集群认为已经挂掉了的原Controller节点，他又重新联机。另外一个Broker已经替代他的位置，被选为新的Controller，但是僵尸Controller自己也许并不知道。</p>
+<p>这种事情很容易发生。举例来说，如果发生了令人讨厌的间歇性<a href="https://aphyr.com/posts/288-the-network-is-reliable" target="_blank" rel="external">网络分裂</a>或者Controller经历了一个足够长的<a href="http://blog.cloudera.com/blog/2011/02/avoiding-full-gcs-in-hbase-with-memstore-local-allocation-buffers-part-1/" target="_blank" rel="external">停止世界的GC暂停</a>–集群将会认为他已经挂掉了，然后挑选出一个新的Controller。在GC的场景下，从原来Controller的角度来看，一切都没有发生变化。Contorller Broker自己甚至都不知道他被暂停了，更不用说集群在没有他的情况下继续运行了。正因为如此，他会继续认为他就是当前的Controller，并执行相应的行为。这是分布式系统中很普遍的一种场景，这类场景被称为<a href="http://techthoughts.typepad.com/managing_computers/2007/10/split-brain-quo.html" target="_blank" rel="external">脑裂</a>。</p>
+<p>我们来看一个例子。想象一下，当前Controller正好经历了一个长时间的停止世界的GC暂停。他的Zookeeper会话已经过期了，并且他注册的<code>/controller</code>节点已经被删除了。因为所有其他的Broker有在这个节点上设置Zookeeper观测通知，因此他的<code>/controller</code>节点被删除的事件已经通知到了所有其他Broker。</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0021_apache_kafka_firefighter/img/05_brain_split.png" alt=""></p>
+<p>为了修复集群没有Controller的问题，每一个Broker都尝试让自己成为新的Controller。假设Broker 2首先创建了<code>/controller</code>节点而赢得了胜利，成为了新的Controller。</p>
+<p>所有Broker都会收到这个节点被创建的通知，并且知道Broker 2是新的leader，除了Broker 3，他还在GC暂停中。很有可能这个通知事件由于这样或者那样的原因(例如，OS有太多的已被接收的连接正等待着被处理，而把这个通知事件给丢掉了)，最终没能抵达Broker 3。</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0021_apache_kafka_firefighter/img/06_new_leader_notification.png" alt=""></p>
+<p>Broker 3的GC暂停最终将会结束，他将醒过来，并仍然认为他自己是Controller。记住，从他的角度来看，没有发生任何变化。</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0021_apache_kafka_firefighter/img/07_old_controller_wake_up.png" alt=""></p>
+<p>你现在有两个Controller，而且他们会并行发出可能存在冲突的命令。显然你不希望这种事情在你的集群中发生，但如果不处理，可能导致严重的不一致。</p>
+<p>如果Broker 2(新的Controller节点)收到了来自Broker 3的请求，他怎么知道Broker 3是不是最新的Controller？Broker 2知道的一切便是，对于同样的GC暂停可能在他身上也发生了！</p>
+<p>这就需要有一个方法来辨别，谁才是真正的，当前集群的Controller。</p>
+<p>有这样的方法！他是通过使用<strong>纪元号</strong>(也被称作隔离令牌)来完成的。一个纪元号是一个单调递增的数–如果老的leader的纪元号是1，新的leader的纪元号将会是2。通过很简单的相信拥有最大纪元号的Controller，Broker现在可以很容易的区分谁是真正的Controller。拥有最大纪元号的Controller必将是最新的Controller，因为纪元号最终是在递增。这个纪元号存在Zookeeper上（利用了他的<a href="https://bowenli86.github.io/2016/07/04/distributed%20system/zookeeper/ZooKeeper-Consistency-Guarantees/" target="_blank" rel="external">一致性保障</a>）</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0021_apache_kafka_firefighter/img/08_epoch_number.png" alt=""></p>
+<p>现在，Broker 1记录了他看见的最新的<code>controllerEpoch</code>，这样一来，他将忽略带有较老纪元号的Controller的请求。</p>
+<h3 id="其他职责"><a href="#其他职责" class="headerlink" title="其他职责"></a>其他职责</h3><p>Controller也会做一些其他更麻烦的事情。</p>
+<ul>
+<li>创建新的Partition</li>
+<li>创建新的Topic</li>
+<li>删除Topic</li>
+</ul>
+<p>以前，这些命令只能以一种糟糕的方式来完成–一个直接修改Zookeeper，并等待Controller对其修改做出响应的脚本。</p>
+<p>自0.11版本和1.0版本开始，这些命令被调整为直接向Controller发请求。他们现在都能很方便的通过<a href="https://kafka.apache.org/documentation/#adminapi" target="_blank" rel="external">AdminClient API</a>被用户app调用，这些API会直接向Controller发送请求。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>在这篇简短的文章中，我们设法完整的解释了Kafka Controller是什么。我们看到，他是一个简单的Broker，仍然会作为partition的leader，并处理读/写请求，同时，他会具有一些额外的职责。</p>
+<p>我们了解了Controller如何处理无响应的节点。首先，通过Zookeeper watch观测节点会话过期来确定节点无响应。接着，挑选一个新的Leader。最后，通过向其他Broker发送<code>LeaderAndIsr</code>请求来传播该消息。</p>
+<p>我们也了解了Controller如何欢迎节点重回集群，以及他最终如何恢复集群的平衡。我们介绍了ISR的概念，并看到Kafka如何通过高水位offset来确保端到端一致性。</p>
+<p>我们学到了Kafka通过使用纪元号来防止两个或更多节点认为自己是当前Controller的“脑裂”场景。我们一步一步解释了他是如何工作的。</p>
+<p>Kafka是一个复杂的系统，由于其健康的社区，Kafka的功能和可靠性都在不断的增强。为了更好的了解他的发展，我建议加入<a href="https://kafka.apache.org/contact" target="_blank" rel="external">邮件列表</a></p>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2018/11/06/0021_apache_kafka_firefighter/">Apache Kafka的分布式系统消防员(Controller Broker)</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">lday</a></p>
+        <p><span>发布时间:</span>2018-11-06, 22:52:14</p>
+        <p><span>最后更新:</span>2018-11-18, 14:50:17</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2018/11/06/0021_apache_kafka_firefighter/" title="Apache Kafka的分布式系统消防员(Controller Broker)">http://lday.me/2018/11/06/0021_apache_kafka_firefighter/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://lday.me/2018/11/06/0021_apache_kafka_firefighter/　　作者: lday" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2018/02/21/0020_b_tree_summary/">
+                    B-Tree数据结构总结
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+        <strong class="toc-title">文章目录</strong>
+        
+            <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#简介"><span class="toc-number">1.</span> <span class="toc-text">简介</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Controller-Broker"><span class="toc-number">2.</span> <span class="toc-text">Controller Broker</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#职责"><span class="toc-number">2.1.</span> <span class="toc-text">职责</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#处理节点离开集群"><span class="toc-number">2.1.1.</span> <span class="toc-text">处理节点离开集群</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#处理节点再次加入集群"><span class="toc-number">2.1.2.</span> <span class="toc-text">处理节点再次加入集群</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#保持同步状态的副本"><span class="toc-number">2.1.3.</span> <span class="toc-text">保持同步状态的副本</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#不一致的持久性？"><span class="toc-number">2.1.4.</span> <span class="toc-text">不一致的持久性？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Producer的acks设置"><span class="toc-number">2.1.5.</span> <span class="toc-text">Producer的acks设置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#高水位Offset"><span class="toc-number">2.1.6.</span> <span class="toc-text">高水位Offset</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#脑裂"><span class="toc-number">2.1.7.</span> <span class="toc-text">脑裂</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#其他职责"><span class="toc-number">2.1.8.</span> <span class="toc-text">其他职责</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#总结"><span class="toc-number">3.</span> <span class="toc-text">总结</span></a></li></ol>
+        
+    </div>
+    <style>
+        .left-col .switch-btn,
+        .left-col .switch-area {
+            display: none;
+        }
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+    <input type="button" id="tocButton" value="隐藏目录"  title="点击按钮隐藏或者显示文章目录">
+
+    <script>
+        yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+    </script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"Apache Kafka的分布式系统消防员(Controller Broker)　| lday的博客　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+        <section id="comments">
+    <style> aside.comment-bar { margin: auto 30px; }</style>
+    <div id="disqus_thread"></div>
+    <script>
+        var disqus_config = function(){
+            this.page.url = 'http://lday.me/2018/11/06/0021_apache_kafka_firefighter/';
+            this.page.identifier = '2018/11/06/0021_apache_kafka_firefighter/';
+        };
+        var loadComment = function(){
+            var d = document, s = d.createElement('script');
+            s.src = '//lday.disqus.com/embed.js';
+            s.setAttribute('data-timestamp', +new Date());
+            (d.head || d.body).appendChild(s);
+        }
+    </script>
+    
+    <script> loadComment(); </script>
+
+</section>
+
+
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/" title="回到主页"><i class="fa fa-home"></i></a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2018/02/21/0020_b_tree_summary/" title="下一篇: B-Tree数据结构总结">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2018/11/06/0021_apache_kafka_firefighter/">Apache Kafka的分布式系统消防员(Controller Broker)</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/02/21/0020_b_tree_summary/">B-Tree数据结构总结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/12/17/0019_boost_share_memory_ipc/">共享内存(ipc)的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/12/02/0018_cpp_atomic_summary/">C++内存屏障（内存顺序）总结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/11/19/0017_condition_variable_and_mutex_together/">Linux下Condition Vairable和Mutext合用的小细节</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/11/04/0016_what_is_memory_barriers/">什么是内存屏障(Memory Barriers)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/10/22/0015_How_we_use_gRPC_to_build_a_client_server_system_in_Go/">我们如何在Go中使用gRPC构建C/S结构系统</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/10/08/0014_kafka_data_loss_and_new_mechanism/">Kafka数据丢失及最新改进策略</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/09/13/0013_a_latency_identification_procedure/">一次Golang程序延迟过大问题的定位过程</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/09/02/0012_a_memory_leak_detection_procedure/">一次Golang程序内存泄漏分析之旅</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/24/0011_kafka_consumer_rebalance_evolution/">Kafka Consumer Rebalance的演进</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/15/0010_kafka_producer_analysis_01/">Kafka Procuder小结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/11/0009_why_not_413/">为什么没有收到预期的413状态码</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/27/0008_kafka_vs_tranditional_mq/">Kafka与传统消息中间件的差异</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/22/0007_elasticsearch_summary/">ElasticSearch总结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/03/19/0006_boost-multi-index-container/">多维索引容器(multi_index_container)的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/27/0005_gdb-vs-dlv/">Golang程序调试工具介绍(gdb vs dlv)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/25/0004_golang-slice-depth/">细看Go中的切片(slice)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/01/0003_seri-stm-etcd3/">基于etcd3的访问序列化及分布式软事务内存</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/11/04/0002_hi/">你好，世界</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/11/03/0001_hello-world/">Hello World</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016-2018 lday
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" title="本站到访数"><i class="fa fa-user" aria-hidden="true"></i><span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>| </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit"  title="本页阅读量"><i class="fa fa-eye animated infinite pulse" aria-hidden="true"></i><span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script>
+    // Open in New Window
+    
+        var oOpenInNew = {
+            
+            
+            
+            
+            
+            
+             archives: ".archive-article-title", 
+             miniArchives: "a.post-list-link", 
+            
+             friends: "#js-friends a", 
+             socail: ".social a" 
+        }
+        for (var x in oOpenInNew) {
+            $(oOpenInNew[x]).attr("target", "_blank");
+        }
+    
+</script>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>

@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://lday.me/"/>
-  <updated>2018-02-24T15:09:11.737Z</updated>
+  <updated>2018-11-18T06:50:17.673Z</updated>
   <id>http://lday.me/</id>
   
   <author>
@@ -14,6 +14,30 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Apache Kafka的分布式系统消防员(Controller Broker)</title>
+    <link href="http://lday.me/2018/11/06/0021_apache_kafka_firefighter/"/>
+    <id>http://lday.me/2018/11/06/0021_apache_kafka_firefighter/</id>
+    <published>2018-11-06T14:52:14.000Z</published>
+    <updated>2018-11-18T06:50:17.673Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;作为分布式系统的Kafka，在管理、协调分布式节点，处理各类分布式系统事件时，都依赖于Controller Broker来完成。Controller Broker的工作包括：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Broker节点上、下线时，处理Broker节点的故障转移。&lt;/li&gt;
+&lt;li&gt;Topic新建或删除时，Partition扩容时，处理Partition的分配。&lt;/li&gt;
+&lt;li&gt;管理所有Partition的状态机，以及所有Replica的状态机，处理状态机的变化。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;以下内容介绍了Controller Broker的具体功能、逻辑，它翻译自：&lt;a href=&quot;https://hackernoon.com/apache-kafkas-distributed-system-firefighter-the-controller-broker-1afca1eae302&quot;&gt;Apache Kafka’s Distributed System Firefighter&lt;/a&gt;&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="kafka" scheme="http://lday.me/tags/kafka/"/>
+    
+  </entry>
   
   <entry>
     <title>B-Tree数据结构总结</title>
@@ -77,9 +101,9 @@
     
       <category term="cpp" scheme="http://lday.me/tags/cpp/"/>
     
-      <category term="atomic" scheme="http://lday.me/tags/atomic/"/>
-    
       <category term="concurrency" scheme="http://lday.me/tags/concurrency/"/>
+    
+      <category term="atomic" scheme="http://lday.me/tags/atomic/"/>
     
   </entry>
   
@@ -97,9 +121,9 @@
     </summary>
     
     
-      <category term="concurrency" scheme="http://lday.me/tags/concurrency/"/>
-    
       <category term="linux" scheme="http://lday.me/tags/linux/"/>
+    
+      <category term="concurrency" scheme="http://lday.me/tags/concurrency/"/>
     
   </entry>
   
@@ -386,24 +410,6 @@
     
     
       <category term="hello1" scheme="http://lday.me/tags/hello1/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Hello World</title>
-    <link href="http://lday.me/2016/11/03/0001_hello-world/"/>
-    <id>http://lday.me/2016/11/03/0001_hello-world/</id>
-    <published>2016-11-03T15:55:00.000Z</published>
-    <updated>2017-03-11T16:16:42.562Z</updated>
-    
-    <summary type="html">
-    
-      &lt;p&gt;Welcome to &lt;a href=&quot;https://hexo.io/&quot;&gt;Hexo&lt;/a&gt;! This is your very first post. Check &lt;a href=&quot;https://hexo.io/docs/&quot;&gt;documentation&lt;/a&gt; for more info. If you get any problems when using Hexo, you can find the answer in &lt;a href=&quot;https://hexo.io/docs/troubleshooting.html&quot;&gt;troubleshooting&lt;/a&gt; or you can ask me on &lt;a href=&quot;https://github.com/hexojs/hexo/issues&quot;&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
-    
-    </summary>
-    
-    
-      <category term="hello" scheme="http://lday.me/tags/hello/"/>
     
   </entry>
   
