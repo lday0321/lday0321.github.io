@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://lday.me/"/>
-  <updated>2018-11-18T06:50:17.673Z</updated>
+  <updated>2018-12-02T07:07:42.855Z</updated>
   <id>http://lday.me/</id>
   
   <author>
@@ -14,6 +14,26 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>如何实现分布式锁</title>
+    <link href="http://lday.me/2018/11/18/0022_how_to_do_distributed_lock/"/>
+    <id>http://lday.me/2018/11/18/0022_how_to_do_distributed_lock/</id>
+    <published>2018-11-18T12:58:14.000Z</published>
+    <updated>2018-12-02T07:07:42.855Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;分布式锁服务在分布式系统中是一个非常通用的需求。互联网行业有基于Zookeeper实现分布式锁服务的方案，也有提出基于Redis实现分布式锁服务的方案。企业级应用方面，开源Linux上，Redhat Linux HA套件中提供了&lt;a href=&quot;https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/high_availability_add-on_overview/ch-dlm&quot;&gt;DLM(Distributed Lock Manager)&lt;/a&gt;，商用操作系统OpenVMS也提供了&lt;a href=&quot;http://neilrieck.net/docs/openvms_notes_DLM.html&quot;&gt;DLM&lt;/a&gt;。下面的这篇文章，是我于18年初的时候读到的，最近又重读一遍，作为回顾总结。翻译自Martin Kleppmann的博文：&lt;a href=&quot;https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html&quot;&gt;How to do distributed locking&lt;/a&gt;&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="分布式" scheme="http://lday.me/tags/%E5%88%86%E5%B8%83%E5%BC%8F/"/>
+    
+      <category term="redis" scheme="http://lday.me/tags/redis/"/>
+    
+  </entry>
   
   <entry>
     <title>Apache Kafka的分布式系统消防员(Controller Broker)</title>
@@ -392,24 +412,6 @@
       <category term="分布式" scheme="http://lday.me/tags/%E5%88%86%E5%B8%83%E5%BC%8F/"/>
     
       <category term="etcd" scheme="http://lday.me/tags/etcd/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>你好，世界</title>
-    <link href="http://lday.me/2016/11/04/0002_hi/"/>
-    <id>http://lday.me/2016/11/04/0002_hi/</id>
-    <published>2016-11-04T09:18:59.000Z</published>
-    <updated>2017-03-11T16:16:54.301Z</updated>
-    
-    <summary type="html">
-    
-      &lt;p&gt;中文版，hello world, from mac&lt;/p&gt;
-    
-    </summary>
-    
-    
-      <category term="hello1" scheme="http://lday.me/tags/hello1/"/>
     
   </entry>
   
