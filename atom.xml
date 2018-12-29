@@ -121,9 +121,9 @@
     
       <category term="cpp" scheme="http://lday.me/tags/cpp/"/>
     
-      <category term="concurrency" scheme="http://lday.me/tags/concurrency/"/>
-    
       <category term="atomic" scheme="http://lday.me/tags/atomic/"/>
+    
+      <category term="concurrency" scheme="http://lday.me/tags/concurrency/"/>
     
   </entry>
   
@@ -141,9 +141,9 @@
     </summary>
     
     
-      <category term="linux" scheme="http://lday.me/tags/linux/"/>
-    
       <category term="concurrency" scheme="http://lday.me/tags/concurrency/"/>
+    
+      <category term="linux" scheme="http://lday.me/tags/linux/"/>
     
   </entry>
   
@@ -191,7 +191,7 @@
     <link href="http://lday.me/2017/10/08/0014_kafka_data_loss_and_new_mechanism/"/>
     <id>http://lday.me/2017/10/08/0014_kafka_data_loss_and_new_mechanism/</id>
     <published>2017-10-08T14:46:14.000Z</published>
-    <updated>2017-10-08T14:46:12.393Z</updated>
+    <updated>2018-12-29T15:25:00.961Z</updated>
     
     <summary type="html">
     
