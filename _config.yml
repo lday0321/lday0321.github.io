@@ -84,7 +84,7 @@ feed:
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
   type: git
-  repo: git@github.com:lday0321/lday0321.github.io.git
-  #repo: https://github.com/lday0321/lday0321.github.io.git
+  #repo: git@github.com:lday0321/lday0321.github.io.git
+  repo: https://lday0321:xxxx@github.com/lday0321/lday0321.github.io.git
   branch: master
   
