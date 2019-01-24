@@ -38,7 +38,7 @@ y.store(42, memory_order_relaxed); // D
 
 允许产生结果`r1 == 42 && r2 == 42`，因为即使线程1中A先序于B且线程2中C先序于D ，却没有制约避免y的修改顺序中D先出现于A ，而x的修改顺序中B先出现于C。D在y上的副效应，可能可见于线程1中的加载A ，同时B在x上的副效应，可能可见于线程2中的加载C。
 
-![](http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/01_relax_mode.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0018_cpp_atomic_summary/img/01_relax_mode.png)
 
 如上图所示，假设：a, b, c分别为普通变量，而x为atomic类型的变量，当在写入x时，设置memory_order_relaxed时，写入a，写入b的顺序，在另外的线程上看到的，完全可能是相互调换的，写入c的位置，完全也有可能由出现在写入x之前，而在另外一个线程上看到的，确实在写入x之后，同时，读出b的动作，完全有可能从写入x之后，编程在另外一个线程上看，是在写入x之前。也就是，各种乱序， 都是被允许的。
 
@@ -48,22 +48,22 @@ y.store(42, memory_order_relaxed); // D
 
 std::memory_order_release，释放操作，**当前线程中的读或写不能被重排到此存储后**。当前线程的所有写入，可见于<font color="#0000FF">加载</font>**该同一原子变量**的其他线程。
 
-![](http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/02_release_mode_ok.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0018_cpp_atomic_summary/img/02_release_mode_ok.png)
 
 如上图所示，在使用`memory_order_release`设置的原子操作写入的情况下，原子操作之后的读写操作，在另外的线程（加载了该原子变量的线程）看来，可以重排到原子操作之前（通俗点说，就是另外线程可能认为当前线程是先执行的写入的a操作，再执行的写入x操作）。但是，如下图所示，原子操作之前的读、写操作，计算机系统必须保证，在另外一个线程看来，他是在原子操作写入之前就被写入了， 不能是在原子操作之后才写入(通俗点说，也就是另外一个线程，不能认为当前线程先写入的x，再写入的c，他一定要看到的是先写入c，再写入的x)：
 
-![](http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/03_release_mode_not_ok.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0018_cpp_atomic_summary/img/03_release_mode_not_ok.png)
 
 
 ## 单向的"加载"内存屏障
 
 std::memory_order_acquire，加载操作，**当前线程中读或写不能被重排到此加载前**。其他<font color="#0000FF">释放</font>**同一原子变量**的线程的所有写入，为当前线程所可见。
 
-![](http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/04_acquire_mode_ok.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0018_cpp_atomic_summary/img/04_acquire_mode_ok.png)
 
 如上图所示，在设置`memory_order_acquire`的对x的读操作前的读、写操作，在另外的线程看来（或者说实际的运行顺序），可以被重排到对x的读操作后，(通俗点说，就是其他线程可以是认为当前线程先读取的x，再写入的c)。然而如下图所示，对x的读操作后的读、写操作，在另外的线程看来不允许被重排到x的读操作前（不允许其他线程看到当前线程先写入的a，再读取的x）。
 
-![](http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/05_acquire_mode_not_ok.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0018_cpp_atomic_summary/img/05_acquire_mode_not_ok.png)
 
 ## 单向“加载”+单向“释放”协议
 
@@ -75,7 +75,7 @@ std::memory_order_acquire，加载操作，**当前线程中读或写不能被�
 1. 线程1，写入一些实际数据，接着通过将原子变量x设置为某个值`A`（通过使用`memory_order_release`写入原子变量x）来“发布”这些数据。
 2. 线程2，通过读取并判断x已被设置为`A`（通过使用`memory_order_acquire`来读取原子变量x），进而读取线程1实际“发布”的那些数据
 
-![](http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/06_release_acquire_protocol.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0018_cpp_atomic_summary/img/06_release_acquire_protocol.png)
 
 如上图所示，thread_1在release写入x(值:`A`)之前，写入了待发布的a,b的数据，而thread_2，将在acquire读出x且为`A`之后，将读到thread_1发布的a,b的数据。同时，我们可以注意到，在thread_2上，在acquire读出x之前，如果对a进行读操作，我们是无法确认读到的a一定会thread_1在之前最后写入的a，这里的顺序是不会被保证的，重排是被允许的。同时，在之后，读取c，读到的是否为thread_1最后写入的c，也是不确定的，因为，在x写入之后，thread_1上又出现了一次写入，而如果在此之前，还有一次写入， 这两次写入之间，是不存在限制，可能会被重排的。
 
