@@ -124,7 +124,7 @@ void f()
 
 SMP架构需要内存屏障的进一步解释：从体系结构上来看，首先在SMP架构下，每个CPU与内存之间，都配有自己的高速缓存（Cache），以减少访问内存时的冲突
 
-![](http://og43lpuu1.bkt.clouddn.com/what_is_memory_barriers/img/01_smp_arch.jpg?imageView2/2/w/600/h/300)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0016_what_is_memory_barriers/img/01_smp_arch.jpg?imageView2/2/w/600/h/300)
 
 采用高速缓存的写操作有两种模式：(1). 穿透(Write through)模式，每次写时，都直接将数据写回内存中，效率相对较低；(2). 回写(Write back)模式，写的时候先写回告诉缓存，然后由高速缓存的硬件再周转复用缓冲线(Cache Line)时自动将数据写回内存，或者由软件主动地“冲刷”有关的缓冲线(Cache Line)。出于性能的考虑，系统往往采用的是模式2来完成数据写入。正是由于存在高速缓存这一层，正是由于采用了Write back模式的数据写入，才导致在SMP架构下，对高速缓存的运用可能改变对内存操作的顺序。已上面的一个简短代码为例：
 
@@ -140,13 +140,13 @@ print(x);
 
 这里CPU1执行时， x一定是打印出42吗？让我们来看看以下图为例的说明：
 
-![](http://og43lpuu1.bkt.clouddn.com/what_is_memory_barriers/img/02_smp_cache_order_changed.jpg?imageView2/2/w/800/h/400)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0016_what_is_memory_barriers/img/02_smp_cache_order_changed.jpg?imageView2/2/w/800/h/400)
 
 假设，正好CPU0的高速缓存中有x，此时CPU0仅仅是将`x=42`写入到了高速缓存中，另外一个ok也在高速缓存中，但由于周转复用高速缓冲线（Cache Line）而导致将`ok=1`刷会到了内存中，此时CPU1首先执行对ok内存的读取操作，他读到了ok为1的结果，进而跳出循环，读取x的内容，而此时，由于实际写入的x(42)还只在CPU0的高速缓存中，导致CPU1读到的数据为x(17)。**程序中编排好的内存访问顺序（指令序： program ordering）是先写入x，再写入y。而实际上出现在该CPU外部，即系统总线上的次序（处理器序： processor ordering），却是先写入y，再写入x(这个例子中x还未写入)**。在SMP架构中，每个CPU都只知道自己何时会改变内存的内容，但是都不知道别的CPU会在什么时候改变内存的内容，也不知道自己本地的高速缓存中的内容是否与内存中的内容不一致。反过来，每个CPU都可能因为改变了内存内容，而使得其他CPU的高速缓存变的不一致了。在SMP架构下，由于高速缓存的存在而导致的内存访问次序（读或写都有可能书序被改变）的改变很有可能影响到CPU间的同步与互斥。因此需要有一种手段，使得在某些操作之前，把这种“欠下”的内存操作（本例中的x=42的内存写入）全都最终地、物理地完成，就好像把欠下的债都结清，然后再开始新的（通常是比较重要的）活动一样。这种手段就是内存屏障，其本质原理就是对系统总线加锁。
 
 回过头来，我们再来看看为什么非SMP架构（UP架构）下，运行时内存乱序访问不存在。在单处理器架构下，各个进程在宏观上是并行的，但是在微观上却是串行的，因为在同一时间点上，只有一个进程真正在运行（系统中只有一个处理器）。在这种情况下，我们再来看看上面提到的例子：
 
-![](http://og43lpuu1.bkt.clouddn.com/what_is_memory_barriers/img/03_up_cache_order_unchanged.jpg?imageView2/2/w/500/h/400)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0016_what_is_memory_barriers/img/03_up_cache_order_unchanged.jpg?imageView2/2/w/500/h/400)
 
 线程0和线程1的指令都将在CPU0上按照指令序执行。thread0通过CPU0完成`x=42`的高速缓存写入后，再将`ok=1`写入内存，此后串行的将thread0换出，thread1换入，及时此时`x=42`并未写入内存，但由于thread1的执行仍然是在CPU0上执行，他仍然访问的是CPU0的高速缓存，因此，及时`x=42`还未写回到内存中，thread1势必还是先从高速缓存中读到`x=42`，再从内存中读到`ok=1`
 
@@ -263,13 +263,13 @@ void run2
 
 如果仅仅是对“写入”操作进行顺序化，实际上，还是有可能使的上面的代码出现r1，r2同时为0（初始值）的场景：
 
-![](http://og43lpuu1.bkt.clouddn.com/what_is_memory_barriers/img/04_sfence_limit.jpg?imageView2/2/w/800/h/400)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0016_what_is_memory_barriers/img/04_sfence_limit.jpg?imageView2/2/w/800/h/400)
 
 当CPU0上的thread0执行时，x被先行写回到内存中，但如果此时y在CPU0的高速缓存中，这时y从缓存中读出，并被赋予r1写回内存，此时r1为0。同理，CPU1上的thread1执行时，y被先行写回到内存中，如果此时x在CPU1的高速缓存中存在，则此时r2被赋予了x的（过时）值0，同样存在了r1, r2同时为0。这个现象实际上就是所谓的`r1=y`的读顺序与`x=1`的写顺序存在逻辑上的乱序所致（或者是`r2 = x`与`y=1`存在乱序） -- 读操作与写操作之间存在乱序。而mfence就是将这类乱序也屏蔽掉
 
 如果是通过mfence，是怎样解决该问题的呢？
 
-![](http://og43lpuu1.bkt.clouddn.com/what_is_memory_barriers/img/05_mfence_usage.jpg?imageView2/2/w/800/h/400)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0016_what_is_memory_barriers/img/05_mfence_usage.jpg?imageView2/2/w/800/h/400)
 
 当thread1在CPU0上对`x=1`进行写入时，`x=1`被刷新到内存中，由于是mfence，他要求r1的读取操作从内存读取数据，而不是从缓存中读取数据，因此，此时如果y更新为1，则`r1 = 1`; 如果y没有更新为1，则`r1 = 0`， 同时此时由于x更新为1， r2必须从内存中读取数据，则此时`r2 = 1`。总而言之是r1, r2, 一个=0， 一个=1。
 
@@ -400,7 +400,7 @@ unsigned int __kfifo_get(struct kfifo *fifo,
 
 这里`__kfifo_put`被一个线程用于向`fifo`中写入数据，另外一个线程可以安全地调用`__kfifo_get`，从此`fifo`中读取数据。代码中in和out的索引用于指定环形缓冲区实际的头和尾。具体的in和out所指向的缓冲区的位置通过与操作来求取（例如：`fifo->in & (fifo->size -1)`），这样相比取余操作来求取下表的做法效率要高不少。使用与操作求取下表的前提是环形缓冲区的大小必须是2的N次方，换而言之，就是说环形缓冲区的大小为一个仅有一个1的二进制数，那么`index & (size – 1)`则为求取的下标（这不难理解）。
 
-![](http://og43lpuu1.bkt.clouddn.com/what_is_memory_barriers/img/06_kfifo.jpg?imageView2/2/w/700/h/300)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0016_what_is_memory_barriers/img/06_kfifo.jpg?imageView2/2/w/700/h/300)
 
 索引in和out被两个线程访问。in和out指明了缓冲区中实际数据的边界，也就是in和out同缓冲区数据存在访问上的顺序关系，由于不适用同步机制，那么保证顺序关系就需要使用到内存屏障了。索引in和out都分别只被一个线程修改，而被两个线程读取。`__kfifo_put`先通过in和out来确定可以向缓冲区中写入数据量的多少，这时，out索引应该先被读取，才能真正将用户buffer中的数据写入缓冲区，因此这里使用到了`smp_mb()`，对应的，`__kfifo_get`也使用`smp_mb()`来确保修改out索引之前缓冲区中数据已被成功读取并写入用户buffer中了。（我认为在`__kfifo_put`中添加的这个`smp_mb()`是没有必要的。理由如下，kfifo仅支持一写一读，这是前提。在这个前提下，in和out两个变量是有着依赖关系的，这的确没错，并且我们可以看到在put中，in一定会是最新的，因为put修改的是in的值，而在get中，out一定会是最新的，因为get修改out的值。这里的smp_mb()显然是希望在运行时，遵循out先load新值，in再load新值。的确，这样做是没错，但这是否有必要呢？out一定要是最新值吗？out如果不是最新值会有什么问题？如果out不是最新值，实际上并不会有什么问题，仅仅是在put时，fifo的实际可写入空间要大于put计算出来的空间（因为out是旧值，导致len在计算时偏小），这并不影响程序执行的正确性。从最新linux-3.16-rc3 kernel的代码：lib\kfifo.c的实现：`__kfifo_in`中也可以看出`memcpy(fifo->data + off, src, l); memcpy(fifo->data, src + l, len - l);`之前的那次`smb_mb()`已经被省去了，当然更新in之前的`smb_wmb()`还是在`kfifo_copy_in`中被保留了。之所以省去这次`smb_mb()`的调用，我想除了省去调用不影响程序正确性外，是否还有对于性能影响的考虑，尽量减少不必要的mb调用）对于in索引，在`__kfifo_put`中，通过`smp_wmb()`保证先向缓冲区写入数据后才修改in索引，由于这里只需要保证写入操作有序，所以选用写操作屏障，在`__kfifo_get`中，通过`smp_rmb()`保证先读取了in索引（这时in索引用于确定缓冲区中实际存在多少可读数据）才开始读取缓冲区中数据（并写入用户buffer中），由于这里指需要保证读取操作有序，故选用读操作屏障。
 
