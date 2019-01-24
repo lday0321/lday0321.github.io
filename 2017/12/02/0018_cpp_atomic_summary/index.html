@@ -21,17 +21,17 @@
 <meta property="og:url" content="http://lday.me/2017/12/02/0018_cpp_atomic_summary/index.html">
 <meta property="og:site_name" content="lday的博客">
 <meta property="og:description" content="原子操作（atomic）是无锁编程(Lock-Free Programming)的基础。以往，要使用atomic操作，我们一般会使用gcc内置的原子操作接口，或者是基于指定平台硬件指令封装的atomic库。c++11直接引入了atomic库，为c++定义了原子类型操作接口以及内存模型，极大的方便了我们的使用。我尝试通过本文对C++11中内存屏障（内存顺序）的一些基本概念和使用情况进行总结。">
-<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/01_relax_mode.png">
-<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/02_release_mode_ok.png">
-<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/03_release_mode_not_ok.png">
-<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/04_acquire_mode_ok.png">
-<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/05_acquire_mode_not_ok.png">
-<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/06_release_acquire_protocol.png">
-<meta property="og:updated_time" content="2017-12-02T07:30:06.925Z">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0018_cpp_atomic_summary/img/01_relax_mode.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0018_cpp_atomic_summary/img/02_release_mode_ok.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0018_cpp_atomic_summary/img/03_release_mode_not_ok.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0018_cpp_atomic_summary/img/04_acquire_mode_ok.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0018_cpp_atomic_summary/img/05_acquire_mode_not_ok.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0018_cpp_atomic_summary/img/06_release_acquire_protocol.png">
+<meta property="og:updated_time" content="2019-01-24T15:25:16.540Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="C++内存屏障（内存顺序）总结">
 <meta name="twitter:description" content="原子操作（atomic）是无锁编程(Lock-Free Programming)的基础。以往，要使用atomic操作，我们一般会使用gcc内置的原子操作接口，或者是基于指定平台硬件指令封装的atomic库。c++11直接引入了atomic库，为c++定义了原子类型操作接口以及内存模型，极大的方便了我们的使用。我尝试通过本文对C++11中内存屏障（内存顺序）的一些基本概念和使用情况进行总结。">
-<meta name="twitter:image" content="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/01_relax_mode.png">
+<meta name="twitter:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0018_cpp_atomic_summary/img/01_relax_mode.png">
 
 <link rel="apple-touch-icon" href= "/apple-touch-icon.png">
 
@@ -315,17 +315,17 @@
 <p>例如，对于最初为零的<code>x</code>和<code>y</code>:</p>
 <figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="comment">// 线程 1 ：</span></div><div class="line">r1 = y.load(memory_order_relaxed); <span class="comment">// A</span></div><div class="line">x.store(r1, memory_order_relaxed); <span class="comment">// B</span></div><div class="line"></div><div class="line"><span class="comment">// 线程 2 ：</span></div><div class="line">r2 = x.load(memory_order_relaxed); <span class="comment">// C </span></div><div class="line">y.store(<span class="number">42</span>, memory_order_relaxed); <span class="comment">// D</span></div></pre></td></tr></table></figure>
 <p>允许产生结果<code>r1 == 42 &amp;&amp; r2 == 42</code>，因为即使线程1中A先序于B且线程2中C先序于D ，却没有制约避免y的修改顺序中D先出现于A ，而x的修改顺序中B先出现于C。D在y上的副效应，可能可见于线程1中的加载A ，同时B在x上的副效应，可能可见于线程2中的加载C。</p>
-<p><img src="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/01_relax_mode.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0018_cpp_atomic_summary/img/01_relax_mode.png" alt=""></p>
 <p>如上图所示，假设：a, b, c分别为普通变量，而x为atomic类型的变量，当在写入x时，设置memory_order_relaxed时，写入a，写入b的顺序，在另外的线程上看到的，完全可能是相互调换的，写入c的位置，完全也有可能由出现在写入x之前，而在另外一个线程上看到的，确实在写入x之后，同时，读出b的动作，完全有可能从写入x之后，编程在另外一个线程上看，是在写入x之前。也就是，各种乱序， 都是被允许的。</p>
 <p>松散内存顺序的典型使用是计数器自增，只要求原子性，但不要求顺序或同步</p>
 <h2 id="单向的”释放”内存屏障"><a href="#单向的”释放”内存屏障" class="headerlink" title="单向的”释放”内存屏障"></a>单向的”释放”内存屏障</h2><p>std::memory_order_release，释放操作，<strong>当前线程中的读或写不能被重排到此存储后</strong>。当前线程的所有写入，可见于<font color="#0000FF">加载</font><strong>该同一原子变量</strong>的其他线程。</p>
-<p><img src="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/02_release_mode_ok.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0018_cpp_atomic_summary/img/02_release_mode_ok.png" alt=""></p>
 <p>如上图所示，在使用<code>memory_order_release</code>设置的原子操作写入的情况下，原子操作之后的读写操作，在另外的线程（加载了该原子变量的线程）看来，可以重排到原子操作之前（通俗点说，就是另外线程可能认为当前线程是先执行的写入的a操作，再执行的写入x操作）。但是，如下图所示，原子操作之前的读、写操作，计算机系统必须保证，在另外一个线程看来，他是在原子操作写入之前就被写入了， 不能是在原子操作之后才写入(通俗点说，也就是另外一个线程，不能认为当前线程先写入的x，再写入的c，他一定要看到的是先写入c，再写入的x)：</p>
-<p><img src="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/03_release_mode_not_ok.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0018_cpp_atomic_summary/img/03_release_mode_not_ok.png" alt=""></p>
 <h2 id="单向的”加载”内存屏障"><a href="#单向的”加载”内存屏障" class="headerlink" title="单向的”加载”内存屏障"></a>单向的”加载”内存屏障</h2><p>std::memory_order_acquire，加载操作，<strong>当前线程中读或写不能被重排到此加载前</strong>。其他<font color="#0000FF">释放</font><strong>同一原子变量</strong>的线程的所有写入，为当前线程所可见。</p>
-<p><img src="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/04_acquire_mode_ok.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0018_cpp_atomic_summary/img/04_acquire_mode_ok.png" alt=""></p>
 <p>如上图所示，在设置<code>memory_order_acquire</code>的对x的读操作前的读、写操作，在另外的线程看来（或者说实际的运行顺序），可以被重排到对x的读操作后，(通俗点说，就是其他线程可以是认为当前线程先读取的x，再写入的c)。然而如下图所示，对x的读操作后的读、写操作，在另外的线程看来不允许被重排到x的读操作前（不允许其他线程看到当前线程先写入的a，再读取的x）。</p>
-<p><img src="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/05_acquire_mode_not_ok.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0018_cpp_atomic_summary/img/05_acquire_mode_not_ok.png" alt=""></p>
 <h2 id="单向“加载”-单向“释放”协议"><a href="#单向“加载”-单向“释放”协议" class="headerlink" title="单向“加载”+单向“释放”协议"></a>单向“加载”+单向“释放”协议</h2><p>往往<code>memory_order_acquire</code>和<code>memory_order_release</code>是配合着一起使用的：</p>
 <ol>
 <li>线程1使用<code>memory_order_release</code>写入<strong>原子变量x</strong></li>
@@ -336,7 +336,7 @@
 <li>线程1，写入一些实际数据，接着通过将原子变量x设置为某个值<code>A</code>（通过使用<code>memory_order_release</code>写入原子变量x）来“发布”这些数据。</li>
 <li>线程2，通过读取并判断x已被设置为<code>A</code>（通过使用<code>memory_order_acquire</code>来读取原子变量x），进而读取线程1实际“发布”的那些数据</li>
 </ol>
-<p><img src="http://og43lpuu1.bkt.clouddn.com/cpp_atomic_summary/img/06_release_acquire_protocol.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0018_cpp_atomic_summary/img/06_release_acquire_protocol.png" alt=""></p>
 <p>如上图所示，thread_1在release写入x(值:<code>A</code>)之前，写入了待发布的a,b的数据，而thread_2，将在acquire读出x且为<code>A</code>之后，将读到thread_1发布的a,b的数据。同时，我们可以注意到，在thread_2上，在acquire读出x之前，如果对a进行读操作，我们是无法确认读到的a一定会thread_1在之前最后写入的a，这里的顺序是不会被保证的，重排是被允许的。同时，在之后，读取c，读到的是否为thread_1最后写入的c，也是不确定的，因为，在x写入之后，thread_1上又出现了一次写入，而如果在此之前，还有一次写入， 这两次写入之间，是不存在限制，可能会被重排的。</p>
 <p>thread_1上有了release_store，对于a，b的写入就一定会在x的改变之前，在thread_2上，就不会出现类似读出c，的不确定性。thread_2上有了acquire_load，右侧的读出a，就不会被重排读到左侧，而左侧读出a的不确定性，也不存在。thread_1卡住的是：对于数据a，b的写入不能排到x的写入之后，thread_2卡住的，是对于数据a，b的读取，不能排到读取x之前，这样，就保证了数据a，b，与”信号量”x，之间，在thread_1, thread_2上的同步关系。</p>
 <h2 id="双向的”加载-释放”内存屏障"><a href="#双向的”加载-释放”内存屏障" class="headerlink" title="双向的”加载-释放”内存屏障"></a>双向的”加载-释放”内存屏障</h2><p>std::memory_order_acq_rel，加载-释放操作，带此内存顺序的读-修改-写操作既是获得加载又是释放操作。没有操作能够从此操作之后被重排到此操作之前，也没有操作能够从此操作之前被重排到此操作之后，当然，具有这一限制的前提是，观察读写顺序的不同线程是使用的<strong>同一个原子变量</strong>并基于这一内存顺序。</p>
@@ -352,7 +352,7 @@
         <p><span>本文标题:</span><a href="/2017/12/02/0018_cpp_atomic_summary/">C++内存屏障（内存顺序）总结</a></p>
         <p><span>文章作者:</span><a href="/" title="回到主页">lday</a></p>
         <p><span>发布时间:</span>2017-12-02, 15:09:14</p>
-        <p><span>最后更新:</span>2017-12-02, 15:30:06</p>
+        <p><span>最后更新:</span>2019-01-24, 23:25:16</p>
         <p>
             <span>原始链接:</span><a class="post-url" href="/2017/12/02/0018_cpp_atomic_summary/" title="C++内存屏障（内存顺序）总结">http://lday.me/2017/12/02/0018_cpp_atomic_summary/</a>
             <span class="copy-path" data-clipboard-text="原文: http://lday.me/2017/12/02/0018_cpp_atomic_summary/　　作者: lday" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
