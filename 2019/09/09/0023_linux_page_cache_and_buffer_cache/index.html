@@ -52,7 +52,7 @@
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/22_linux-2.4.0-create_buffers.png">
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/23_linux-2.4.0-set_bh_page.png">
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/17_linux-2.4.0_file_block_page_cache.png">
-<meta property="og:updated_time" content="2019-09-08T16:59:18.230Z">
+<meta property="og:updated_time" content="2019-09-08T17:22:10.145Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Linux内核Page Cache和Buffer Cache关系及演化历史">
 <meta name="twitter:description" content="在我们进行数据持久化，对文件内容进行落盘处理时，我们时常会使用fsync操作，该操作会将文件关联的脏页(dirty page)数据(实际文件内容及元数据信息)一同写回磁盘。这里提到的脏页(dirty page)即为页缓存(page cache)。
@@ -424,7 +424,7 @@
 <font color="#FF0000"><strong>[注意]</strong>：这里的Page Cache与Buffer Cache的融合，是针对文件这一层面的Page Cache与Buffer Cache的融合。对于跨层的：File层面的Page Cache和裸设备Buffer Cache，虽然都统一到了基于Page的实现，但File的Page Cache和该文件对应的Block在裸设备层访问的Buffer Cache，这两个是完全独立的Page，这种情况下，一个物理磁盘Block上的数据，仍然对应了Linux内核中的两份Page，一个是通过文件层访问的File的Page Cache(Page Cache)，一个是通过裸设备层访问的Page Cache(Buffer Cache)。</font>
 
 <p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/17_linux-2.4.0_file_block_page_cache.png" alt=""></p>
-<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><p>[1]. Understanding the Linux Kernel<br>[2]. Professional Linux Kernel Architecture<br>[3]. The Art of Linux Kernel Design<br>[4]. Linux Kernel Development<br>[5]. A Heavily Commented Linux Kernel Source Code<br>[6]. Linux内核源代码情景分析<br>[7]. 独辟蹊径品内核：Linux内核源代码导读<br>[8]. <a href="https://www.ibm.com/developerworks/cn/linux/l-cache/index.html" target="_blank" rel="external">Linux内核的文件Cache管理机制介绍</a><br>[9]. <a href="https://ilinuxkernel.com/?p=1700" target="_blank" rel="external">Linux内核文件Cache机制</a><br>[10]. <a href="https://www.quora.com/What-is-the-major-difference-between-the-buffer-cache-and-the-page-cache-Why-were-they-separate-entities-in-older-kernels-Why-were-they-merged-later-on" target="_blank" rel="external">What is the major difference between the buffer cache<br>and the page cache</a><br>[11]. UBC: An Efficient Unified I/O and Memory Caching Subsystem for NetBSD<br>[12]. <a href="https://lwn.net/Articles/175432/" target="_blank" rel="external">Trees I: Radix trees</a></p>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><p>[1]. Understanding the Linux Kernel<br>[2]. Professional Linux Kernel Architecture<br>[3]. The Art of Linux Kernel Design<br>[4]. Linux Kernel Development<br>[5]. A Heavily Commented Linux Kernel Source Code<br>[6]. Linux内核源代码情景分析<br>[7]. 独辟蹊径品内核：Linux内核源代码导读<br>[8]. <a href="https://www.ibm.com/developerworks/cn/linux/l-cache/index.html" target="_blank" rel="external">Linux内核的文件Cache管理机制介绍</a><br>[9]. <a href="https://ilinuxkernel.com/?p=1700" target="_blank" rel="external">Linux内核文件Cache机制</a><br>[10]. <a href="https://www.quora.com/What-is-the-major-difference-between-the-buffer-cache-and-the-page-cache-Why-were-they-separate-entities-in-older-kernels-Why-were-they-merged-later-on" target="_blank" rel="external">What is the major difference between the buffer cache and the page cache</a><br>[11]. UBC: An Efficient Unified I/O and Memory Caching Subsystem for NetBSD<br>[12]. <a href="https://lwn.net/Articles/175432/" target="_blank" rel="external">Trees I: Radix trees</a></p>
 
       
     </div>
@@ -436,7 +436,7 @@
         <p><span>本文标题:</span><a href="/2019/09/09/0023_linux_page_cache_and_buffer_cache/">Linux内核Page Cache和Buffer Cache关系及演化历史</a></p>
         <p><span>文章作者:</span><a href="/" title="回到主页">lday</a></p>
         <p><span>发布时间:</span>2019-09-09, 00:55:14</p>
-        <p><span>最后更新:</span>2019-09-09, 00:59:18</p>
+        <p><span>最后更新:</span>2019-09-09, 01:22:10</p>
         <p>
             <span>原始链接:</span><a class="post-url" href="/2019/09/09/0023_linux_page_cache_and_buffer_cache/" title="Linux内核Page Cache和Buffer Cache关系及演化历史">http://lday.me/2019/09/09/0023_linux_page_cache_and_buffer_cache/</a>
             <span class="copy-path" data-clipboard-text="原文: http://lday.me/2019/09/09/0023_linux_page_cache_and_buffer_cache/　　作者: lday" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
