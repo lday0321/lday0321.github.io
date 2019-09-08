@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://lday.me/"/>
-  <updated>2018-12-02T07:07:42.855Z</updated>
+  <updated>2019-09-08T16:59:18.230Z</updated>
   <id>http://lday.me/</id>
   
   <author>
@@ -14,6 +14,32 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Linux内核Page Cache和Buffer Cache关系及演化历史</title>
+    <link href="http://lday.me/2019/09/09/0023_linux_page_cache_and_buffer_cache/"/>
+    <id>http://lday.me/2019/09/09/0023_linux_page_cache_and_buffer_cache/</id>
+    <published>2019-09-08T16:55:14.000Z</published>
+    <updated>2019-09-08T16:59:18.230Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;在我们进行数据持久化，对文件内容进行落盘处理时，我们时常会使用fsync操作，该操作会将文件关联的脏页(dirty page)数据(实际文件内容及元数据信息)一同写回磁盘。这里提到的脏页(dirty page)即为页缓存(page cache)。&lt;/p&gt;
+&lt;p&gt;块缓存(buffer cache)，则是内核为了加速对底层存储介质的访问速度，而构建的一层缓存。他缓存部分磁盘数据，当有磁盘读取请求时，会首先查看块缓存中是否有对应的数据，如果有的话，则直接将对应数据返回，从而减少对磁盘的访问。&lt;/p&gt;
+&lt;p&gt;两层缓存各有自己的缓存目标，我好奇的是，这两者到底是什么关系。本文主要参考若干kernel资料，对应的kernel源码版本主要包括：linux-0.11, linux-2.2.16, linux-2.4.0, linux-2.4.19, linux-2.6.18。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="linux" scheme="http://lday.me/tags/linux/"/>
+    
+      <category term="kernel" scheme="http://lday.me/tags/kernel/"/>
+    
+      <category term="storage" scheme="http://lday.me/tags/storage/"/>
+    
+      <category term="cache" scheme="http://lday.me/tags/cache/"/>
+    
+  </entry>
   
   <entry>
     <title>如何实现分布式锁</title>
@@ -391,27 +417,6 @@
     
     
       <category term="golang" scheme="http://lday.me/tags/golang/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>基于etcd3的访问序列化及分布式软事务内存</title>
-    <link href="http://lday.me/2017/02/01/0003_seri-stm-etcd3/"/>
-    <id>http://lday.me/2017/02/01/0003_seri-stm-etcd3/</id>
-    <published>2017-02-01T15:20:14.000Z</published>
-    <updated>2017-03-11T16:17:14.803Z</updated>
-    
-    <summary type="html">
-    
-      &lt;p&gt;&lt;em&gt;本文翻译自&lt;a href=&quot;https://coreos.com/blog/transactional-memory-with-etcd3.html&quot;&gt;Serializability and Distributed Software Transactional Memory with etcd3&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
-&lt;p&gt;新的etcd3 API引入了新的更加强大的原语，相比较于etcd2的限制，这些新的原语充分利用了系统的能力。作为评估etcd3性能的一部分，我们花费了很大力气来使用新的API开发分布式的并发算法。&lt;/p&gt;
-    
-    </summary>
-    
-    
-      <category term="分布式" scheme="http://lday.me/tags/%E5%88%86%E5%B8%83%E5%BC%8F/"/>
-    
-      <category term="etcd" scheme="http://lday.me/tags/etcd/"/>
     
   </entry>
   
