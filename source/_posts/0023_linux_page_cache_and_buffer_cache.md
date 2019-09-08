@@ -209,7 +209,6 @@ page结构中，通过`buffers`字段是否为空，来判定这个Page是否与
 [7]. 独辟蹊径品内核：Linux内核源代码导读
 [8]. [Linux内核的文件Cache管理机制介绍](https://www.ibm.com/developerworks/cn/linux/l-cache/index.html)
 [9]. [Linux内核文件Cache机制](https://ilinuxkernel.com/?p=1700)
-[10]. [What is the major difference between the buffer cache
-and the page cache](https://www.quora.com/What-is-the-major-difference-between-the-buffer-cache-and-the-page-cache-Why-were-they-separate-entities-in-older-kernels-Why-were-they-merged-later-on)
+[10]. [What is the major difference between the buffer cache and the page cache](https://www.quora.com/What-is-the-major-difference-between-the-buffer-cache-and-the-page-cache-Why-were-they-separate-entities-in-older-kernels-Why-were-they-merged-later-on)
 [11]. UBC: An Efficient Unified I/O and Memory Caching Subsystem for NetBSD
 [12]. [Trees I: Radix trees](https://lwn.net/Articles/175432/)
