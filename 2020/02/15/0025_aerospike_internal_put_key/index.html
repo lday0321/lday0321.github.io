@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+
+    <!--[if lt IE 9]>
+        <style>body {display: none; background: none !important} </style>
+        <meta http-equiv="Refresh" Content="0; url=//outdatedbrowser.com/" />
+    <![endif]-->
+
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="format-detection" content="telephone=no" />
+<meta name="author" content="lday" />
+
+
+
+<meta name="description" content="Aerospike是一个分布式的Key-Value存储系统，广泛应用于广告行业的个性化推荐及实时竞价系统中。其主要特点是采用混合存储架构，数据索引信息存储在内存中，而数据本身则存储在硬盘上。Aerospike可绕过文件系统，独立管理写入磁盘的数据，以裸盘访问形式直接读写硬盘，从而达到高效的数据访问性能。本文以数据写入(Record Put)为例，来一窥Aerospike的内部逻辑结构(Aerosp">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Aerospike内部逻辑：从Record Put说起">
+<meta property="og:url" content="http://lday.me/2020/02/15/0025_aerospike_internal_put_key/index.html">
+<meta property="og:site_name" content="lday的博客">
+<meta property="og:description" content="Aerospike是一个分布式的Key-Value存储系统，广泛应用于广告行业的个性化推荐及实时竞价系统中。其主要特点是采用混合存储架构，数据索引信息存储在内存中，而数据本身则存储在硬盘上。Aerospike可绕过文件系统，独立管理写入磁盘的数据，以裸盘访问形式直接读写硬盘，从而达到高效的数据访问性能。本文以数据写入(Record Put)为例，来一窥Aerospike的内部逻辑结构(Aerosp">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/01_put_procedure.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/02_record_key_hash.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/03_thread_for_record_put.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/04_function_call_seq_for_put.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/05_as_index_tree.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/06_as_index.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/07_swb_2.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/08_flat_record.png">
+<meta property="og:updated_time" content="2020-02-15T14:05:44.756Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Aerospike内部逻辑：从Record Put说起">
+<meta name="twitter:description" content="Aerospike是一个分布式的Key-Value存储系统，广泛应用于广告行业的个性化推荐及实时竞价系统中。其主要特点是采用混合存储架构，数据索引信息存储在内存中，而数据本身则存储在硬盘上。Aerospike可绕过文件系统，独立管理写入磁盘的数据，以裸盘访问形式直接读写硬盘，从而达到高效的数据访问性能。本文以数据写入(Record Put)为例，来一窥Aerospike的内部逻辑结构(Aerosp">
+<meta name="twitter:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/01_put_procedure.png">
+
+<link rel="apple-touch-icon" href= "/apple-touch-icon.png">
+
+
+    <link rel="alternate" href="/atom.xml" title="lday的博客" type="application/atom+xml">
+
+
+
+    <link rel="shortcut icon" href="/favicon.png">
+
+
+
+    <link href="//cdn.bootcss.com/animate.css/3.5.1/animate.min.css" rel="stylesheet">
+
+
+
+    <link href="//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.css" rel="stylesheet">
+
+
+
+    <script src="//cdn.bootcss.com/pace/1.0.2/pace.min.js"></script>
+    <link href="//cdn.bootcss.com/pace/1.0.2/themes/blue/pace-theme-minimal.css" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/css/style.css">
+
+
+
+<link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
+
+
+<title>Aerospike内部逻辑：从Record Put说起 | lday的博客</title>
+
+<script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
+<script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
+
+<script>
+    var yiliaConfig = {
+        fancybox: true,
+        animate: true,
+        isHome: false,
+        isPost: true,
+        isArchive: false,
+        isTag: false,
+        isCategory: false,
+        fancybox_js: "//cdn.bootcss.com/fancybox/2.1.5/jquery.fancybox.min.js",
+        scrollreveal: "//cdn.bootcss.com/scrollReveal.js/3.1.4/scrollreveal.min.js",
+        search: undefined
+    }
+</script>
+
+
+    <script> yiliaConfig.jquery_ui = [false]; </script>
+
+
+
+    <script> yiliaConfig.rootUrl = "\/";</script>
+
+
+
+
+
+
+</head>
+<body>
+  <div id="container">
+    <div class="left-col">
+    <div class="overlay"></div>
+<div class="intrude-less">
+    <header id="header" class="inner">
+        <a href="/" class="profilepic">
+            <img src="/assets/blogImg/donkey.jpg" class="animated zoomIn">
+        </a>
+        <hgroup>
+          <h1 class="header-author"><a href="/">lday</a></h1>
+        </hgroup>
+
+        
+        <p class="header-subtitle">Life, Coding, Funning</p>
+        
+
+        
+
+
+        
+            <div id="switch-btn" class="switch-btn">
+                <div class="icon">
+                    <div class="icon-ctn">
+                        <div class="icon-wrap icon-house" data-idx="0">
+                            <div class="birdhouse"></div>
+                            <div class="birdhouse_holes"></div>
+                        </div>
+                        <div class="icon-wrap icon-ribbon hide" data-idx="1">
+                            <div class="ribbon"></div>
+                        </div>
+                        
+                        <div class="icon-wrap icon-link hide" data-idx="2">
+                            <div class="loopback_l"></div>
+                            <div class="loopback_r"></div>
+                        </div>
+                        
+                        
+                        <div class="icon-wrap icon-me hide" data-idx="3">
+                            <div class="user"></div>
+                            <div class="shoulder"></div>
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+                <div class="tips-box hide">
+                    <div class="tips-arrow"></div>
+                    <ul class="tips-inner">
+                        <li>菜单</li>
+                        <li>标签</li>
+                        
+                        <li>友情链接</li>
+                        
+                        
+                        <li>关于我</li>
+                        
+                    </ul>
+                </div>
+            </div>
+        
+
+        <div id="switch-area" class="switch-area">
+            <div class="switch-wrap">
+                <section class="switch-part switch-part1">
+                    <nav class="header-menu">
+                        <ul>
+                        
+                            <li><a href="/">主页</a></li>
+                        
+                            <li><a href="/archives/">所有文章</a></li>
+                        
+                            <li><a href="/tags/">标签云</a></li>
+                        
+                            <li><a href="/about/">关于我</a></li>
+                        
+                        </ul>
+                    </nav>
+                    <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" href="mailto:oneday0321@gmail.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" href="https://github.com/lday0321" title="GitHub"></a>
+                            
+                                <a class="fa RSS" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+                    </nav>
+                </section>
+                
+                
+                <section class="switch-part switch-part2">
+                    <div class="widget tagcloud" id="js-tagcloud">
+                        <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Aerospike/">Aerospike</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HDFS/">HDFS</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/HTTP/">HTTP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Hadoop/">Hadoop</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kafka/">Kafka</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/NoSQL/">NoSQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/atomic/">atomic</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/b-tree/">b-tree</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/boost/">boost</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cache/">cache</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/concurrency/">concurrency</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/cpp/">cpp</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ds-algorithm/">ds_algorithm</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/elasticsearch/">elasticsearch</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/etcd/">etcd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/gRPC/">gRPC</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/golang/">golang</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hello/">hello</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/hello1/">hello1</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/ipc/">ipc</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/java/">java</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kafka/">kafka</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/kernel/">kernel</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/lease/">lease</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/linux/">linux</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/memory-barriers/">memory barriers</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/redis/">redis</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/share-memory/">share memory</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/storage/">storage</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/分布式/">分布式</a></li></ul>
+                    </div>
+                </section>
+                
+                
+                
+                <section class="switch-part switch-part3">
+                    <div id="js-friends">
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://hexo.io">Hexo</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="https://pages.github.com/">GitHub</a>
+                    
+                      <a class="main-nav-link switch-friends-link" href="http://moxfive.xyz/">MOxFIVE</a>
+                    
+                    </div>
+                </section>
+                
+
+                
+                
+                <section class="switch-part switch-part4">
+                
+                    <div id="js-aboutme">lday, 80后IT码农一枚. 白羊座，喜热闹</div>
+                </section>
+                
+            </div>
+        </div>
+    </header>                
+</div>
+    </div>
+    <div class="mid-col">
+      <nav id="mobile-nav">
+      <div class="overlay">
+          <div class="slider-trigger"></div>
+          <h1 class="header-author js-mobile-header hide"><a href="/" title="回到主页">lday</a></h1>
+      </div>
+    <div class="intrude-less">
+        <header id="header" class="inner">
+            <a href="/" class="profilepic">
+                <img src="/assets/blogImg/donkey.jpg" class="animated zoomIn">
+            </a>
+            <hgroup>
+              <h1 class="header-author"><a href="/" title="回到主页">lday</a></h1>
+            </hgroup>
+            
+            <p class="header-subtitle">Life, Coding, Funning</p>
+            
+            <nav class="header-menu">
+                <ul>
+                
+                    <li><a href="/">主页</a></li>
+                
+                    <li><a href="/archives/">所有文章</a></li>
+                
+                    <li><a href="/tags/">标签云</a></li>
+                
+                    <li><a href="/about/">关于我</a></li>
+                
+                <div class="clearfix"></div>
+                </ul>
+            </nav>
+            <nav class="header-nav">
+                        <ul class="social">
+                            
+                                <a class="fa Email" target="_blank" href="mailto:oneday0321@gmail.com" title="Email"></a>
+                            
+                                <a class="fa GitHub" target="_blank" href="https://github.com/lday0321" title="GitHub"></a>
+                            
+                                <a class="fa RSS" target="_blank" href="/atom.xml" title="RSS"></a>
+                            
+                        </ul>
+            </nav>
+        </header>                
+    </div>
+    <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
+</nav>
+      <div class="body-wrap"><article id="post-0025_aerospike_internal_put_key" class="article article-type-post" itemscope itemprop="blogPost">
+  
+    <div class="article-meta">
+      <a href="/2020/02/15/0025_aerospike_internal_put_key/" class="article-date">
+      <time datetime="2020-02-15T13:56:14.000Z" itemprop="datePublished">2020-02-15</time>
+</a>
+
+
+    </div>
+  
+  <div class="article-inner">
+    
+      <input type="hidden" class="isFancy" />
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Aerospike内部逻辑：从Record Put说起
+    </h1>
+  
+
+      </header>
+      
+      <div class="article-info article-info-post">
+        
+
+        
+    <div class="article-tag tagcloud">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Aerospike/">Aerospike</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/NoSQL/">NoSQL</a></li></ul>
+    </div>
+
+        <div class="clearfix"></div>
+      </div>
+      
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+          
+        <p><a href="https://github.com/aerospike" target="_blank" rel="external">Aerospike</a>是一个分布式的Key-Value存储系统，广泛应用于广告行业的个性化推荐及实时竞价系统中。其主要特点是采用混合存储架构，数据索引信息存储在内存中，而数据本身则存储在硬盘上。Aerospike可绕过文件系统，独立管理写入磁盘的数据，以裸盘访问形式直接读写硬盘，从而达到高效的数据访问性能。本文以数据写入(Record Put)为例，来一窥Aerospike的内部逻辑结构(Aerospike参考版本：4.5.3.3)。</p>
+<a id="more"></a>
+<h1 id="整体流程"><a href="#整体流程" class="headerlink" title="整体流程"></a>整体流程</h1><p>一条record(key+value)在Aerospike中的写入过程，大致如下图所示：</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/01_put_procedure.png" alt=""></p>
+<p>每一条record都有一个指定的key与之关联。最终，server端写入record使用的key并不是原始的user key，而是由set name + user key经由ripemd160算法计算出的20 bytes固定长度的KeyDigest(keyd)</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/02_record_key_hash.png" alt=""></p>
+<p>keyd的计算，在client端完成(常规情况下)。而整个record put过程如下：</p>
+<ol>
+<li><p>client端基于set name和user key，通过ripemd160算法，计算出keyd</p>
+</li>
+<li><p>client端通过keyd/4096定位该key归属的partition，并查询partition表，将本次put请求发送到对应parition的master节点</p>
+</li>
+<li><p>master节点，为每一个partition构建了一棵广义上的索引tree结构(as_index_tree)。该<strong><font color="#0000FF">结构实际上为两级索引(hash+rbtree)</font></strong>。索引步骤为：首先，对keyd取余，找到该keyd对应的子rbtree(sprig)。取余的基数为sprig的配置数量(<code>artition-tree-sprigs</code>, 默认值：256)</p>
+</li>
+<li><font color="#0000FF">在找到对应的sprig(rbtree)之后，接着，将对应record key以rbtree节点形式插入到指定位置。</font>
+</li>
+<li><p>完成索引的构建后，还需要完成record value的写入，<strong><font color="#FF0000">Aerospike并没有直接将value写入磁盘，而是将value首先写入到swb(<code>ssd_write_buf</code>)</font></strong>，每个swb大小为1M(<code>write-block-size</code>)，一个swb将可能写入多条record。Aerospike将ssd磁盘按<code>write-block-size</code>为单位切分成若干给write block(wBlock)，swb与唯一的一个wBlock对应(swb记录了wBlockId信息)。在最终将swb落盘时，将swb内容落到对应wBlock的位置即可。</p>
+</li>
+<li><p>在master节点完成index+record(key+value)的内存写入后，则发送数据到replica server，要求replica server 完成对应的index+record写入</p>
+</li>
+<li><p>replica server根据要求完成index+record写入，并向master节点返回响应。</p>
+</li>
+<li><p>在<strong><font color="#FF0000">确认master server + replica server均完成index + record的内存写入后，master节点向client端返回PUT成功的响应</font></strong>。</p>
+</li>
+<li><p>当swb被写满（或者是持续一定时间的写入, <code>flush-max-ms</code>），swb被加入到<code>swb_write_q</code>，准备进行持久化。</p>
+</li>
+<li><p>后台<strong><em><font color="#0000FF">ssd write thread</font></em></strong>不断从swb_write_q中拉取swb，将其落盘到ssd device，最终<strong><font color="#0000FF">完成record(value)持久化</font></strong>。</p>
+</li>
+</ol>
+<h1 id="线程切换逻辑"><a href="#线程切换逻辑" class="headerlink" title="线程切换逻辑"></a>线程切换逻辑</h1><p>server在处理record PUT时，主要涉及三类线程处理：</p>
+<ol>
+<li>service thread: 负责处理io请求</li>
+<li>transaction thread: 负责将key-value写入内存索引及swb缓存，并将相应返回给调用方</li>
+<li>write thread: 负责将swb中的数据，异步落盘</li>
+</ol>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/03_thread_for_record_put.png" width="500" height="" align="center"></p>
+<h1 id="调用时序"><a href="#调用时序" class="headerlink" title="调用时序"></a>调用时序</h1><p>如下所示，为Aerospike server处理PUT请求的整体调用时序</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/04_function_call_seq_for_put.png" alt=""></p>
+<ul>
+<li>service thread在收到PUT请求后，将PUT transaction通过transaction_queue转交给transaction thread来处理</li>
+<li>transaction thread主要分三步来完成整个处理过程:<ul>
+<li>通过<code>write.c::write_master</code>，完成index+record在master数据索引sprig及磁盘缓存swb上的写入</li>
+<li>通过<code>write.c::start_write_repl_write</code>，通知replica server完成在副本节点的index+record的内存写入</li>
+<li>通过<code>write.c::write_repl_write_cb</code>，完成将响应返回给调用方</li>
+</ul>
+</li>
+<li>transaction thread在write_master进行index+record的内存写入时，进一步的分为2步进行：<ul>
+<li>通过<code>record.c::as_record_get_create()</code>，完成将keyd(index)写入到指定的sprig</li>
+<li>通过<code>storage.c::as_storage_record_write()</code>，完成将index写入到swb缓存区</li>
+</ul>
+</li>
+<li>后台write thread不断的从<code>swb_write_q</code>中拉取待持久化的swb，并通过<code>drv_ssd.c::ssd_flush_swb</code>将目标swb写入ssd device的指定位置（该位置，在swb被分配的时候，已经确认）</li>
+</ul>
+<h1 id="数据结构说明"><a href="#数据结构说明" class="headerlink" title="数据结构说明"></a>数据结构说明</h1><h2 id="index索引结构"><a href="#index索引结构" class="headerlink" title="index索引结构"></a>index索引结构</h2><p>一个<code>as_index_tree</code>对应了一个partition的内存索引结构。如上所述，内存索引结构为一个hash+rbtree的两级结构。如下图所示：</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/05_as_index_tree.png" width="600" height="" align="center"></p>
+<p>一个<code>as_index_tree</code>对应了partition的整个索引空间，而一个<code>as_index_tree</code>包含了若干个(<code>partition-tree-sprigs</code>, 默认256)子树。同时，为控制并发访问子树，而包含了固定的256组<code>mutex-pair</code>(一个pair包含2个muext)，用于对子树进行更细力度的访问控制。</p>
+<p>每一个<code>as_sprig</code>是一个arena内存句柄，通过句柄，可以拿到对应的内存结构</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">typedef</span> <span class="keyword">struct</span> as_sprig_s &#123;</div><div class="line">    <span class="keyword">uint64_t</span> n_elements: <span class="number">24</span>; <span class="comment">// max 16M records per sprig</span></div><div class="line">    <span class="keyword">uint64_t</span> root_h: <span class="number">40</span>;</div><div class="line">&#125; as_sprig;</div></pre></td></tr></table></figure>
+<p><code>as_sprig.root_h</code>对应的是子树的根节点，其内部实际为tree node结构类型：<code>as_index</code></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/06_as_index.png" width="500" height="" align="center"></p>
+<p><code>as_index</code>作为rb-tree node结构，其中<strong><font color="#0000FF">[tree_id, color, keyd, left_h, righ_h]</font></strong>部分主要用于维护rb-tree结构，<strong><font color="#0000FF">[rblock_id, n_rbocks, file_id]</font></strong>则用于记录该key(index)所对应的value(record)的持久化位置信息，[last_update_time, generation]则用于记录index的metadata信息（ttl相关）</p>
+<p><code>as_index</code>通过index.c的若干接口，提供基于rb-tree的insert/get操作</p>
+<ul>
+<li><code>as_index_sprig_get_insert_vlock</code>， 将指定index插入到rb-tree中</li>
+<li><code>as_index_sprig_try_get_vlock</code>， 从rb-tree查找指定index(keyd)</li>
+</ul>
+<p><code>as_index</code>中左右子树<code>left_h</code>, <code>righ_h</code>也不是实际的内存地址，而是基于arena分配的内存地址句柄(间接访问)，在访问所有子树时，均需基于句柄，拿到对应的子节点指针，进而执行访问：</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">define</span> RESOLVE_H(__h) ((as_index*)cf_arenax_resolve(isprig-&gt;arena, __h))</span></div><div class="line"></div><div class="line">r_h = cmp &gt; <span class="number">0</span> ? r-&gt;left_h : r-&gt;right_h;</div><div class="line">r = RESOLVE_H(r_h);</div></pre></td></tr></table></figure>
+<p>在通过keyd查找索引时，首先会基于keyd判断该key归属于哪个sprig: <code>as_index_sprig_from_keyd(tree, &amp;isprig, keyd);</code> 这里则是将keyd进行”hash”运算，找到对应的sprig:</p>
+<figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span></span></div><div class="line"><span class="title">as_index_sprig_from_keyd</span><span class="params">(as_index_tree *tree, as_index_sprig *isprig,</span></div><div class="line">        <span class="keyword">const</span> cf_digest *keyd)</div><div class="line">&#123;</div><div class="line">    <span class="comment">// Get the 28 most significant non-pid bits in the digest. Note - this is</span></div><div class="line">    <span class="comment">// hardwired around the way we currently extract the (12 bit) partition-ID</span></div><div class="line">    <span class="comment">// from the digest.</span></div><div class="line">    <span class="keyword">uint32_t</span> bits = (((<span class="keyword">uint32_t</span>)keyd-&gt;digest[<span class="number">1</span>] &amp; <span class="number">0xF0</span>) &lt;&lt; <span class="number">20</span>) |</div><div class="line">            ((<span class="keyword">uint32_t</span>)keyd-&gt;digest[<span class="number">2</span>] &lt;&lt; <span class="number">16</span>) |</div><div class="line">            ((<span class="keyword">uint32_t</span>)keyd-&gt;digest[<span class="number">3</span>] &lt;&lt; <span class="number">8</span>) |</div><div class="line">            (<span class="keyword">uint32_t</span>)keyd-&gt;digest[<span class="number">4</span>];</div><div class="line"></div><div class="line">    <span class="keyword">uint32_t</span> lock_i = bits &gt;&gt; tree-&gt;shared-&gt;locks_shift;</div><div class="line">    <span class="keyword">uint32_t</span> sprig_i = bits &gt;&gt; tree-&gt;shared-&gt;sprigs_shift;</div><div class="line"></div><div class="line">    isprig-&gt;destructor = tree-&gt;shared-&gt;destructor;</div><div class="line">    isprig-&gt;destructor_udata = tree-&gt;shared-&gt;destructor_udata;</div><div class="line">    isprig-&gt;arena = tree-&gt;shared-&gt;arena;</div><div class="line">    isprig-&gt;pair = tree_locks(tree) + lock_i;</div><div class="line">    isprig-&gt;sprig = tree_sprigs(tree) + sprig_i;</div><div class="line">    isprig-&gt;puddle = tree_puddle_for_sprig(tree, sprig_i);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>在拿到对应的<code>as_index_sprig</code>之后，再将key插入到该sprig中：<code>as_index_sprig_get_insert_vlock</code>，其中插入逻辑，即为红黑树的节点插入逻辑。</p>
+<h2 id="record缓存结构ssd-write-buffer-swb"><a href="#record缓存结构ssd-write-buffer-swb" class="headerlink" title="record缓存结构ssd_write_buffer(swb)"></a>record缓存结构ssd_write_buffer(swb)</h2><p>swb用于在内存中记录record(value)内容，其结构<code>ssd_write_buf</code>如下所示：</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/07_swb_2.png" width="600" height="" align="center"></p>
+<p>其中，buf用于存储record的实际内容，wblock_id则记录了该swb对应的持久化ssd上的<code>wblock_id</code>编号，后续对swb的持久化，就是将swb内容写入到对应的wblock中</p>
+<h2 id="record记录结构as-flat-record"><a href="#record记录结构as-flat-record" class="headerlink" title="record记录结构as_flat_record"></a>record记录结构as_flat_record</h2><p>swb-&gt;buf存储若干个record(value)，每个record的内容则已<code>as_flat_record</code>形式组织，并存放在swb-&gt;buf中:</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/08_flat_record.png" width="400" height="" align="center"></p>
+<p>头部是若干record的meta信息，紧跟其后的，则是实际的colume(bin),每一个bin都有自己的name以及实际的数据，根据bin的类型，可能存放的是integer bin(integer_flat), 可能是list bin(list_flat) … 这部分record内容，既是内存中的组织形式，同样也是最终持久化到ssd device的组织形式。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>从上述对Aerospike record put整个过程的描述，我们可以总结出：</p>
+<ol>
+<li>针对每个partition， 以hash+rb-tree方式进行索引组织(<code>as_index_tree</code>)</li>
+<li>第1级访问，是对keyd进行”hash”再取模，hash过程是对keyd的位移操作(<code>as_index_sprig_from_keyd</code>)</li>
+<li>第2级rb-tree(as_index)的组织形式为标准红黑树访问方式</li>
+<li><strong><font color="#FF0000">Aerospike的数据持久化是异步落盘</font></strong></li>
+<li>落盘以1M的swb-&gt;buf为单位(<code>write-block-size</code>配置)</li>
+<li>每一行(record)以<code>as_flat_record</code>方式组织，持久化到ssd device</li>
+<li><strong><font color="#FF0000">当master node确认index+record写入内存，且replica node也已写入内存即向client返回响应</font></strong></li>
+</ol>
+
+      
+    </div>
+    
+  </div>
+  
+    
+    <div class="copyright">
+        <p><span>本文标题:</span><a href="/2020/02/15/0025_aerospike_internal_put_key/">Aerospike内部逻辑：从Record Put说起</a></p>
+        <p><span>文章作者:</span><a href="/" title="回到主页">lday</a></p>
+        <p><span>发布时间:</span>2020-02-15, 21:56:14</p>
+        <p><span>最后更新:</span>2020-02-15, 22:05:44</p>
+        <p>
+            <span>原始链接:</span><a class="post-url" href="/2020/02/15/0025_aerospike_internal_put_key/" title="Aerospike内部逻辑：从Record Put说起">http://lday.me/2020/02/15/0025_aerospike_internal_put_key/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://lday.me/2020/02/15/0025_aerospike_internal_put_key/　　作者: lday" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <script> var clipboard = new Clipboard('.copy-path'); </script>
+        </p>
+        <p>
+            <span>许可协议:</span><i class="fa fa-creative-commons"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" title="CC BY-NC-SA 4.0 International" target = "_blank">"署名-非商用-相同方式共享 4.0"</a> 转载请保留原文链接及作者。
+        </p>
+    </div>
+
+
+
+    <nav id="article-nav">
+        
+        
+            <div id="article-nav-older" class="article-nav-title">
+                <a href="/2020/01/28/0024_hdfs_lease_internal/">
+                    HDFS Lease(租约)逻辑
+                </a>
+            </div>
+        
+    </nav>
+
+  
+</article>
+
+    <div id="toc" class="toc-article">
+        <strong class="toc-title">文章目录</strong>
+        
+            <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#整体流程"><span class="toc-number">1.</span> <span class="toc-text">整体流程</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#线程切换逻辑"><span class="toc-number">2.</span> <span class="toc-text">线程切换逻辑</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#调用时序"><span class="toc-number">3.</span> <span class="toc-text">调用时序</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#数据结构说明"><span class="toc-number">4.</span> <span class="toc-text">数据结构说明</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#index索引结构"><span class="toc-number">4.1.</span> <span class="toc-text">index索引结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#record缓存结构ssd-write-buffer-swb"><span class="toc-number">4.2.</span> <span class="toc-text">record缓存结构ssd_write_buffer(swb)</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#record记录结构as-flat-record"><span class="toc-number">4.3.</span> <span class="toc-text">record记录结构as_flat_record</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#总结"><span class="toc-number">5.</span> <span class="toc-text">总结</span></a></li></ol>
+        
+    </div>
+    <style>
+        .left-col .switch-btn,
+        .left-col .switch-area {
+            display: none;
+        }
+        .toc-level-3 i,
+        .toc-level-3 ol {
+            display: none !important;
+        }
+    </style>
+
+    <input type="button" id="tocButton" value="隐藏目录"  title="点击按钮隐藏或者显示文章目录">
+
+    <script>
+        yiliaConfig.toc = ["隐藏目录", "显示目录", !!"false"];
+    </script>
+
+
+
+    
+<div class="share">
+    
+        <div class="bdsharebuttonbox">
+            <a href="#" class="fa fa-twitter bds_twi" data-cmd="twi" title="分享到推特"></a>
+            <a href="#" class="fa fa-weibo bds_tsina" data-cmd="tsina" title="分享到新浪微博"></a>
+            <a href="#" class="fa fa-qq bds_sqq" data-cmd="sqq" title="分享给 QQ 好友"></a>
+            <a href="#" class="fa fa-files-o bds_copy" data-cmd="copy" title="复制网址"></a>
+            <a href="#" class="fa fa fa-envelope-o bds_mail" data-cmd="mail" title="通过邮件分享"></a>
+            <a href="#" class="fa fa-weixin bds_weixin" data-cmd="weixin" title="生成文章二维码"></a>
+            <a href="#" class="fa fa-share-alt bds_more" data-cmd="more"></i></a>
+        </div>
+        <script>
+            window._bd_share_config={
+                "common":{"bdSnsKey":{},"bdText":"Aerospike内部逻辑：从Record Put说起　| lday的博客　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+        </script>
+    
+
+    
+</div>
+
+
+
+
+
+
+
+    
+        <section id="comments">
+    <style> aside.comment-bar { margin: auto 30px; }</style>
+    <div id="disqus_thread"></div>
+    <script>
+        var disqus_config = function(){
+            this.page.url = 'http://lday.me/2020/02/15/0025_aerospike_internal_put_key/';
+            this.page.identifier = '2020/02/15/0025_aerospike_internal_put_key/';
+        };
+        var loadComment = function(){
+            var d = document, s = d.createElement('script');
+            s.src = '//lday.disqus.com/embed.js';
+            s.setAttribute('data-timestamp', +new Date());
+            (d.head || d.body).appendChild(s);
+        }
+    </script>
+    
+    <script> loadComment(); </script>
+
+</section>
+
+
+    
+
+
+
+
+    <div class="scroll" id="post-nav-button">
+        
+            <a href="/" title="回到主页"><i class="fa fa-home"></i></a>
+        
+
+        <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
+
+        
+            <a href="/2020/01/28/0024_hdfs_lease_internal/" title="下一篇: HDFS Lease(租约)逻辑">
+                <i class="fa fa-angle-right"></i>
+            </a>
+        
+    </div>
+
+    <ul class="post-list"><li class="post-list-item"><a class="post-list-link" href="/2020/02/15/0025_aerospike_internal_put_key/">Aerospike内部逻辑：从Record Put说起</a></li><li class="post-list-item"><a class="post-list-link" href="/2020/01/28/0024_hdfs_lease_internal/">HDFS Lease(租约)逻辑</a></li><li class="post-list-item"><a class="post-list-link" href="/2019/09/09/0023_linux_page_cache_and_buffer_cache/">Linux内核Page Cache和Buffer Cache关系及演化历史</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/18/0022_how_to_do_distributed_lock/">如何实现分布式锁</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/11/06/0021_apache_kafka_firefighter/">Apache Kafka的分布式系统消防员(Controller Broker)</a></li><li class="post-list-item"><a class="post-list-link" href="/2018/02/21/0020_b_tree_summary/">B-Tree数据结构总结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/12/17/0019_boost_share_memory_ipc/">共享内存(ipc)的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/12/02/0018_cpp_atomic_summary/">C++内存屏障（内存顺序）总结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/11/19/0017_condition_variable_and_mutex_together/">Linux下Condition Vairable和Mutext合用的小细节</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/11/04/0016_what_is_memory_barriers/">什么是内存屏障(Memory Barriers)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/10/22/0015_How_we_use_gRPC_to_build_a_client_server_system_in_Go/">我们如何在Go中使用gRPC构建C/S结构系统</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/10/08/0014_kafka_data_loss_and_new_mechanism/">Kafka数据丢失及最新改进策略</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/09/13/0013_a_latency_identification_procedure/">一次Golang程序延迟过大问题的定位过程</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/09/02/0012_a_memory_leak_detection_procedure/">一次Golang程序内存泄漏分析之旅</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/24/0011_kafka_consumer_rebalance_evolution/">Kafka Consumer Rebalance的演进</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/15/0010_kafka_producer_analysis_01/">Kafka Procuder小结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/07/11/0009_why_not_413/">为什么没有收到预期的413状态码</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/27/0008_kafka_vs_tranditional_mq/">Kafka与传统消息中间件的差异</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/06/22/0007_elasticsearch_summary/">ElasticSearch总结</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/03/19/0006_boost-multi-index-container/">多维索引容器(multi_index_container)的使用</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/27/0005_gdb-vs-dlv/">Golang程序调试工具介绍(gdb vs dlv)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/25/0004_golang-slice-depth/">细看Go中的切片(slice)</a></li><li class="post-list-item"><a class="post-list-link" href="/2017/02/01/0003_seri-stm-etcd3/">基于etcd3的访问序列化及分布式软事务内存</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/11/04/0002_hi/">你好，世界</a></li><li class="post-list-item"><a class="post-list-link" href="/2016/11/03/0001_hello-world/">Hello World</a></li></ul>
+
+
+
+
+    <script>
+        
+    </script>
+</div>
+      <footer id="footer">
+    <div class="outer">
+        <div id="footer-info">
+            <div class="footer-left">
+                <i class="fa fa-copyright"></i> 
+                2016-2020 lday
+            </div>
+            <div class="footer-right">
+                <a href="http://hexo.io/" target="_blank" title="快速、简洁且高效的博客框架">Hexo</a>  Theme <a href="https://github.com/MOxFIVE/hexo-theme-yelee" target="_blank" title="简而不减 Hexo 双栏博客主题  v3.5">Yelee</a> by MOxFIVE <i class="fa fa-heart animated infinite pulse"></i>
+            </div>
+        </div>
+        
+            <div class="visit">
+                
+                    <span id="busuanzi_container_site_pv" style='display:none'>
+                        <span id="site-visit" title="本站到访数"><i class="fa fa-user" aria-hidden="true"></i><span id="busuanzi_value_site_uv"></span>
+                        </span>
+                    </span>
+                
+                
+                    <span>| </span>
+                
+                
+                    <span id="busuanzi_container_page_pv" style='display:none'>
+                        <span id="page-visit"  title="本页阅读量"><i class="fa fa-eye animated infinite pulse" aria-hidden="true"></i><span id="busuanzi_value_page_pv"></span>
+                        </span>
+                    </span>
+                
+            </div>
+        
+    </div>
+</footer>
+    </div>
+    
+<script data-main="/js/main.js" src="//cdn.bootcss.com/require.js/2.2.0/require.min.js"></script>
+
+
+
+
+
+<div class="scroll" id="scroll">
+    <a href="#" title="返回顶部"><i class="fa fa-arrow-up"></i></a>
+    <a href="#comments" onclick="load$hide();" title="查看评论"><i class="fa fa-comments-o"></i></a>
+    <a href="#footer" title="转到底部"><i class="fa fa-arrow-down"></i></a>
+</div>
+<script>
+    // Open in New Window
+    
+        var oOpenInNew = {
+            
+            
+            
+            
+            
+            
+             archives: ".archive-article-title", 
+             miniArchives: "a.post-list-link", 
+            
+             friends: "#js-friends a", 
+             socail: ".social a" 
+        }
+        for (var x in oOpenInNew) {
+            $(oOpenInNew[x]).attr("target", "_blank");
+        }
+    
+</script>
+
+<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+</script>
+  </div>
+</body>
+</html>

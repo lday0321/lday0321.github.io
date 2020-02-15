@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://lday.me/"/>
-  <updated>2020-01-28T15:35:29.355Z</updated>
+  <updated>2020-02-15T14:05:44.756Z</updated>
   <id>http://lday.me/</id>
   
   <author>
@@ -14,6 +14,26 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Aerospike内部逻辑：从Record Put说起</title>
+    <link href="http://lday.me/2020/02/15/0025_aerospike_internal_put_key/"/>
+    <id>http://lday.me/2020/02/15/0025_aerospike_internal_put_key/</id>
+    <published>2020-02-15T13:56:14.000Z</published>
+    <updated>2020-02-15T14:05:44.756Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;&lt;a href=&quot;https://github.com/aerospike&quot;&gt;Aerospike&lt;/a&gt;是一个分布式的Key-Value存储系统，广泛应用于广告行业的个性化推荐及实时竞价系统中。其主要特点是采用混合存储架构，数据索引信息存储在内存中，而数据本身则存储在硬盘上。Aerospike可绕过文件系统，独立管理写入磁盘的数据，以裸盘访问形式直接读写硬盘，从而达到高效的数据访问性能。本文以数据写入(Record Put)为例，来一窥Aerospike的内部逻辑结构(Aerospike参考版本：4.5.3.3)。&lt;/p&gt;
+    
+    </summary>
+    
+    
+      <category term="Aerospike" scheme="http://lday.me/tags/Aerospike/"/>
+    
+      <category term="NoSQL" scheme="http://lday.me/tags/NoSQL/"/>
+    
+  </entry>
   
   <entry>
     <title>HDFS Lease(租约)逻辑</title>
@@ -170,9 +190,9 @@
     
       <category term="cpp" scheme="http://lday.me/tags/cpp/"/>
     
-      <category term="atomic" scheme="http://lday.me/tags/atomic/"/>
-    
       <category term="concurrency" scheme="http://lday.me/tags/concurrency/"/>
+    
+      <category term="atomic" scheme="http://lday.me/tags/atomic/"/>
     
   </entry>
   
@@ -190,9 +210,9 @@
     </summary>
     
     
-      <category term="concurrency" scheme="http://lday.me/tags/concurrency/"/>
-    
       <category term="linux" scheme="http://lday.me/tags/linux/"/>
+    
+      <category term="concurrency" scheme="http://lday.me/tags/concurrency/"/>
     
   </entry>
   
@@ -404,24 +424,6 @@
       <category term="cpp" scheme="http://lday.me/tags/cpp/"/>
     
       <category term="boost" scheme="http://lday.me/tags/boost/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Golang程序调试工具介绍(gdb vs dlv)</title>
-    <link href="http://lday.me/2017/02/27/0005_gdb-vs-dlv/"/>
-    <id>http://lday.me/2017/02/27/0005_gdb-vs-dlv/</id>
-    <published>2017-02-27T13:26:03.000Z</published>
-    <updated>2017-03-12T07:35:15.990Z</updated>
-    
-    <summary type="html">
-    
-      &lt;p&gt;通过log库输出日志，我们可以对程序进行异常分析和问题追踪。但有时候，我也希望能有更直接的程序跟踪及定位工具能够帮助我们更方便快捷的追踪、定位问题，最直观的感觉还是使用调试器。Linux平台下，原生的C/C++程序，我们往往使用gdb进行程序调试，切换到Golang，我们同样还是可以使用gdb进行调试。同时我们还可以使用golang实现的调试器dlv进行调试。以下内容是我对gdb以及dlv使用及对比总结&lt;/p&gt;
-    
-    </summary>
-    
-    
-      <category term="golang" scheme="http://lday.me/tags/golang/"/>
     
   </entry>
   
