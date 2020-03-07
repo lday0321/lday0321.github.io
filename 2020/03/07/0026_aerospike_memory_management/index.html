@@ -15,18 +15,25 @@
 
 
 
-<meta name="description" content="在Linux下合用Condition Variable和Mutex有些小细节。为什么需要这么做，总结于此。">
+<meta name="description" content="Aerospike使用jemalloc进行内存分配和管理。利用了jemalloc提供的扩展特性来更细力度的进行内存控制。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Linux下Condition Vairable和Mutext合用的小细节">
-<meta property="og:url" content="http://lday.me/2017/11/19/0017_condition_variable_and_mutex_together/index.html">
+<meta property="og:title" content="Aerospike的内存管理">
+<meta property="og:url" content="http://lday.me/2020/03/07/0026_aerospike_memory_management/index.html">
 <meta property="og:site_name" content="lday的博客">
-<meta property="og:description" content="在Linux下合用Condition Variable和Mutex有些小细节。为什么需要这么做，总结于此。">
-<meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/condition_variable_and_mutex_together/img01_condidition_variable_producer_seq.png">
-<meta property="og:updated_time" content="2017-11-19T06:34:51.815Z">
+<meta property="og:description" content="Aerospike使用jemalloc进行内存分配和管理。利用了jemalloc提供的扩展特性来更细力度的进行内存控制。">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/01_aerospike_use_jemalloc.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/02_aerospike_alloc_arena.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/03_aerospike_namespace_arena.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/04_aerospike_jemalloc_arena_count.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/05_aerospike_jemalloc_result.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/06_aerospike_memory_info_output.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/07_aerospike_asinfo_memory_info.png">
+<meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/08_aerospike_spig_arenax.png">
+<meta property="og:updated_time" content="2020-03-07T09:12:07.694Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Linux下Condition Vairable和Mutext合用的小细节">
-<meta name="twitter:description" content="在Linux下合用Condition Variable和Mutex有些小细节。为什么需要这么做，总结于此。">
-<meta name="twitter:image" content="http://og43lpuu1.bkt.clouddn.com/condition_variable_and_mutex_together/img01_condidition_variable_producer_seq.png">
+<meta name="twitter:title" content="Aerospike的内存管理">
+<meta name="twitter:description" content="Aerospike使用jemalloc进行内存分配和管理。利用了jemalloc提供的扩展特性来更细力度的进行内存控制。">
+<meta name="twitter:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/01_aerospike_use_jemalloc.png">
 
 <link rel="apple-touch-icon" href= "/apple-touch-icon.png">
 
@@ -58,7 +65,7 @@
 <link href="//cdn.bootcss.com/font-awesome/4.6.3/css/font-awesome.min.css" rel="stylesheet">
 
 
-<title>Linux下Condition Vairable和Mutext合用的小细节 | lday的博客</title>
+<title>Aerospike的内存管理 | lday的博客</title>
 
 <script src="//cdn.bootcss.com/jquery/2.2.4/jquery.min.js"></script>
 <script src="//cdn.bootcss.com/clipboard.js/1.5.10/clipboard.min.js"></script>
@@ -262,11 +269,11 @@
     </div>
     <link class="menu-list" tags="标签" friends="友情链接" about="关于我"/>
 </nav>
-      <div class="body-wrap"><article id="post-0017_condition_variable_and_mutex_together" class="article article-type-post" itemscope itemprop="blogPost">
+      <div class="body-wrap"><article id="post-0026_aerospike_memory_management" class="article article-type-post" itemscope itemprop="blogPost">
   
     <div class="article-meta">
-      <a href="/2017/11/19/0017_condition_variable_and_mutex_together/" class="article-date">
-      <time datetime="2017-11-19T06:04:14.000Z" itemprop="datePublished">2017-11-19</time>
+      <a href="/2020/03/07/0026_aerospike_memory_management/" class="article-date">
+      <time datetime="2020-03-07T13:56:14.000Z" itemprop="datePublished">2020-03-07</time>
 </a>
 
 
@@ -281,7 +288,7 @@
         
   
     <h1 class="article-title" itemprop="name">
-      Linux下Condition Vairable和Mutext合用的小细节
+      Aerospike的内存管理
     </h1>
   
 
@@ -292,7 +299,7 @@
 
         
     <div class="article-tag tagcloud">
-        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/concurrency/">concurrency</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/linux/">linux</a></li></ul>
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Aerospike/">Aerospike</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Jemalloc/">Jemalloc</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Memory/">Memory</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/NoSQL/">NoSQL</a></li></ul>
     </div>
 
         <div class="clearfix"></div>
@@ -302,34 +309,74 @@
     <div class="article-entry" itemprop="articleBody">
       
           
-        <p>在Linux下合用Condition Variable和Mutex有些小细节。为什么需要这么做，总结于此。</p>
+        <p><a href="https://github.com/aerospike" target="_blank" rel="external">Aerospike</a>使用<a href="http://jemalloc.net" target="_blank" rel="external">jemalloc</a>进行内存分配和管理。利用了<a href="http://jemalloc.net" target="_blank" rel="external">jemalloc</a>提供的扩展特性来更细力度的进行内存控制。</p>
 <a id="more"></a>
-<p>mutex用于上锁，condition variable用于等待，这两种不同类型的同步，都是我们所需要的。对于条件变量，它提供的操作接口主要为：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;pthread.h&gt;</span></span></div><div class="line"></div><div class="line"><span class="keyword">pthread_cond_t</span> cond = PTHREAD_COND_INITIALIZER;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">pthread_cond_signal</span><span class="params">(<span class="keyword">pthread_cond_t</span> *cond)</span></span>;</div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">pthread_cond_broadcast</span><span class="params">(<span class="keyword">pthread_cond_t</span> *cond)</span></span>;</div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">pthread_cond_wait</span><span class="params">(<span class="keyword">pthread_cond_t</span> *cond, <span class="keyword">pthread_mutex_t</span> *mutex)</span></span>;</div><div class="line"></div><div class="line"><span class="comment">// All return 0 on success, or a positive error number on error</span></div></pre></td></tr></table></figure>
-<p>pthread_cond_signal的作用是通知那些wait在cond上的线程，有事件达到。而pthread_cond_wait的作用实际上包含3部分：</p>
-<ol>
-<li>将与之绑定的mutex解锁(unlock)</li>
-<li>让自己进入等待状态，直至被signal唤醒</li>
-<li>在被唤醒之后再次拿到与之绑定的mutex</li>
+<h1 id="jemalloc的扩展能力"><a href="#jemalloc的扩展能力" class="headerlink" title="jemalloc的扩展能力"></a>jemalloc的扩展能力</h1><ol>
+<li><p>jemalloc提供扩展接口来创建独立内存管理单元<code>arena</code>。可基于该<code>arena</code>进行内存申请和释放，arena之间的内存管理无任何冲突。</p>
+<ul>
+<li><code>mallctl(&quot;arenas.extend&quot;, &amp;arena, &amp;arena_len, NULL, 0)</code>，用于创建<code>arena</code>。</li>
+<li><code>mallocx(size, arena_flags)</code>用于在指定<code>arena</code>上申请内存空间</li>
+<li><code>free(p)</code>释放接口与标准接口无差。</li>
+</ul>
+</li>
+<li><p>jemalloc提供扩展接口来创建线程级别的cache(<code>tcache</code>)，分配内存空间时，可要求优先使用<code>tcache</code>进行空间分配(<code>tcache</code>空间优先），使用<code>tcache</code>的好处是，完全无冲突。因为一个<code>arena</code>还是有可能被分享给不同的线程共享使用，还是存在共享冲突的可能。</p>
+<ul>
+<li><code>mallctl(&quot;tcache.create&quot;, &amp;tcache, &amp;len, NULL, 0)</code>，用于创建<code>tcache</code>。</li>
+</ul>
+</li>
+<li><p>jemalloc提供内存状态信息输出，方便查看定位内存使用情况：</p>
+<ul>
+<li><code>mallctl(&quot;stats.allocated&quot;, &amp;allocated, &amp;len, NULL, 0)</code>，获取分配的内存数量</li>
+<li><code>mallctl(&quot;stats.active&quot;, &amp;active, &amp;len, NULL, 0)</code>，获取分配的active pages信息</li>
+</ul>
+</li>
 </ol>
-<p>从pthread_cond_wait返回，实际上是他重新又拿到了mutex</p>
-<p>基于mutex + cond的生产者往往如下所示：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">s = pthread_mutex_lock(&amp;mtx);			<span class="comment">//加锁，执行生产动作</span></div><div class="line"><span class="keyword">if</span> (s != <span class="number">0</span>)</div><div class="line">	errExitEN(s, <span class="string">"pthread_mutex_lock"</span>);</div><div class="line"></div><div class="line">avail++;  							<span class="comment">//实际的生产相应数据</span></div><div class="line"></div><div class="line">s = pthread_mutex_unlock(&amp;mtx);		<span class="comment">//完成生产之后，首先将mutex释放</span></div><div class="line"><span class="keyword">if</span> (s != <span class="number">0</span>)</div><div class="line">	errExitEN(s, <span class="string">"pthread_mutex_unlock"</span>);</div><div class="line"></div><div class="line"></div><div class="line">s = pthread_cond_signal(&amp;cond); 		<span class="comment">//之后，再通过signal，通知消费者</span></div><div class="line"><span class="keyword">if</span> (s != <span class="number">0</span>)</div><div class="line">	errExitEN(s, <span class="string">"pthread_cond_signal"</span>);</div></pre></td></tr></table></figure></p>
-<p>先unlock，再执行signal，这种操作顺序，我认为是比较符合习惯的。但在《Unix网络编程，卷2》的7.5章节中，我们看到了另外一种写法，先signal，再unlock。</p>
-<p><img src="http://og43lpuu1.bkt.clouddn.com/condition_variable_and_mutex_together/img01_condidition_variable_producer_seq.png" alt=""></p>
-<p><strong>我直观的认为这样不合适，毕竟signal之后，那些在等待的线程就唤醒，而此时如果没法拿到锁，就会进入竞争，而且是不是有可能这个时候没有一个人拿到锁，都又睡去呢？</strong>（因为生产者mutex还没能unlock时，所有消费者都拿不到锁，都又睡去了，有没有可能？）– 虽然这种最终没有消费者唤醒的情况不会存在，但的确还是有些影响，根据《The Linux Programming Interface》中的描述：</p>
+<h1 id="Aerospike如何使用jemalloc"><a href="#Aerospike如何使用jemalloc" class="headerlink" title="Aerospike如何使用jemalloc"></a>Aerospike如何使用jemalloc</h1><p>下图为Aerospike使用jemalloc的大致关系：</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/01_aerospike_use_jemalloc.png" alt=""></p>
+<ol>
+<li><p>Aerospike启动时，创建了150个<code>arena</code>(<code>#define N_ARENAS 150</code>)，线程在使用jemalloc进行内存分配时，会在第一次调用时，以round-robin的方式attach到其中一个<code>arena</code>上，后续的内存管理动作均基于该<code>arena</code>完成。<br><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/02_aerospike_alloc_arena.png" alt=""></p>
+</li>
+<li><p>Aerospike为每一个对应的<code>namespace</code>创建了一个指定的<code>arena</code>。当<code>namespace</code>指定了<code>data-in-memory</code>参数时(record数据将在内存中保留一份)，此时该<code>namespace</code>的record内容，都将关联到该arena上来完成内存分配。<br><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/03_aerospike_namespace_arena.png" alt=""></p>
+</li>
+</ol>
+<p>在具有一个<code>namespace</code>的实验环境下，我们可以看到，server总共分配出151(150+1)个<code>arena</code>，通过<code>mallctl(&quot;arenas.narenas&quot;,...)</code>进行统计，结果如下：</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/04_aerospike_jemalloc_arena_count.png" alt=""></p>
+<h2 id="使用jemalloc的心得"><a href="#使用jemalloc的心得" class="headerlink" title="使用jemalloc的心得"></a>使用jemalloc的心得</h2><p>之所以Aerospike以上述形式进行内存管理，是根据Aerospike研发自身的经验总结：</p>
+<ol>
+<li><p>对于大多数在内存处理任务来说，per thread <code>arena</code>已经非常好了，因为大多数内存会在当前线程中申请，并在当前线程中释放( <em><font color="#0000FF">This works well with a purely-transactional model where the data is allocated and relatively quickly freed on the same thread.</font></em> )</p>
+</li>
+<li><p>但是对于数据存储而言，由于数据访问的存储周期会跨多个线程，基于<code>namespace</code>的内存管理(以<code>namespace</code>为单位来构建<code>arena</code>，并基于该<code>arena</code>来管理内存）会更加有效( <em><font color="#0000FF">The main database object store, however, follows entirely different allocation patterns. These objects are usually persistent, potentially much larger, and may be accessed over time by many different threads (and sometimes are even accessed concurrently.) Therefore, the best pattern we have found is to have objects with the same general characteristics (i.e., those within the same Aerospike namespace, which roughly corresponds to a database</font></em> )</p>
+</li>
+</ol>
+<p>Aerospike在使用jemalloc的总结可参考：<a href="http://highscalability.com/blog/2015/3/17/in-memory-computing-at-aerospike-scale-when-to-choose-and-ho.html" target="_blank" rel="external">In-Memory Computing At Aerospike Scale: When To Choose And How To Effectively Use JEMalloc</a>。从文章数据来看，Aerospike改用jemalloc之后，内存使用效率变高，更加稳定：</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/05_aerospike_jemalloc_result.png" alt=""></p>
 <blockquote>
-<p>on some implementations, <font color="#FF0000">unlocking the mutex and then signaling the condition variable may yield better performance than performing these steps in the reverse sequence.</font> If the mutex is unlocked only after the condition variable is signaled, the thread performing pthread_cond_wait() may wake up while the mutex is still locked, and then immediately go back to sleep again when it finds that the mutex is locked. <font color="#FF0000">This results in two superfluous context switches.</font> Some implementations eliminate this problem by employing a technique called <font color="#0000FF"><strong>wait morphing</strong></font>, which moves the signaled thread from the condition variable wait queue to the mutex wait queue without performing a context switch if the mutex is locked.</p>
+<font color="#0000FF">After selecting a better dynamic memory allocator and changing the server to use the allocator effectively in a multi-threaded context, the system memory use per node quickly “flatlines” on the right side (with some residual “bouncing” as memory as additional memory is transiently allocated and given back to the system.) </font>
+
 </blockquote>
-<p>所以，还是按照上面，先放锁，再signal会比较好。</p>
-<p>看完生产者的实现，我们再看看消费者的实现：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">for</span> (;;) &#123;</div><div class="line">	<span class="comment">//消费者首先加锁查看资源情况</span></div><div class="line">	s = pthread_mutex_lock(&amp;mtx);</div><div class="line">	<span class="keyword">if</span> (s != <span class="number">0</span>)</div><div class="line">		errExitEN(s, <span class="string">"pthread_mutex_lock"</span>);</div><div class="line">	</div><div class="line">	<span class="keyword">while</span> (avail == <span class="number">0</span>) &#123; 	<span class="comment">//循环等待有可用资源进行消费，</span></div><div class="line">		<span class="comment">//在没有可用资源进行消费时，就放锁，进入休眠</span></div><div class="line">		s = pthread_cond_wait(&amp;cond, &amp;mtx);		</div><div class="line">		<span class="keyword">if</span> (s != <span class="number">0</span>)</div><div class="line">			errExitEN(s, <span class="string">"pthread_cond_wait"</span>);</div><div class="line">	&#125;</div><div class="line">	</div><div class="line">	<span class="comment">//循环等待出来之后，是实际上有资源可消费，同时自己持有了mutex</span></div><div class="line">	<span class="keyword">while</span> (avail &gt; <span class="number">0</span>) &#123; 	<span class="comment">//进行消费</span></div><div class="line">		<span class="comment">//扣减资源，进行消费</span></div><div class="line">		avail--;</div><div class="line">	&#125;</div><div class="line">	</div><div class="line">	<span class="comment">//完成消费后，释放mutex</span></div><div class="line">	s = pthread_mutex_unlock(&amp;mtx);</div><div class="line">	<span class="keyword">if</span> (s != <span class="number">0</span>)</div><div class="line">		errExitEN(s, <span class="string">"pthread_mutex_unlock"</span>);</div><div class="line">	</div><div class="line">&#125;</div></pre></td></tr></table></figure>
-<p>这里有一点需要注意的是：<font color="#0000FF">pthread_cond_wait(…)是被包裹在一个while(…)判断语句中的，判断是否有资源，并不是用的if，而是用的while。</font>之所以用while，<strong>是因为即使在被pthread_cond_wait(…)唤醒，拿到了mutex，也存在实际上并没有资源的情况</strong>。</p>
-<ol>
-<li><p>其他线程先于你被唤醒，并将资源消费完了，你才被唤醒。“pthread_cond_signal(), we are simply guaranteed that <strong>at least</strong> one of the blocked threads is woken up;”从这里就可以看出，也许有多个线程被唤醒，并以此拿到了mutex，因为前面拿到mutex的线程可能已经消费完了资源，此时你被唤醒，实际上是没有用处了，此时就应该再读进入wait，因此需要通过while()而不是if()来控制是否能够进入真正的消费阶段</p>
-</li>
-<li><p>可能发生惊群。在一些pthread_cond_wait(…)的实现中，即使没有人调用signal，一个线程也有可能在pthread_cond_wait(…)上被唤醒，这种惊群现象是一些多核处理器技术实现的后果，而这种惊群现象在SUSv3中是被显式允许的，因此我们不能假设从wait中醒来就一定有资源可消费，还必须再探测一下。</p>
-</li>
-</ol>
+<p>同时，Aerospike还利用了jemalloc扩展接口，来统计进程的内容使用情况<code>alloc.c::cf_alloc_heap_stats()</code>:</p>
+<ul>
+<li><code>mallctl(&quot;stats.allocated&quot;, ...)</code></li>
+<li><code>mallctl(&quot;stats.active&quot;,...)</code></li>
+<li><code>mallctl(&quot;stats.mapped&quot;,...)</code></li>
+</ul>
+<p>Aerospike后台会定时输出该类信息：</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/06_aerospike_memory_info_output.png" alt=""></p>
+<p>通过asinfo命令也可以直接获取该信息:</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/07_aerospike_asinfo_memory_info.png" alt=""></p>
+<h1 id="Aerospike自身的内存管理结构arenax"><a href="#Aerospike自身的内存管理结构arenax" class="headerlink" title="Aerospike自身的内存管理结构arenax"></a>Aerospike自身的内存管理结构arenax</h1><p>上面我们提到，Aerospike会为每个<code>namespace</code>创建一个对应的<code>arena</code>。在设置了<code>data-in-memory</code>时，这个<code>arena</code>用于管理该<code>namespace</code>的所有record的内存。请注意，这个<code>arena</code><strong>只负责管理record部分，也就是value部分的内存</strong>。而无论是否设置<code>data-in-memory</code>，用于组织key的<code>sprig</code>(红黑树索引结构），并没有使用jemalloc提供的arena来管理。由于<code>sprig</code>的树节点(<code>as_index</code>)结构为定长的64byte，Aerospike使用了自己设计的<code>arenax</code>结构来管理该定长数据。</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/08_aerospike_spig_arenax.png" alt=""></p>
+<p>上图为<code>arenax</code>的组织结构。<code>arenax</code>为两层内存分配方式结构：</p>
+<ul>
+<li>第一层为<code>stage</code>，总共有256个<code>stage</code>，每个<code>stage</code>指向一块定长的内存区域（1G)。</li>
+<li>第二层，则为<code>stage</code>指向的这片内存区域，该片区域根据<code>as_index</code>的大小被切分成1677721块(1G/64)。</li>
+<li><code>arenax</code>维护了一个<code>free list</code>。当有<code>as_index</code>结构free时，则放回到该<code>free list</code>的头部。<code>arenax</code>实际维护的是该<code>free list</code>的头。</li>
+<li>当有malloc请求时，arenax首先会查看free list里面是否还有空闲slot，如果有的话，则将free list头上的slot返回给调用方。</li>
+<li>如果<code>free list</code>没有空闲slot，则从根据当前<code>stage_id</code>（at_stage_id）以及对应的<code>element_id</code>(at_element_id)拿到可用的slot，将该slot返回给调用方，并顺势调整at_stage_id, at_element_id。</li>
+<li>返回给调用方的是<code>cf_arenax_handle</code>（uint64_t)，该句柄并不是内存地址，而是一个两级索引，<strong><font color="#0000FF">前36位为第1级stage索引，后28位为第2级elemnt索引</font></strong>。在使用时，需要通过handle调用接口转换出指定的内存指针: <code>void* cf_arenax_resolve(cf_arenax* arena, cf_arenax_handle h)</code>。</li>
+<li>光从<code>arenax</code>的组织来看，单台server，一个<code>namespace</code>的索引节点上限<code>(as_index)</code>数量：<code>stage_count * slot_count_per_stage = 256*16777216 = 4294967296</code>。基本上算无上限。</li>
+<li>为区分非法<code>handle</code>，<code>stage[0]</code>的<code>slot[0]</code>不做分配，初始状态是<code>at_stage_id = 0, at_element_id = 1</code>。</li>
+</ul>
 
       
     </div>
@@ -338,13 +385,13 @@
   
     
     <div class="copyright">
-        <p><span>本文标题:</span><a href="/2017/11/19/0017_condition_variable_and_mutex_together/">Linux下Condition Vairable和Mutext合用的小细节</a></p>
+        <p><span>本文标题:</span><a href="/2020/03/07/0026_aerospike_memory_management/">Aerospike的内存管理</a></p>
         <p><span>文章作者:</span><a href="/" title="回到主页">lday</a></p>
-        <p><span>发布时间:</span>2017-11-19, 14:04:14</p>
-        <p><span>最后更新:</span>2017-11-19, 14:34:51</p>
+        <p><span>发布时间:</span>2020-03-07, 21:56:14</p>
+        <p><span>最后更新:</span>2020-03-07, 17:12:07</p>
         <p>
-            <span>原始链接:</span><a class="post-url" href="/2017/11/19/0017_condition_variable_and_mutex_together/" title="Linux下Condition Vairable和Mutext合用的小细节">http://lday.me/2017/11/19/0017_condition_variable_and_mutex_together/</a>
-            <span class="copy-path" data-clipboard-text="原文: http://lday.me/2017/11/19/0017_condition_variable_and_mutex_together/　　作者: lday" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
+            <span>原始链接:</span><a class="post-url" href="/2020/03/07/0026_aerospike_memory_management/" title="Aerospike的内存管理">http://lday.me/2020/03/07/0026_aerospike_memory_management/</a>
+            <span class="copy-path" data-clipboard-text="原文: http://lday.me/2020/03/07/0026_aerospike_memory_management/　　作者: lday" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
             <script> var clipboard = new Clipboard('.copy-path'); </script>
         </p>
         <p>
@@ -356,16 +403,10 @@
 
     <nav id="article-nav">
         
-            <div id="article-nav-newer" class="article-nav-title">
-                <a href="/2017/12/02/0018_cpp_atomic_summary/">
-                    C++内存屏障（内存顺序）总结
-                </a>
-            </div>
-        
         
             <div id="article-nav-older" class="article-nav-title">
-                <a href="/2017/11/04/0016_what_is_memory_barriers/">
-                    什么是内存屏障(Memory Barriers)
+                <a href="/2020/02/15/0025_aerospike_internal_put_key/">
+                    Aerospike内部逻辑：从Record Put说起
                 </a>
             </div>
         
@@ -377,7 +418,7 @@
     <div id="toc" class="toc-article">
         <strong class="toc-title">文章目录</strong>
         
-            
+            <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#jemalloc的扩展能力"><span class="toc-number">1.</span> <span class="toc-text">jemalloc的扩展能力</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Aerospike如何使用jemalloc"><span class="toc-number">2.</span> <span class="toc-text">Aerospike如何使用jemalloc</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#使用jemalloc的心得"><span class="toc-number">2.1.</span> <span class="toc-text">使用jemalloc的心得</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Aerospike自身的内存管理结构arenax"><span class="toc-number">3.</span> <span class="toc-text">Aerospike自身的内存管理结构arenax</span></a></li></ol>
         
     </div>
     <style>
@@ -413,7 +454,7 @@
         </div>
         <script>
             window._bd_share_config={
-                "common":{"bdSnsKey":{},"bdText":"Linux下Condition Vairable和Mutext合用的小细节　| lday的博客　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
+                "common":{"bdSnsKey":{},"bdText":"Aerospike的内存管理　| lday的博客　","bdMini":"2","bdMiniList":false,"bdPic":"","bdStyle":"0","bdSize":"24"},"share":{}};with(document)0[(getElementsByTagName('head')[0]||body).appendChild(createElement('script')).src='http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion='+~(-new Date()/36e5)];
         </script>
     
 
@@ -432,8 +473,8 @@
     <div id="disqus_thread"></div>
     <script>
         var disqus_config = function(){
-            this.page.url = 'http://lday.me/2017/11/19/0017_condition_variable_and_mutex_together/';
-            this.page.identifier = '2017/11/19/0017_condition_variable_and_mutex_together/';
+            this.page.url = 'http://lday.me/2020/03/07/0026_aerospike_memory_management/';
+            this.page.identifier = '2020/03/07/0026_aerospike_memory_management/';
         };
         var loadComment = function(){
             var d = document, s = d.createElement('script');
@@ -455,15 +496,13 @@
 
     <div class="scroll" id="post-nav-button">
         
-            <a href="/2017/12/02/0018_cpp_atomic_summary/" title="上一篇: C++内存屏障（内存顺序）总结">
-                <i class="fa fa-angle-left"></i>
-            </a>
+            <a href="/" title="回到主页"><i class="fa fa-home"></i></a>
         
 
         <a title="文章列表"><i class="fa fa-bars"></i><i class="fa fa-times"></i></a>
 
         
-            <a href="/2017/11/04/0016_what_is_memory_barriers/" title="下一篇: 什么是内存屏障(Memory Barriers)">
+            <a href="/2020/02/15/0025_aerospike_internal_put_key/" title="下一篇: Aerospike内部逻辑：从Record Put说起">
                 <i class="fa fa-angle-right"></i>
             </a>
         
