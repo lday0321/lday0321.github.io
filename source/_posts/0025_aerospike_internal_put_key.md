@@ -14,11 +14,11 @@ tags:
 
 一条record(key+value)在Aerospike中的写入过程，大致如下图所示：
 
-![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/01_put_procedure.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0025_aerospike_internal_put_key/img/01_put_procedure.png)
 
 每一条record都有一个指定的key与之关联。最终，server端写入record使用的key并不是原始的user key，而是由set name + user key经由ripemd160算法计算出的20 bytes固定长度的KeyDigest(keyd)
 
-![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/02_record_key_hash.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0025_aerospike_internal_put_key/img/02_record_key_hash.png)
 
 keyd的计算，在client端完成(常规情况下)。而整个record put过程如下：
 
@@ -51,14 +51,14 @@ server在处理record PUT时，主要涉及三类线程处理：
 2. transaction thread: 负责将key-value写入内存索引及swb缓存，并将相应返回给调用方
 3. write thread: 负责将swb中的数据，异步落盘
 
-<img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/03_thread_for_record_put.png" width="500" height="" align="center" />
+<img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0025_aerospike_internal_put_key/img/03_thread_for_record_put.png" width="500" height="" align="center" />
 
 
 # 调用时序
 
 如下所示，为Aerospike server处理PUT请求的整体调用时序
 
-![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/04_function_call_seq_for_put.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0025_aerospike_internal_put_key/img/04_function_call_seq_for_put.png)
 
 * service thread在收到PUT请求后，将PUT transaction通过transaction_queue转交给transaction thread来处理
 * transaction thread主要分三步来完成整个处理过程:
@@ -79,7 +79,7 @@ server在处理record PUT时，主要涉及三类线程处理：
 
 一个`as_index_tree`对应了一个partition的内存索引结构。如上所述，内存索引结构为一个hash+rbtree的两级结构。如下图所示：
 
-<img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/05_as_index_tree.png" width="600" height="" align="center" />
+<img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0025_aerospike_internal_put_key/img/05_as_index_tree.png" width="600" height="" align="center" />
 
 一个`as_index_tree`对应了partition的整个索引空间，而一个`as_index_tree`包含了若干个(`partition-tree-sprigs`, 默认256)子树。同时，为控制并发访问子树，而包含了固定的256组`mutex-pair`(一个pair包含2个muext)，用于对子树进行更细力度的访问控制。
 
@@ -94,7 +94,7 @@ typedef struct as_sprig_s {
 
 `as_sprig.root_h`对应的是子树的根节点，其内部实际为tree node结构类型：`as_index`
 
-<img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/06_as_index.png" width="500" height="" align="center" />
+<img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0025_aerospike_internal_put_key/img/06_as_index.png" width="500" height="" align="center" />
 
 `as_index`作为rb-tree node结构，其中**<font color=#0000FF>[tree_id, color, keyd, left_h, righ_h]</font>**部分主要用于维护rb-tree结构，**<font color=#0000FF>[rblock_id, n_rbocks, file_id]</font>**则用于记录该key(index)所对应的value(record)的持久化位置信息，[last_update_time, generation]则用于记录index的metadata信息（ttl相关）
 
@@ -145,7 +145,7 @@ as_index_sprig_from_keyd(as_index_tree *tree, as_index_sprig *isprig,
 
 swb用于在内存中记录record(value)内容，其结构`ssd_write_buf`如下所示：
 
-<img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/07_swb_2.png" width="600" height="" align="center" />
+<img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0025_aerospike_internal_put_key/img/07_swb_2.png" width="600" height="" align="center" />
 
 其中，buf用于存储record的实际内容，wblock_id则记录了该swb对应的持久化ssd上的`wblock_id`编号，后续对swb的持久化，就是将swb内容写入到对应的wblock中
 
@@ -153,7 +153,7 @@ swb用于在内存中记录record(value)内容，其结构`ssd_write_buf`如下�
 
 swb->buf存储若干个record(value)，每个record的内容则已`as_flat_record`形式组织，并存放在swb->buf中:
 
-<img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/025_aerospike_internal_put_key/img/08_flat_record.png" width="400" height="" align="center" />
+<img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0025_aerospike_internal_put_key/img/08_flat_record.png" width="400" height="" align="center" />
 
 头部是若干record的meta信息，紧跟其后的，则是实际的colume(bin),每一个bin都有自己的name以及实际的数据，根据bin的类型，可能存放的是integer bin(integer_flat), 可能是list bin(list_flat) ... 这部分record内容，既是内存中的组织形式，同样也是最终持久化到ssd device的组织形式。
 
