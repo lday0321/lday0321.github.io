@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://lday.me/"/>
-  <updated>2020-03-07T09:12:07.694Z</updated>
+  <updated>2020-03-07T09:14:07.694Z</updated>
   <id>http://lday.me/</id>
   
   <author>
@@ -20,7 +20,7 @@
     <link href="http://lday.me/2020/03/07/0026_aerospike_memory_management/"/>
     <id>http://lday.me/2020/03/07/0026_aerospike_memory_management/</id>
     <published>2020-03-07T13:56:14.000Z</published>
-    <updated>2020-03-07T09:12:07.694Z</updated>
+    <updated>2020-03-07T09:14:07.694Z</updated>
     
     <summary type="html">
     
@@ -214,9 +214,9 @@
     
       <category term="cpp" scheme="http://lday.me/tags/cpp/"/>
     
-      <category term="atomic" scheme="http://lday.me/tags/atomic/"/>
-    
       <category term="concurrency" scheme="http://lday.me/tags/concurrency/"/>
+    
+      <category term="atomic" scheme="http://lday.me/tags/atomic/"/>
     
   </entry>
   
@@ -234,9 +234,9 @@
     </summary>
     
     
-      <category term="concurrency" scheme="http://lday.me/tags/concurrency/"/>
-    
       <category term="linux" scheme="http://lday.me/tags/linux/"/>
+    
+      <category term="concurrency" scheme="http://lday.me/tags/concurrency/"/>
     
   </entry>
   
@@ -302,7 +302,7 @@
     <link href="http://lday.me/2017/09/13/0013_a_latency_identification_procedure/"/>
     <id>http://lday.me/2017/09/13/0013_a_latency_identification_procedure/</id>
     <published>2017-09-13T14:27:14.000Z</published>
-    <updated>2017-09-13T14:43:41.907Z</updated>
+    <updated>2020-11-22T01:43:58.756Z</updated>
     
     <summary type="html">
     
@@ -320,7 +320,7 @@
     <link href="http://lday.me/2017/09/02/0012_a_memory_leak_detection_procedure/"/>
     <id>http://lday.me/2017/09/02/0012_a_memory_leak_detection_procedure/</id>
     <published>2017-09-01T18:49:14.000Z</published>
-    <updated>2017-09-01T19:12:01.146Z</updated>
+    <updated>2020-11-22T01:51:16.763Z</updated>
     
     <summary type="html">
     
