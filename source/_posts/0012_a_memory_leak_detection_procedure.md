@@ -12,7 +12,7 @@ tags:
 
 花了二周时间，用golang完成了一个分布式的测试工具框架，满足我对PubSub系统大规模分布式并发压力测是的需求。同时，这段时间，我已经将PubSub系统部署起来，并通过一个监控程序每隔30s向目标topic发送pub和sub请求。一周后，当我打开监控面板，“期待已久”的幺蛾子出现了：
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/01_2w_memory_leak.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/01_2w_memory_leak.png)
 
 从上图我们可以看出，在两周多的时间里，系统的堆内存画出了一条"完美"的增长曲线，WTF！
 
@@ -26,7 +26,7 @@ tags:
 
 我花2周时间写的分布式自动化测试工具正好派上了用场。简单的介绍一下我的分布自动化测试工具：“摸你”(moni)。由于时间原因，目前moni只实现了一些基础功能，不过，对于这次的目标已经够用了。moni是一套主-从结构的分布式测试工具。大致结构如下所示：
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/25_moni_arch.png?imageView2/2/w/700)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/25_moni_arch.png?imageView2/2/w/700)
 
 moni分为三部分：
 * mrunner，用于执行具体的测试任务，保存执行状态及结果。
@@ -51,10 +51,10 @@ moni分为三部分：
 mman与mrunner之间保持TCP长连接，mrunner会在与mman的连接断开后主动每间隔一定时间便尝试重连，并在每次连接成功后执行runner注册动作。mman同时作为一个http server，向mctl暴露HTTP的RESTFul接口，接收来自mctl的指令，并返回结果
 
 查看mrunner整体情况：
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/02_mctl_status.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/02_mctl_status.png)
 
 下图则是我在向13个runner下发了sub测试指令（持续12小时，每2s执行一次sub，并发量为1）之后，查看sub执行情况：
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/03_mctl_sub_status.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/03_mctl_sub_status.png)
 
 有了moni这套工具， 我就能很方便的模拟测试各类场景，帮助我重现系统的问题。
 
@@ -71,7 +71,7 @@ mman与mrunner之间保持TCP长连接，mrunner会在与mman的连接断开后�
 
 这些数据我们都将进行统计，并最终写入到influxdb中，并经由grafana展示出来
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/04_golang_grafana.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/04_golang_grafana.png)
 
 这些数据可以通过[runtime包](https://golang.org/pkg/runtime/)内的接口获得，当然，为获得各类型的统计值，使用封装好的库会是更加方便的选择：[rcrowley/go-metrics](https://github.com/rcrowley/go-metrics)。
 
@@ -134,10 +134,10 @@ runtime.goexit()
   
 * 获取系统实时堆内存调优辅助统计信息
   具体是在哪里分配了多少内存，以及top N分别是哪些，甚至是每个内存分配的来源图
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/05_go_tool_pprof.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/05_go_tool_pprof.png)
 
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/06_go_tool_pprof_profile.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/06_go_tool_pprof_profile.png)
 
 让我们一个一个来看。
 
@@ -174,7 +174,7 @@ this.debugMux.HandleFunc("/debug/pprof/", http.HandlerFunc(pprof.Index))
 
 ### 场景一：完全仿照之前的测试，通过长连接执行Pub/Sub调用
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/07_long_conn_pub_sub.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/07_long_conn_pub_sub.png)
 
 经过两轮测试，我们发现，内存占用“似乎”有一定的变化，但又不是那么明显，此时我们无法确定是否真重现了内存泄漏的问题。
 
@@ -183,7 +183,7 @@ this.debugMux.HandleFunc("/debug/pprof/", http.HandlerFunc(pprof.Index))
 
 仔细分析前两周PubSub系统的静默运行行为，我们发现，实际上当时的Pub采用的是长连接，而Sub实际上采用的是短连接模式。为此，我们调整了moni的测试连接模式，改成短连接模式
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/08_short_conn_2r_test.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/08_short_conn_2r_test.png)
 
 如上图所示，在调整为短连接模式后，我们又执行了两轮测试，其中第一轮测试初始化时5个Pub，5个Sub，每个客户端分别以2s为间隔执行sub，在执行了40分钟后，我又进一步加大了压力。同理，第二轮测试与第一轮测试类似。从图上我们可以看出，换成短连接后，内存泄漏的现象已经被清晰的展示出来，其中每轮测试，内存泄漏量大致在20M之上
 
@@ -192,11 +192,11 @@ this.debugMux.HandleFunc("/debug/pprof/", http.HandlerFunc(pprof.Index))
 
 为进一步确认是由Pub调用引起的内存泄漏，还是由Sub调用引起的内存泄漏，我们单独对Pub进行了测试，如下图所示，在单独执行pub的测试中，我们发现，pub对内存泄漏没有影响
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/09_short_conn_pub.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/09_short_conn_pub.png)
 
 ### 场景四：单独使用Sub调用，确认是否由Sub调用引起内存泄漏
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/10_short_conn_sub.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/10_short_conn_sub.png)
 
 在单独使用sub进行测试的过程中，我们明显发现了内存泄漏
 
@@ -205,7 +205,7 @@ this.debugMux.HandleFunc("/debug/pprof/", http.HandlerFunc(pprof.Index))
 
 为进一步验证在sub上存在内存泄漏，我们对PubSub系统进行了2组长时间测试，每组测试10小时，12个sub，每2s执行一次sub
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/11_short_conn_sub_longterm.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/11_short_conn_sub_longterm.png)
 
 ### 总结
 
@@ -221,7 +221,7 @@ golang是一门自带gc的语言，这也就意味着大多数情况下我们不
 
 为找出内存泄漏的来源，我们首先来确认goroutine是否存在泄漏问题。下图是我们整个测试周期内，PubSub系统goroutine的变化情况：
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/12_goroutine_cnt.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/12_goroutine_cnt.png)
 
 从上图我们可以看出，整个测试过程中，goroutine数量会随着测试的推进而变化，但不会持续增长，同时，在sub测试结束后，goroutine的数量又会回落到初始化持平状态，goroutine数量基本没有变，通过goroutine数据的观察，我们可以确定，不存在goroutine泄漏。同时我们可以看到在之前有pub参与时，goroutine提升到了1k以上，但是在只有sub参与测试中，goroutine数量维持在了一个较低的水平（85左右）。之所有pub参与时，goroutine数量会上升，是因为PubSub系统对Pub调用构建了对象池，虽然pub动作是短连接，但是在PubSub系统中，和后台kafka连接的Broker对象并未关闭，这些对象被放在了对象池中，并未回收。而这些对象的生命周期内有存活的内部goroutine，因此，在有pub的测试中goroutine的数量明显更多。在有pub参与的测试结束后，我们通过`curl -XGET  "http://192.168.149.150:10194/debug/pprof/goroutine?debug=2"`拿到goroutine调用栈的信息时，可以看到很多类似的信息：
 ```
@@ -271,7 +271,7 @@ Dropped 464 nodes (cum <= 4.75MB)
 
 通过在交互模式下生成png图片，我们进一步来看：
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/13_08_30_after_test_profile009.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/13_08_30_after_test_profile009.png)
 
 上图已经很明确的显示出，是在saram.Broker.Open函数中，New了各类Meter，而这些Meter就是内存泄漏的地方。同时，在我们通过`curl -XGET  "http://192.168.149.150:10194/debug/pprof/heap?debug=2"`收集的heap详细信息中，我们也可以看到：
 ```
@@ -285,9 +285,9 @@ Dropped 464 nodes (cum <= 4.75MB)
 
 从Broker的Open来看，Broker是通过起goroutine来申请的资源，最开始我是怀疑是由于Broker起了goroutine，但是没有close goroutine，导致内存泄漏。
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/14_sarama_broker_open.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/14_sarama_broker_open.png)
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/15_sarama_broker_open_meter.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/15_sarama_broker_open_meter.png)
 
 从上面对goroutine数据的观察我们可以看出，在sub时，并没有goroutine泄漏。实际上，为了进一步确认Broker的关闭情况，我还开启了sarama的log，在broker open和close的地方进行了打点统计，统计的结果也的确是所有open的broker，最终均close掉。
 
@@ -297,19 +297,19 @@ Dropped 464 nodes (cum <= 4.75MB)
 
 在比对测试前后goroutine的信息时，我发现在测试结束后，尽然多出了一个非常可疑的goroutine：
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/16_goroutine_compare.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/16_goroutine_compare.png)
 
 之所以非常可疑，是因为这个tick的gorutine，就是在处理Meter相关的逻辑，和我们从heap信息中看到的泄漏数据非常吻合。为进一步确认，顺着代码，仔细看看：
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/17_meter_tick_goroutine.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/17_meter_tick_goroutine.png)
 
 隐约感觉这个`ma.meters`就是勾住内存对象的某个全局变量，顺着函数，这货到底从何而来！
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/18_meter_global_list.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/18_meter_global_list.png)
 
 `arbiter`是一个彻头彻尾的全局变量！
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/19_meter_global_list_2.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/19_meter_global_list_2.png)
 
 我擦擦擦，胜利就在眼前了！如果在`arbiter.meters = append(arbiter.meters, m)`之后，没有remove，那就有问题了！看着list append的动作，估计是没有remove，要是需要remove，一般会用map吧。搜了一圈代码，果真没有！ 那应该就是这里，导致memory leak了。
 
@@ -318,7 +318,7 @@ Dropped 464 nodes (cum <= 4.75MB)
 
 问题基本上确定了， 为进一步肯定自己的推测，这个时候，我到https://github.com/rcrowley/go-metrics 查查issue list，看看有没有人有类似的问题
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/20_leak_issue.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/20_leak_issue.png)
 
 果然，赫然在列！进一步，我们会看到sarama中和这个相关的issue:
 问题根源：go-metrics存在内存泄漏！
@@ -338,11 +338,11 @@ go-metrics内存泄漏，证据确凿！！！
 
 换句话说，sarama得等go-metrics提供了修复内存泄漏的Unregister接口后，在必要的地方(Broker Close的时候)Unregister，才能避免内存泄漏。那有没有别的workaround呢？仔细分析sarama中metrics相关逻辑，我们会看到，sarama是在使用metrics做一些统计信息。其实，这些统计信息对于我而言，完全可以不用，如果不用，把metrics禁掉，是否可行呢？从sarama的代码中我找到的思路：
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/21_use_nil_metrics.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/21_use_nil_metrics.png)
 
 当我们将`metrics.UseNilMetrics`设置为`true`后，我们会看到，所有类型的metrics的创建，实际上都是返回一个空的metrics:
 
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/22_nil_meter.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/22_nil_meter.png)
 
 这样一来，全局的`arbiter.meters`链表就不会勾住任何内存对象，进而内存泄漏就不存在了。
 
@@ -360,10 +360,10 @@ go-metrics内存泄漏，证据确凿！！！
 补充说明一点，实际上在确认内存在Broker.Open泄漏后，我就一直在“仔细”阅读代码。但是为啥就一直没看到那个`arbiter.meters = append(arbiter.meters, m)`呢。回过头，再给自己的“不仔细”找个理由，请仔细观察一下两图：
 
 本次读代码使用的VSCode：
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/23_vscode_GetOrRegsterMeter.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/23_vscode_GetOrRegsterMeter.png)
 
 另外使用的Goglang:
-![](http://og43lpuu1.bkt.clouddn.com/a_memory_leak/png/24_goglang_GetOrRegsterMeter.png)
+![](https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0012_a_memory_leak_detection_procedure/img/24_goglang_GetOrRegsterMeter.png)
 
 
 看到差异了吗，vscode对NewMeter尽然没高亮！自己读代码的时候，以为NewMeter是变量，没注意他原来是个函数... -,-b，此时，一个论题在我脑海中浮现：《论优秀IDE对分析问题的重要性》
