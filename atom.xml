@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://lday.me/"/>
-  <updated>2020-03-07T09:14:07.694Z</updated>
+  <updated>2020-12-06T10:40:17.607Z</updated>
   <id>http://lday.me/</id>
   
   <author>
@@ -14,6 +14,31 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>TEST</title>
+    <link href="http://lday.me/2020/12/06/0027_test/"/>
+    <id>http://lday.me/2020/12/06/0027_test/</id>
+    <published>2020-12-06T13:56:14.000Z</published>
+    <updated>2020-12-06T10:40:17.607Z</updated>
+    
+    <summary type="html">
+    
+      &lt;p&gt;test!!!&lt;/p&gt;
+
+    
+    </summary>
+    
+    
+      <category term="Aerospike" scheme="http://lday.me/tags/Aerospike/"/>
+    
+      <category term="NoSQL" scheme="http://lday.me/tags/NoSQL/"/>
+    
+      <category term="Memory" scheme="http://lday.me/tags/Memory/"/>
+    
+      <category term="Jemalloc" scheme="http://lday.me/tags/Jemalloc/"/>
+    
+  </entry>
   
   <entry>
     <title>Aerospike的内存管理</title>
@@ -410,24 +435,6 @@
     
     
       <category term="Kafka" scheme="http://lday.me/tags/Kafka/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>ElasticSearch总结</title>
-    <link href="http://lday.me/2017/06/22/0007_elasticsearch_summary/"/>
-    <id>http://lday.me/2017/06/22/0007_elasticsearch_summary/</id>
-    <published>2017-06-22T14:03:18.000Z</published>
-    <updated>2017-06-22T14:54:20.775Z</updated>
-    
-    <summary type="html">
-    
-      &lt;p&gt;前段时间对分布式追踪相关的实现方案进行了一些调研，了解到近期对于大数据的日志检索、分析从原来基于hadoop的实现逐渐过渡到基于es的方案上来。近期在消息审计追踪相关的项目上也尝试的使用了类似的方案。这里对es的一些了解以及常用的一些使用整理于此。&lt;/p&gt;
-    
-    </summary>
-    
-    
-      <category term="elasticsearch" scheme="http://lday.me/tags/elasticsearch/"/>
     
   </entry>
   
