@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-Hans">
-<head>
+<head><meta name="generator" content="Hexo 3.9.0">
 
     <!--[if lt IE 9]>
         <style>body {display: none; background: none !important} </style>
@@ -8,19 +8,21 @@
     <![endif]-->
 
 <meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="format-detection" content="telephone=no" />
-<meta name="author" content="lday" />
+<meta name="format-detection" content="telephone=no">
+<meta name="author" content="lday">
 
 
 
 <meta name="description" content="理解Kafka 0.10.0.1版本的Procuder代码，对Producer的整体逻辑进行小结。">
+<meta name="keywords" content="Kafka">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Kafka Procuder小结">
 <meta property="og:url" content="http://lday.me/2017/07/15/0010_kafka_producer_analysis_01/index.html">
 <meta property="og:site_name" content="lday的博客">
 <meta property="og:description" content="理解Kafka 0.10.0.1版本的Procuder代码，对Producer的整体逻辑进行小结。">
+<meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/kafka_producer_analysis_01/png/01_producer_thread_structure.png">
 <meta property="og:image" content="http://og43lpuu1.bkt.clouddn.com/kafka_producer_analysis_01/png/02_producer_modules_structure.png">
 <meta property="og:updated_time" content="2017-07-15T06:05:31.209Z">
@@ -29,7 +31,7 @@
 <meta name="twitter:description" content="理解Kafka 0.10.0.1版本的Procuder代码，对Producer的整体逻辑进行小结。">
 <meta name="twitter:image" content="http://og43lpuu1.bkt.clouddn.com/kafka_producer_analysis_01/png/01_producer_thread_structure.png">
 
-<link rel="apple-touch-icon" href= "/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
 
     <link rel="alternate" href="/atom.xml" title="lday的博客" type="application/atom+xml">
@@ -91,7 +93,7 @@
 
 
 
-</head>
+</head></html>
 <body>
   <div id="container">
     <div class="left-col">
@@ -305,13 +307,13 @@
           
         <p>理解Kafka 0.10.0.1版本的Procuder代码，对Producer的整体逻辑进行小结。</p>
 <a id="more"></a>
-<h1 id="1-线程结构"><a href="#1-线程结构" class="headerlink" title="1. 线程结构"></a>1. 线程结构</h1><p><img src="http://og43lpuu1.bkt.clouddn.com/kafka_producer_analysis_01/png/01_producer_thread_structure.png" alt=""></p>
+<h1 id="1-线程结构"><a href="#1-线程结构" class="headerlink" title="1. 线程结构"></a>1. 线程结构</h1><p><img src="http://og43lpuu1.bkt.clouddn.com/kafka_producer_analysis_01/png/01_producer_thread_structure.png" alt></p>
 <p>如上图所示，Producer的功能主要由两个线程协同工作完成：</p>
 <ol>
 <li>主线程主要将业务数据封装成ProducerRecord对象，压入由RecordAccumulator构建的数据Queue中</li>
 <li>Sender线程主要从Queue中获取数据，封装成请求报文，并最终通过网络IO线程将数据发送到Kafka</li>
 </ol>
-<h1 id="2-模块结构"><a href="#2-模块结构" class="headerlink" title="2. 模块结构"></a>2. 模块结构</h1><p><img src="http://og43lpuu1.bkt.clouddn.com/kafka_producer_analysis_01/png/02_producer_modules_structure.png" alt=""></p>
+<h1 id="2-模块结构"><a href="#2-模块结构" class="headerlink" title="2. 模块结构"></a>2. 模块结构</h1><p><img src="http://og43lpuu1.bkt.clouddn.com/kafka_producer_analysis_01/png/02_producer_modules_structure.png" alt></p>
 <h1 id="3-交互逻辑"><a href="#3-交互逻辑" class="headerlink" title="3. 交互逻辑"></a>3. 交互逻辑</h1><p>上图所示为Producer内部的模块关系图，整个消息发送流程大致分为如下步骤：</p>
 <ol>
 <li>用户调用send接口进入KafkaProducer内部处理逻辑，消息交由ProducerInterceptors对消息进行拦截处理</li>

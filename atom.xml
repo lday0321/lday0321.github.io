@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
   <title>lday的博客</title>
+  <icon>https://www.gravatar.com/avatar/e0990c57ae3add9cf8e115500c659076</icon>
   <subtitle>Life, Coding, Funning</subtitle>
   <link href="/atom.xml" rel="self"/>
   
@@ -24,8 +25,11 @@
     
     <summary type="html">
     
-      &lt;p&gt;test!!!&lt;/p&gt;
+      
+      
+        &lt;p&gt;test!!!&lt;/p&gt;
 
+      
     
     </summary>
     
@@ -49,7 +53,7 @@
     
     <summary type="html">
     
-      &lt;p&gt;&lt;a href=&quot;https://github.com/aerospike&quot;&gt;Aerospike&lt;/a&gt;使用&lt;a href=&quot;http://jemalloc.net&quot;&gt;jemalloc&lt;/a&gt;进行内存分配和管理。利用了&lt;a href=&quot;http://jemalloc.net&quot;&gt;jemalloc&lt;/a&gt;提供的扩展特性来更细力度的进行内存控制。&lt;/p&gt;
+      &lt;p&gt;&lt;a href=&quot;https://github.com/aerospike&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Aerospike&lt;/a&gt;使用&lt;a href=&quot;http://jemalloc.net&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;jemalloc&lt;/a&gt;进行内存分配和管理。利用了&lt;a href=&quot;http://jemalloc.net&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;jemalloc&lt;/a&gt;提供的扩展特性来更细力度的进行内存控制。&lt;/p&gt;
     
     </summary>
     
@@ -69,11 +73,11 @@
     <link href="http://lday.me/2020/02/15/0025_aerospike_internal_put_key/"/>
     <id>http://lday.me/2020/02/15/0025_aerospike_internal_put_key/</id>
     <published>2020-02-15T13:56:14.000Z</published>
-    <updated>2020-03-07T08:59:34.764Z</updated>
+    <updated>2020-03-07T08:59:34.765Z</updated>
     
     <summary type="html">
     
-      &lt;p&gt;&lt;a href=&quot;https://github.com/aerospike&quot;&gt;Aerospike&lt;/a&gt;是一个分布式的Key-Value存储系统，广泛应用于广告行业的个性化推荐及实时竞价系统中。其主要特点是采用混合存储架构，数据索引信息存储在内存中，而数据本身则存储在硬盘上。Aerospike可绕过文件系统，独立管理写入磁盘的数据，以裸盘访问形式直接读写硬盘，从而达到高效的数据访问性能。本文以数据写入(Record Put)为例，来一窥Aerospike的内部逻辑结构(Aerospike参考版本：4.5.3.3)。&lt;/p&gt;
+      &lt;p&gt;&lt;a href=&quot;https://github.com/aerospike&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Aerospike&lt;/a&gt;是一个分布式的Key-Value存储系统，广泛应用于广告行业的个性化推荐及实时竞价系统中。其主要特点是采用混合存储架构，数据索引信息存储在内存中，而数据本身则存储在硬盘上。Aerospike可绕过文件系统，独立管理写入磁盘的数据，以裸盘访问形式直接读写硬盘，从而达到高效的数据访问性能。本文以数据写入(Record Put)为例，来一窥Aerospike的内部逻辑结构(Aerospike参考版本：4.5.3.3)。&lt;/p&gt;
     
     </summary>
     
@@ -112,7 +116,7 @@
     <link href="http://lday.me/2019/09/09/0023_linux_page_cache_and_buffer_cache/"/>
     <id>http://lday.me/2019/09/09/0023_linux_page_cache_and_buffer_cache/</id>
     <published>2019-09-08T16:55:14.000Z</published>
-    <updated>2019-09-08T17:22:10.145Z</updated>
+    <updated>2019-09-08T17:22:10.146Z</updated>
     
     <summary type="html">
     
@@ -138,11 +142,11 @@
     <link href="http://lday.me/2018/11/18/0022_how_to_do_distributed_lock/"/>
     <id>http://lday.me/2018/11/18/0022_how_to_do_distributed_lock/</id>
     <published>2018-11-18T12:58:14.000Z</published>
-    <updated>2018-12-02T07:07:42.855Z</updated>
+    <updated>2018-12-02T07:07:42.856Z</updated>
     
     <summary type="html">
     
-      &lt;p&gt;分布式锁服务在分布式系统中是一个非常通用的需求。互联网行业有基于Zookeeper实现分布式锁服务的方案，也有提出基于Redis实现分布式锁服务的方案。企业级应用方面，开源Linux上，Redhat Linux HA套件中提供了&lt;a href=&quot;https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/high_availability_add-on_overview/ch-dlm&quot;&gt;DLM(Distributed Lock Manager)&lt;/a&gt;，商用操作系统OpenVMS也提供了&lt;a href=&quot;http://neilrieck.net/docs/openvms_notes_DLM.html&quot;&gt;DLM&lt;/a&gt;。下面的这篇文章，是我于18年初的时候读到的，最近又重读一遍，作为回顾总结。翻译自Martin Kleppmann的博文：&lt;a href=&quot;https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html&quot;&gt;How to do distributed locking&lt;/a&gt;&lt;/p&gt;
+      &lt;p&gt;分布式锁服务在分布式系统中是一个非常通用的需求。互联网行业有基于Zookeeper实现分布式锁服务的方案，也有提出基于Redis实现分布式锁服务的方案。企业级应用方面，开源Linux上，Redhat Linux HA套件中提供了&lt;a href=&quot;https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/high_availability_add-on_overview/ch-dlm&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;DLM(Distributed Lock Manager)&lt;/a&gt;，商用操作系统OpenVMS也提供了&lt;a href=&quot;http://neilrieck.net/docs/openvms_notes_DLM.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;DLM&lt;/a&gt;。下面的这篇文章，是我于18年初的时候读到的，最近又重读一遍，作为回顾总结。翻译自Martin Kleppmann的博文：&lt;a href=&quot;https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;How to do distributed locking&lt;/a&gt;&lt;/p&gt;
     
     </summary>
     
@@ -158,7 +162,7 @@
     <link href="http://lday.me/2018/11/06/0021_apache_kafka_firefighter/"/>
     <id>http://lday.me/2018/11/06/0021_apache_kafka_firefighter/</id>
     <published>2018-11-06T14:52:14.000Z</published>
-    <updated>2018-11-18T06:50:17.673Z</updated>
+    <updated>2018-11-18T06:50:17.674Z</updated>
     
     <summary type="html">
     
@@ -168,7 +172,7 @@
 &lt;li&gt;Topic新建或删除时，Partition扩容时，处理Partition的分配。&lt;/li&gt;
 &lt;li&gt;管理所有Partition的状态机，以及所有Replica的状态机，处理状态机的变化。&lt;/li&gt;
 &lt;/ol&gt;
-&lt;p&gt;以下内容介绍了Controller Broker的具体功能、逻辑，它翻译自：&lt;a href=&quot;https://hackernoon.com/apache-kafkas-distributed-system-firefighter-the-controller-broker-1afca1eae302&quot;&gt;Apache Kafka’s Distributed System Firefighter&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;以下内容介绍了Controller Broker的具体功能、逻辑，它翻译自：&lt;a href=&quot;https://hackernoon.com/apache-kafkas-distributed-system-firefighter-the-controller-broker-1afca1eae302&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Apache Kafka’s Distributed System Firefighter&lt;/a&gt;&lt;/p&gt;
     
     </summary>
     
@@ -182,7 +186,7 @@
     <link href="http://lday.me/2018/02/21/0020_b_tree_summary/"/>
     <id>http://lday.me/2018/02/21/0020_b_tree_summary/</id>
     <published>2018-02-21T06:04:14.000Z</published>
-    <updated>2018-02-24T15:09:11.737Z</updated>
+    <updated>2018-02-24T15:09:11.738Z</updated>
     
     <summary type="html">
     
@@ -228,18 +232,18 @@
     <link href="http://lday.me/2017/12/02/0018_cpp_atomic_summary/"/>
     <id>http://lday.me/2017/12/02/0018_cpp_atomic_summary/</id>
     <published>2017-12-02T07:09:14.000Z</published>
-    <updated>2019-01-24T15:25:16.540Z</updated>
+    <updated>2019-01-24T15:25:16.541Z</updated>
     
     <summary type="html">
     
-      &lt;p&gt;原子操作（atomic）是无锁编程(Lock-Free Programming)的基础。以往，要使用atomic操作，我们一般会使用&lt;a href=&quot;https://gcc.gnu.org/onlinedocs/gcc-4.9.2/gcc/_005f_005fatomic-Builtins.html&quot;&gt;gcc内置的原子操作接口&lt;/a&gt;，或者是基于指定平台硬件指令封装的&lt;a href=&quot;https://github.com/ivmai/libatomic_ops&quot;&gt;atomic库&lt;/a&gt;。c++11直接引入了&lt;a href=&quot;http://en.cppreference.com/w/cpp/atomic&quot;&gt;atomic库&lt;/a&gt;，为c++定义了原子类型操作接口以及内存模型，极大的方便了我们的使用。我尝试通过本文对C++11中内存屏障（内存顺序）的一些基本概念和使用情况进行总结。&lt;/p&gt;
+      &lt;p&gt;原子操作（atomic）是无锁编程(Lock-Free Programming)的基础。以往，要使用atomic操作，我们一般会使用&lt;a href=&quot;https://gcc.gnu.org/onlinedocs/gcc-4.9.2/gcc/_005f_005fatomic-Builtins.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;gcc内置的原子操作接口&lt;/a&gt;，或者是基于指定平台硬件指令封装的&lt;a href=&quot;https://github.com/ivmai/libatomic_ops&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;atomic库&lt;/a&gt;。c++11直接引入了&lt;a href=&quot;http://en.cppreference.com/w/cpp/atomic&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;atomic库&lt;/a&gt;，为c++定义了原子类型操作接口以及内存模型，极大的方便了我们的使用。我尝试通过本文对C++11中内存屏障（内存顺序）的一些基本概念和使用情况进行总结。&lt;/p&gt;
     
     </summary>
     
     
-      <category term="cpp" scheme="http://lday.me/tags/cpp/"/>
-    
       <category term="concurrency" scheme="http://lday.me/tags/concurrency/"/>
+    
+      <category term="cpp" scheme="http://lday.me/tags/cpp/"/>
     
       <category term="atomic" scheme="http://lday.me/tags/atomic/"/>
     
@@ -250,7 +254,7 @@
     <link href="http://lday.me/2017/11/19/0017_condition_variable_and_mutex_together/"/>
     <id>http://lday.me/2017/11/19/0017_condition_variable_and_mutex_together/</id>
     <published>2017-11-19T06:04:14.000Z</published>
-    <updated>2017-11-19T06:34:51.815Z</updated>
+    <updated>2017-11-19T06:34:51.816Z</updated>
     
     <summary type="html">
     
@@ -270,7 +274,7 @@
     <link href="http://lday.me/2017/11/04/0016_what_is_memory_barriers/"/>
     <id>http://lday.me/2017/11/04/0016_what_is_memory_barriers/</id>
     <published>2017-11-04T11:25:14.000Z</published>
-    <updated>2019-01-24T15:06:14.487Z</updated>
+    <updated>2019-01-24T15:06:14.488Z</updated>
     
     <summary type="html">
     
@@ -293,7 +297,7 @@
     
     <summary type="html">
     
-      &lt;p&gt;RPC作为分布式系统节点中较为主流的一种通信方式，因其简单、方便的调用模式而深受开发者的喜爱。gRPC作为google推出的RPC调用框架，更是受到大家的关注。gRPC原生提供了对Golang的支持，最近，我也在关注gRPC的使用，本文是我整理的&lt;em&gt;&lt;a href=&quot;https://medium.com/pantomath/how-we-use-grpc-to-build-a-client-server-system-in-go-dd20045fa1c2&quot;&gt;《How we use gRPC to build a client/server system in Go》&lt;/a&gt;&lt;/em&gt;翻译:&lt;/p&gt;
+      &lt;p&gt;RPC作为分布式系统节点中较为主流的一种通信方式，因其简单、方便的调用模式而深受开发者的喜爱。gRPC作为google推出的RPC调用框架，更是受到大家的关注。gRPC原生提供了对Golang的支持，最近，我也在关注gRPC的使用，本文是我整理的&lt;em&gt;&lt;a href=&quot;https://medium.com/pantomath/how-we-use-grpc-to-build-a-client-server-system-in-go-dd20045fa1c2&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;《How we use gRPC to build a client/server system in Go》&lt;/a&gt;&lt;/em&gt;翻译:&lt;/p&gt;
     
     </summary>
     
@@ -309,7 +313,7 @@
     <link href="http://lday.me/2017/10/08/0014_kafka_data_loss_and_new_mechanism/"/>
     <id>http://lday.me/2017/10/08/0014_kafka_data_loss_and_new_mechanism/</id>
     <published>2017-10-08T14:46:14.000Z</published>
-    <updated>2018-12-29T15:25:00.961Z</updated>
+    <updated>2018-12-29T15:25:00.962Z</updated>
     
     <summary type="html">
     
@@ -327,7 +331,7 @@
     <link href="http://lday.me/2017/09/13/0013_a_latency_identification_procedure/"/>
     <id>http://lday.me/2017/09/13/0013_a_latency_identification_procedure/</id>
     <published>2017-09-13T14:27:14.000Z</published>
-    <updated>2020-11-22T01:43:58.756Z</updated>
+    <updated>2020-11-22T01:43:58.757Z</updated>
     
     <summary type="html">
     
@@ -345,11 +349,11 @@
     <link href="http://lday.me/2017/09/02/0012_a_memory_leak_detection_procedure/"/>
     <id>http://lday.me/2017/09/02/0012_a_memory_leak_detection_procedure/</id>
     <published>2017-09-01T18:49:14.000Z</published>
-    <updated>2020-11-22T01:51:16.763Z</updated>
+    <updated>2020-11-22T01:51:16.764Z</updated>
     
     <summary type="html">
     
-      &lt;p&gt;最近在开发升级PubSub系统，目标是支持更新版本的kafka（从原来的支持kafka 0.8.2.2升级到支持较新版本的kafka 0.10.1.1）。由于kafka在0.9版本上对consumer group相关的结构进行了&lt;a href=&quot;https://cwiki.apache.org/confluence/display/KAFKA/Kafka+Client-side+Assignment+Proposal&quot;&gt;重构&lt;/a&gt;，原来使用的基于zk进行rebalance的&lt;a href=&quot;https://github.com/wvanbergen/kafka&quot;&gt;consumer group client:wvanbergen/kafka&lt;/a&gt;已经不再适用。为此，我们调研并最终选用了支持新版kafka consumer rebalance的&lt;a href=&quot;https://github.com/bsm/sarama-cluster&quot;&gt;consumer group client:sarama-cluster&lt;/a&gt;。功能开发已基本结束，目前已进入系统压力测试阶段。&lt;/p&gt;
+      &lt;p&gt;最近在开发升级PubSub系统，目标是支持更新版本的kafka（从原来的支持kafka 0.8.2.2升级到支持较新版本的kafka 0.10.1.1）。由于kafka在0.9版本上对consumer group相关的结构进行了&lt;a href=&quot;https://cwiki.apache.org/confluence/display/KAFKA/Kafka+Client-side+Assignment+Proposal&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;重构&lt;/a&gt;，原来使用的基于zk进行rebalance的&lt;a href=&quot;https://github.com/wvanbergen/kafka&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;consumer group client:wvanbergen/kafka&lt;/a&gt;已经不再适用。为此，我们调研并最终选用了支持新版kafka consumer rebalance的&lt;a href=&quot;https://github.com/bsm/sarama-cluster&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;consumer group client:sarama-cluster&lt;/a&gt;。功能开发已基本结束，目前已进入系统压力测试阶段。&lt;/p&gt;
     
     </summary>
     

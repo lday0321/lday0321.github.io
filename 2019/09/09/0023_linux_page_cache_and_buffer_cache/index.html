@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-Hans">
-<head>
+<head><meta name="generator" content="Hexo 3.9.0">
 
     <!--[if lt IE 9]>
         <style>body {display: none; background: none !important} </style>
@@ -8,21 +8,21 @@
     <![endif]-->
 
 <meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="format-detection" content="telephone=no" />
-<meta name="author" content="lday" />
+<meta name="format-detection" content="telephone=no">
+<meta name="author" content="lday">
 
 
 
-<meta name="description" content="在我们进行数据持久化，对文件内容进行落盘处理时，我们时常会使用fsync操作，该操作会将文件关联的脏页(dirty page)数据(实际文件内容及元数据信息)一同写回磁盘。这里提到的脏页(dirty page)即为页缓存(page cache)。
-块缓存(buffer cache)，则是内核为了加速对底层存储介质的访问速度，而构建的一层缓存。他缓存部分磁盘数据，当有磁盘读取请求时，会首先查看块缓存">
+<meta name="description" content="在我们进行数据持久化，对文件内容进行落盘处理时，我们时常会使用fsync操作，该操作会将文件关联的脏页(dirty page)数据(实际文件内容及元数据信息)一同写回磁盘。这里提到的脏页(dirty page)即为页缓存(page cache)。 块缓存(buffer cache)，则是内核为了加速对底层存储介质的访问速度，而构建的一层缓存。他缓存部分磁盘数据，当有磁盘读取请求时，会首先查看块缓存">
+<meta name="keywords" content="linux,kernel,storage,cache">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux内核Page Cache和Buffer Cache关系及演化历史">
 <meta property="og:url" content="http://lday.me/2019/09/09/0023_linux_page_cache_and_buffer_cache/index.html">
 <meta property="og:site_name" content="lday的博客">
-<meta property="og:description" content="在我们进行数据持久化，对文件内容进行落盘处理时，我们时常会使用fsync操作，该操作会将文件关联的脏页(dirty page)数据(实际文件内容及元数据信息)一同写回磁盘。这里提到的脏页(dirty page)即为页缓存(page cache)。
-块缓存(buffer cache)，则是内核为了加速对底层存储介质的访问速度，而构建的一层缓存。他缓存部分磁盘数据，当有磁盘读取请求时，会首先查看块缓存">
+<meta property="og:description" content="在我们进行数据持久化，对文件内容进行落盘处理时，我们时常会使用fsync操作，该操作会将文件关联的脏页(dirty page)数据(实际文件内容及元数据信息)一同写回磁盘。这里提到的脏页(dirty page)即为页缓存(page cache)。 块缓存(buffer cache)，则是内核为了加速对底层存储介质的访问速度，而构建的一层缓存。他缓存部分磁盘数据，当有磁盘读取请求时，会首先查看块缓存">
+<meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/27_file_page_device_block.png">
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/28_linux-2.6.18_page_cache_buffer_cache.png">
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/29_linux-2.6.18_inode_mapping.png">
@@ -52,14 +52,13 @@
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/22_linux-2.4.0-create_buffers.png">
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/23_linux-2.4.0-set_bh_page.png">
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/17_linux-2.4.0_file_block_page_cache.png">
-<meta property="og:updated_time" content="2019-09-08T17:22:10.145Z">
+<meta property="og:updated_time" content="2019-09-08T17:22:10.146Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Linux内核Page Cache和Buffer Cache关系及演化历史">
-<meta name="twitter:description" content="在我们进行数据持久化，对文件内容进行落盘处理时，我们时常会使用fsync操作，该操作会将文件关联的脏页(dirty page)数据(实际文件内容及元数据信息)一同写回磁盘。这里提到的脏页(dirty page)即为页缓存(page cache)。
-块缓存(buffer cache)，则是内核为了加速对底层存储介质的访问速度，而构建的一层缓存。他缓存部分磁盘数据，当有磁盘读取请求时，会首先查看块缓存">
+<meta name="twitter:description" content="在我们进行数据持久化，对文件内容进行落盘处理时，我们时常会使用fsync操作，该操作会将文件关联的脏页(dirty page)数据(实际文件内容及元数据信息)一同写回磁盘。这里提到的脏页(dirty page)即为页缓存(page cache)。 块缓存(buffer cache)，则是内核为了加速对底层存储介质的访问速度，而构建的一层缓存。他缓存部分磁盘数据，当有磁盘读取请求时，会首先查看块缓存">
 <meta name="twitter:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/27_file_page_device_block.png">
 
-<link rel="apple-touch-icon" href= "/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
 
     <link rel="alternate" href="/atom.xml" title="lday的博客" type="application/atom+xml">
@@ -121,7 +120,7 @@
 
 
 
-</head>
+</head></html>
 <body>
   <div id="container">
     <div class="left-col">
@@ -340,47 +339,47 @@
 <h1 id="两类缓存各自的作用"><a href="#两类缓存各自的作用" class="headerlink" title="两类缓存各自的作用"></a>两类缓存各自的作用</h1><h2 id="Page-Cache"><a href="#Page-Cache" class="headerlink" title="Page Cache"></a>Page Cache</h2><p>Page Cache以Page为单位，缓存文件内容。缓存在Page Cache中的文件数据，能够更快的被用户读取。同时对于带buffer的写入操作，数据在写入到Page Cache中即可立即返回，而不需等待数据被实际持久化到磁盘，进而提高了上层应用读写文件的整体性能。</p>
 <h2 id="Buffer-Cache"><a href="#Buffer-Cache" class="headerlink" title="Buffer Cache"></a>Buffer Cache</h2><p>磁盘的最小数据单位为sector，每次读写磁盘都是以sector为单位对磁盘进行操作。sector大小跟具体的磁盘类型有关，有的为512Byte， 有的为4K Bytes。无论用户是希望读取1个byte，还是10个byte，最终访问磁盘时，都必须以sector为单位读取，如果裸读磁盘，那意味着数据读取的效率会非常低。同样，如果用户希望向磁盘某个位置写入(更新)1个byte的数据，他也必须整个刷新一个sector，言下之意，则是在写入这1个byte之前，我们需要先将该1byte所在的磁盘sector数据全部读出来，在内存中，修改对应的这1个byte数据，然后再将整个修改后的sector数据，一口气写入磁盘。为了降低这类低效访问，尽可能的提升磁盘访问性能，内核会在磁盘sector上构建一层缓存，他以sector的整数倍力度单位(block)，缓存部分sector数据在内存中，当有数据读取请求时，他能够直接从内存中将对应数据读出。当有数据写入时，他可以直接再内存中直接更新指定部分的数据，然后再通过异步方式，把更新后的数据写回到对应磁盘的sector中。这层缓存则是块缓存Buffer Cache。</p>
 <h1 id="两类缓存的逻辑关系"><a href="#两类缓存的逻辑关系" class="headerlink" title="两类缓存的逻辑关系"></a>两类缓存的逻辑关系</h1><p>从linux-2.6.18的内核源码来看，<font color="#0000FF"><strong>Page Cache和Buffer Cache是一个事物的两种表现：对于一个Page而言，对上，他是某个File的一个Page Cache，而对下，他同样是一个Device上的一组Buffer Cache</strong></font>。</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/27_file_page_device_block.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/27_file_page_device_block.png" alt></p>
 <p>File在地址空间上，以4K(page size)为单位进行切分，每一个4k都<em>可能</em>对应到一个page上（这里<em>可能</em>的含义是指，只有被缓存的部分，才会对应到page上，没有缓存的部分，则不会对应），而这个4k的page，就是这个文件的一个Page Cache。而对于落磁盘的一个文件而言，最终，这个4k的page cache，还需要映射到一组磁盘block对应的buffer cache上，假设block为1k，那么每个page cache将对应一组(4个)buffer cache，而每一个buffer cache，则有一个对应的buffer cache与device block映射关系的描述符：buffer_head，这个描述符记录了这个buffer cache对应的block在磁盘上的具体位置。</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/28_linux-2.6.18_page_cache_buffer_cache.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/28_linux-2.6.18_page_cache_buffer_cache.png" alt></p>
 <p>上图只展示了Page Cache与Buffer Cache(buffer_head)，以及对应的block之间的关联关系。而从File的角度来看，要想将数据写入磁盘，第一步，则是需要找到file具体位置对应的page cache是哪个page？ 进而才能将数据写入。而要找到对应的page，则依赖于inode结构中的<code>i_mapping</code>字段：</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/29_linux-2.6.18_inode_mapping.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/29_linux-2.6.18_inode_mapping.png" alt></p>
 <p>该字段为一<code>address_space</code>结构，而实际上<code>address_space</code>即为一棵radix tree。简单来说，radix tree即为一个多级索引结构，如果将一个文件的大小，以page为单位来切分，假设一个文件有N个page，这个N是一个32bit的int，那么，这个32bit的N，可以被切分成若干层级：level-0: [0 - 7bit], level-1:[8 - 15bit], level-2: [16 - 23bit], level-3: [24 - 31bit]。在查找File某个位置对应的page是否存在时，则拿着这个page所在的位置N，到对应的radix-tree上查找。 查找时，首先通过N中的level-0部分，到radix tree上的level-0层级索引上去查找，如果不存在，则直接告知不存在，如果存在，则进一步的，拿着N中的level-1部分，到这个level-0下面对应的level-1去查找，一级一级查找。这样，我们可以看出，最多，在4层索引上查找，就能找到N对应的page信息。radix-tree及address_space的详细描述，可参考[12]、[2]中的说明。这里借用[12]、[2]中的各自一张图，可能会更好说明radix-tree(address_space)结构的样子：</p>
 <p>基本的radix-tree映射结构：</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/30_linux_kernel_radix_tree_1.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/30_linux_kernel_radix_tree_1.png" alt></p>
 <p>对应的inode上，i_mapping字段(address_space)对page的映射关系：</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/31_linux_kernel_radix_tree_2.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/31_linux_kernel_radix_tree_2.png" alt></p>
 <h1 id="两类缓存的演进历史"><a href="#两类缓存的演进历史" class="headerlink" title="两类缓存的演进历史"></a>两类缓存的演进历史</h1><p>虽然，目前Linux Kernel代码中，Page Cache和Buffer Cache实际上是统一的，无论是文件的Page Cache还是Block的Buffer Cache最终都统一到Page上。但是，在阅读较老代码时，我们能够看出，这两块缓存的实现，原本是完全分开的。是什么原因使得最终这两类缓存“走到了一起”？[10]中各位的回答，让我豁然开来。 我试着对这一演进的由来做个梳理。</p>
 <h2 id="第一阶段：仅有Buffer-Cache"><a href="#第一阶段：仅有Buffer-Cache" class="headerlink" title="第一阶段：仅有Buffer Cache"></a>第一阶段：仅有Buffer Cache</h2><p>在Linux-0.11版本的代码中，我们会看到，buffer cache是完全独立的实现，甚至都还没有基于page作为内存单元，而是以原始指针的系形式出现。每一个block sector，在kernel内部对应一个独立的buffer cache单元，这个buffer cache单元通过buffer head来描述：</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/01_linux-0.11_buffer_head.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/01_linux-0.11_buffer_head.png" alt></p>
 <p>其中，buffer_head在初始化时，其内部的<code>b_data</code>指向的是原始的内存地址：</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/08_linux-0.11_buffer_init.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/08_linux-0.11_buffer_init.png" alt></p>
 <p>其中，<code>b_data</code>指向具体的buffer cache内容，而<code>b_dev</code>和<code>b_blocknr</code>则代表了这块缓存对应的device以及device上的block number信息。</p>
 <p>kernel通过<code>getblk</code>函数，会将一个指定dev, blocknr sector对应的buffer cache单元(buffer header)返回给调用方。上层读取、写入这个buffer_header，最终将会映射到对应(dev, blocknr) sector的读取和写入。</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/02_linux-0.11_getblk.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/02_linux-0.11_getblk.png" alt></p>
 <p>如果一个对应的buffer cache单元(dev, blocknr)已经在kernel中分配了，则会通过<code>get_hash_table</code>直接返回给用户，如果没有，则会首先创建出对应的buffer_header，并将其加入到hash_table中(<code>inser_into_queues</code>)，最终返回给用户。</p>
 <p>上层对于文件的读写，会转化到对于对应buffer_header的读写：</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/03_linux-0.11_file_read.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/03_linux-0.11_file_read.png" alt></p>
 <p>file_read时，会先通过<code>f_pos</code>计算出实际位于的dev, blocknr位置，并通过<code>bread</code>获取到对应的<code>buffer_head</code>, 而在此之后，则会通过<code>put_fs_byte</code>完成buffer cache单元中的数据向目标buf的数据回填(数据读取)</p>
 <p>同理，在向文件中写入数据时，也是通过<code>f_pos</code>首先计算出对应的dev, blocknr位置信息，进而通过<code>bread</code>拿到对应的buffer_head，并向buffer_header对应的buffer cache单元中写入数据</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/04_linux-0.11_file_write.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/04_linux-0.11_file_write.png" alt></p>
 <p>从上面file_read, file_write的实现来看，我们会看到<code>bread</code>返回目标buffer_head，让上层只操作buffer cache单元，而不再关心block底层。</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/05_linux-0.11_bread.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/05_linux-0.11_bread.png" alt></p>
 <p>而<code>bread</code>内部则是通过上面提到的<code>getblk</code>函数，返回对应的buffer_head，接着执行数据读取。</p>
 <h2 id="第二阶段：Page-Cache、Buffer-Cache两者并存"><a href="#第二阶段：Page-Cache、Buffer-Cache两者并存" class="headerlink" title="第二阶段：Page Cache、Buffer Cache两者并存"></a>第二阶段：Page Cache、Buffer Cache两者并存</h2><p>到Linux-2.2版本时，磁盘文件访问的高速缓冲仍然是缓冲区高速缓冲(Buffer Cache)。其访问模式与上面Linux-0.11版本的访问逻辑基本类似。但此时，Buffer Cache已基于page来分配内存，buffer_head内部，已经有了关于所在page的一些信息：</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/12_linux-2.2.16_buffer_head.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/12_linux-2.2.16_buffer_head.png" alt></p>
 <p>同时，从buffer cache的初始化，以及buffer cache不足时新建buffer cache单元的动作，我们也可以看出，此时buffer cache已经完全是基于page来分配内存</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/09_linux-2.2.16_buffer_init.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/09_linux-2.2.16_buffer_init.png" alt></p>
 <p>当buffer cache不足时，通过<code>grow_buffers</code>来新增buffer cache:</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/10_linux-2.2.16_grow_buffers.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/10_linux-2.2.16_grow_buffers.png" alt></p>
 <p>并通过<code>create_buffers</code>来完成对buffer_head的初始化构造：</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/11_linux-2.2.16_create_buffers.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/11_linux-2.2.16_create_buffers.png" alt></p>
 <p>以Linux-2.2.16版本的代码为例，在执行磁盘文件写入时，会通过xxx_getblk获取对应位置的<code>buffer_head</code>信息，并将对应的数据写入该buffer中。在此之后，会执行一步<strong><code>update_vm_cache</code></strong>，至于为什么会要执行这一步，我们后面再来看。</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/06_linux-2.2.16_sysv_file_write.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/06_linux-2.2.16_sysv_file_write.png" alt></p>
 <p>而对于对应的文件读取，则是同样，先通过xxx_getblk找到对应的buffer_head，在此之后，完成对应的数据读取。（通过while循环，一口气将所有目标block的buffer_head拿出来，再一把读取所有的数据）</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/07_linux-2.2.16_sysv_file_read.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/07_linux-2.2.16_sysv_file_read.png" alt></p>
 <p>而xxx_getblk最终，还是使用的<code>getblk</code>接口来定位到指定的<code>buffer_head</code>:</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/13_linux-2.2.16_getblk.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/13_linux-2.2.16_getblk.png" alt></p>
 <p>从上面的描述我们可以看出，此时的buffer cache基于page来分配内存，但是与Page Cache完全独立，一点关系都没有。</p>
 <p>在Linux-2.2版本中，<strong>Page Cache</strong>此时用来干什么的？</p>
 <p>(1). 用于文件的mmap:</p>
@@ -397,34 +396,34 @@
 <p>Disk-based filesystems do not directly use the page cache for writing to a regular file. This is<br>a heritage from older versions of Linux, in which the only disk cache was the buffer cache.<br>However, network-based filesystems always use the page cache for writing to a regular file.</p>
 </blockquote>
 <p>此时， Page Cache和Buffer Cache的关系如下图所示：</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/14_linux-2.2.16_page_cache_and_buffer_cache.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/14_linux-2.2.16_page_cache_and_buffer_cache.png" alt></p>
 <p>Page Cache仅负责其中mmap部分的处理，而Buffer Cache实际上负责所有对磁盘的IO访问。从上面图中，我们也可看出其中一个问题：write绕过了Page Cache，这里导致了一个同步问题。当write发生时，有效数据是在Buffer Cache中，而不是在Page Cache中。这就导致mmap访问的文件数据可能存在不一致问题。为了解决这个问题，所有基于磁盘文件系统的write，都需要调用<strong><code>update_vm_cache()</code></strong>函数，该操作会修改write相关Buffer Cache对应的Page Cache。从代码中我们可以看到，上述<code>sysv_file_write</code>中，在调用完<code>copy_from_user</code>之后，会调用<code>update_vm_cache</code></p>
 <p>同样，正是这样Page Cache、Buffer Cache分离的设计，导致基于磁盘的文件，同一份数据，可能在Page Cache中有一份，而同时，却还在Buffer Cache中有一份。</p>
 <h2 id="第三阶段：Page-Cache、Buffer-Cache两者融合"><a href="#第三阶段：Page-Cache、Buffer-Cache两者融合" class="headerlink" title="第三阶段：Page Cache、Buffer Cache两者融合"></a>第三阶段：Page Cache、Buffer Cache两者融合</h2><p>介于上述Page Cache、Buffer Cache分离设计的弊端，Linux-2.4版本中对Page Cache、Buffer Cache的实现进行了融合，融合后的Buffer Cache不再以独立的形式存在，Buffer Cache的内容，直接存在于Page Cache中，同时，保留了对Buffer Cache的描述符单元：<code>buffer_head</code></p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/15_linux-2.4.0_page_cache_and_buffer_cache.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/15_linux-2.4.0_page_cache_and_buffer_cache.png" alt></p>
 <p>page结构中，通过<code>buffers</code>字段是否为空，来判定这个Page是否与一组Buffer Cache关联（在后续的演进过程中，这个判断，转变为由<code>private</code>字段来判定）。</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/24_linux-2.4.0_page.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/24_linux-2.4.0_page.png" alt></p>
 <p>而对应的， buffer_head则增加了字段<code>b_page</code>，直接指向对应的page。</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/25_linux-2.4.0_buffer_head.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/25_linux-2.4.0_buffer_head.png" alt></p>
 <p>至此，两者的关系已经相互融合如下图所示：</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/26_linux-2.4.0_page_and_buffer_head.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/26_linux-2.4.0_page_and_buffer_head.png" alt></p>
 <p>一个文件的PageCache(page)，通过<code>buffers</code>字段能够非常快捷的确定该page对应的buffer_head信息，进而明确该page对应的device, block等信息。</p>
 <p>从逻辑上来看，当针对一个文件的write请求进入内核时，会执行<code>generic_file_write</code>，在这一层，通过inode的address_space结构<code>mapping</code>会分配一个新的page来作为对应写入的page cache(这里我们假设是一个新的写入，且数据量仅一个page)：<code>__grab_cache_page</code>，而在分配了内存空间page之后，则通过<code>prepare_write</code>，来完成对应的buffer_head的构建。</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/18_linux-2.4.0_generic_file_write.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/18_linux-2.4.0_generic_file_write.png" alt></p>
 <p><code>prepare_write</code>实际执行的是：<code>__block_prepare_write</code>，在其中，会针对该page分配对应的buffer_head(<code>create_empty_buffers</code>)，并计算实际写入的在device上的具体位置：blocknr，进而初始化buffer_head(<code>get_block</code>)</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/19_linux-2.4.0_block_prepare_write.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/19_linux-2.4.0_block_prepare_write.png" alt></p>
 <p>在<code>create_empty_buffers</code>内部，则通过<code>create_buffers</code>以及<code>set_bh_page</code>等一系列操作，将page与buffer_head组织成如前图所示的通过<code>buffers</code>、<code>b_page</code>等相互关联的关系。</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/21_linux-2.4.0_create_empty_buffers.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/21_linux-2.4.0_create_empty_buffers.png" alt></p>
 <p>通过<code>create_buffers</code>分配一组串联好的buffer_head</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/22_linux-2.4.0-create_buffers.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/22_linux-2.4.0-create_buffers.png" alt></p>
 <p>通过<code>set_bh_page</code>将各buffer_head关联到对应的page，以及data的具体位置</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/23_linux-2.4.0-set_bh_page.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/23_linux-2.4.0-set_bh_page.png" alt></p>
 <p>正是如上的一系列动作，使得Page Cache与Buffer Cache(buffer_head)相互绑定。对上，在文件读写时，以page为单位进行处理。而对下，在数据向device进行刷新时，则可以以buffer_head(block)为单位进行处理。</p>
 <p>在后续的linux-2.5版本中，引入了bio结构来替换基于buffer_head的块设备IO操作。</p>
 <font color="#FF0000"><strong>[注意]</strong>：这里的Page Cache与Buffer Cache的融合，是针对文件这一层面的Page Cache与Buffer Cache的融合。对于跨层的：File层面的Page Cache和裸设备Buffer Cache，虽然都统一到了基于Page的实现，但File的Page Cache和该文件对应的Block在裸设备层访问的Buffer Cache，这两个是完全独立的Page，这种情况下，一个物理磁盘Block上的数据，仍然对应了Linux内核中的两份Page，一个是通过文件层访问的File的Page Cache(Page Cache)，一个是通过裸设备层访问的Page Cache(Buffer Cache)。</font>
 
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/17_linux-2.4.0_file_block_page_cache.png" alt=""></p>
-<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><p>[1]. Understanding the Linux Kernel<br>[2]. Professional Linux Kernel Architecture<br>[3]. The Art of Linux Kernel Design<br>[4]. Linux Kernel Development<br>[5]. A Heavily Commented Linux Kernel Source Code<br>[6]. Linux内核源代码情景分析<br>[7]. 独辟蹊径品内核：Linux内核源代码导读<br>[8]. <a href="https://www.ibm.com/developerworks/cn/linux/l-cache/index.html" target="_blank" rel="external">Linux内核的文件Cache管理机制介绍</a><br>[9]. <a href="https://ilinuxkernel.com/?p=1700" target="_blank" rel="external">Linux内核文件Cache机制</a><br>[10]. <a href="https://www.quora.com/What-is-the-major-difference-between-the-buffer-cache-and-the-page-cache-Why-were-they-separate-entities-in-older-kernels-Why-were-they-merged-later-on" target="_blank" rel="external">What is the major difference between the buffer cache and the page cache</a><br>[11]. UBC: An Efficient Unified I/O and Memory Caching Subsystem for NetBSD<br>[12]. <a href="https://lwn.net/Articles/175432/" target="_blank" rel="external">Trees I: Radix trees</a></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/17_linux-2.4.0_file_block_page_cache.png" alt></p>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><p>[1]. Understanding the Linux Kernel<br>[2]. Professional Linux Kernel Architecture<br>[3]. The Art of Linux Kernel Design<br>[4]. Linux Kernel Development<br>[5]. A Heavily Commented Linux Kernel Source Code<br>[6]. Linux内核源代码情景分析<br>[7]. 独辟蹊径品内核：Linux内核源代码导读<br>[8]. <a href="https://www.ibm.com/developerworks/cn/linux/l-cache/index.html" target="_blank" rel="noopener">Linux内核的文件Cache管理机制介绍</a><br>[9]. <a href="https://ilinuxkernel.com/?p=1700" target="_blank" rel="noopener">Linux内核文件Cache机制</a><br>[10]. <a href="https://www.quora.com/What-is-the-major-difference-between-the-buffer-cache-and-the-page-cache-Why-were-they-separate-entities-in-older-kernels-Why-were-they-merged-later-on" target="_blank" rel="noopener">What is the major difference between the buffer cache and the page cache</a><br>[11]. UBC: An Efficient Unified I/O and Memory Caching Subsystem for NetBSD<br>[12]. <a href="https://lwn.net/Articles/175432/" target="_blank" rel="noopener">Trees I: Radix trees</a></p>
 
       
     </div>

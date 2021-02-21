@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-Hans">
-<head>
+<head><meta name="generator" content="Hexo 3.9.0">
 
     <!--[if lt IE 9]>
         <style>body {display: none; background: none !important} </style>
@@ -8,21 +8,21 @@
     <![endif]-->
 
 <meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="format-detection" content="telephone=no" />
-<meta name="author" content="lday" />
+<meta name="format-detection" content="telephone=no">
+<meta name="author" content="lday">
 
 
 
-<meta name="description" content="HDFS对于同一个文件支持一写多读（write-once-read-many）。为了保持数据一致性，当一个客户端往HDFS某个文件写数据时， 其他客户端不允许同时写入。HDFS引入Lease(租约)机制来实现“独写”控制。 
-本文基于hadoop-2.7.2版本对HDFS的租约机制进行整理分析">
+<meta name="description" content="HDFS对于同一个文件支持一写多读（write-once-read-many）。为了保持数据一致性，当一个客户端往HDFS某个文件写数据时， 其他客户端不允许同时写入。HDFS引入Lease(租约)机制来实现“独写”控制。  本文基于hadoop-2.7.2版本对HDFS的租约机制进行整理分析">
+<meta name="keywords" content="Hadoop,HDFS,lease">
 <meta property="og:type" content="article">
 <meta property="og:title" content="HDFS Lease(租约)逻辑">
 <meta property="og:url" content="http://lday.me/2020/01/28/0024_hdfs_lease_internal/index.html">
 <meta property="og:site_name" content="lday的博客">
-<meta property="og:description" content="HDFS对于同一个文件支持一写多读（write-once-read-many）。为了保持数据一致性，当一个客户端往HDFS某个文件写数据时， 其他客户端不允许同时写入。HDFS引入Lease(租约)机制来实现“独写”控制。 
-本文基于hadoop-2.7.2版本对HDFS的租约机制进行整理分析">
+<meta property="og:description" content="HDFS对于同一个文件支持一写多读（write-once-read-many）。为了保持数据一致性，当一个客户端往HDFS某个文件写数据时， 其他客户端不允许同时写入。HDFS引入Lease(租约)机制来实现“独写”控制。  本文基于hadoop-2.7.2版本对HDFS的租约机制进行整理分析">
+<meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/01_lease_strucuture.png">
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/02_lease_map_relation.png">
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/03_create_function.png">
@@ -37,11 +37,10 @@
 <meta property="og:updated_time" content="2020-01-28T15:35:29.355Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="HDFS Lease(租约)逻辑">
-<meta name="twitter:description" content="HDFS对于同一个文件支持一写多读（write-once-read-many）。为了保持数据一致性，当一个客户端往HDFS某个文件写数据时， 其他客户端不允许同时写入。HDFS引入Lease(租约)机制来实现“独写”控制。 
-本文基于hadoop-2.7.2版本对HDFS的租约机制进行整理分析">
+<meta name="twitter:description" content="HDFS对于同一个文件支持一写多读（write-once-read-many）。为了保持数据一致性，当一个客户端往HDFS某个文件写数据时， 其他客户端不允许同时写入。HDFS引入Lease(租约)机制来实现“独写”控制。  本文基于hadoop-2.7.2版本对HDFS的租约机制进行整理分析">
 <meta name="twitter:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/01_lease_strucuture.png">
 
-<link rel="apple-touch-icon" href= "/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
 
     <link rel="alternate" href="/atom.xml" title="lday的博客" type="application/atom+xml">
@@ -103,7 +102,7 @@
 
 
 
-</head>
+</head></html>
 <body>
   <div id="container">
     <div class="left-col">
@@ -321,14 +320,14 @@
 <h1 id="Lease的组织形式"><a href="#Lease的组织形式" class="headerlink" title="Lease的组织形式"></a>Lease的组织形式</h1><p>lease由NameNode(<code>LeaseManager</code>)负责维护。一个lease是一个client(由clientName决定，DFSClient_xxxx, DFSClient.java)可写的若干文件的凭证记录，他记录了该client(holder)对哪些文件具有写权限，同时，lease具有一定的独占期限（2s, <code>SoftLimit</code>）,如果该client未能在上一轮续约后2s内完成新的续约，该client拥有的可写权限将允许被其他用户抢占，同时，lease还具有一个失效期限，当client长时间未续约（60min，<code>HardLimit</code>），NameNode将负责从后台直接清理掉该lease，client将不再具有对之前任何文件的写权限。</p>
 <p>简单来说，client要正常拥有对文件的写权限，就需要每隔2s，完成一次lease续约(renew lease)。如果在2s之后，还没有进行续约，则其他client可以进行抢占，但如果没有其他client抢占，该client还是拥有这份lease，同样还是对文件具有写权限。如果60min之后，client还没有对lease进行续约，那么，NameNode将视该lease过期，并对该lease进行清理，此时client不再具有对文件的写权限。</p>
 <p>为判断一份lease是否有效，lease记录最近一次，该client申请续约的时间（<code>lastUpdate</code>)。一个Lease的结构组成如下：</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/01_lease_strucuture.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/01_lease_strucuture.png" alt></p>
 <ul>
 <li>holder: 记录了这是哪个client的租约信息</li>
 <li>lastUpdate: 记录上一次续租时间</li>
 <li>paths: lease包含的文件信息(这个client对哪些文件可写)</li>
 </ul>
-<p><font color="#0000FF">Lease是与client(holder)对应的，在后台NameNode上，每一个client有一份唯一的Lease与之对应。</font>在这份Lease中，记录了该client拥有写权限的所有文件信息(paths)。为了维护client &lt;–&gt; Lease &lt;–&gt; files之间的关系，方便分别从client的角度，从file的角度去访问、判断lease信息，NameNode(LeaseManager)使用了3个数据结构来完成相关管理工作：</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/02_lease_map_relation.png" alt=""></p>
+<p><font color="#0000FF">Lease是与client(holder)对应的，在后台NameNode上，每一个client有一份唯一的Lease与之对应。</font>在这份Lease中，记录了该client拥有写权限的所有文件信息(paths)。为了维护client <--> Lease <--> files之间的关系，方便分别从client的角度，从file的角度去访问、判断lease信息，NameNode(LeaseManager)使用了3个数据结构来完成相关管理工作：</--></--></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/02_lease_map_relation.png" alt></p>
 <ul>
 <li>leases: 用于管理client –&gt; lease之的关系</li>
 <li>sortedLease: 按lastUpdate(最近一次续约时间），由早到晚排序的所有lease列表</li>
@@ -353,11 +352,11 @@
 <li>如果不行，则发起lease recovery。发起lease recovery，意味着当前用户也无法立马获取到该文件的lease。（<em><font color="#0000FF">关于<code>recoverLeaseInternal</code>的具体说明，参见后面2.4的章节</font></em>）</li>
 </ol>
 <p>当一切检查都通过， client满足获取lease的条件后，则创建client与file的lease，将其加入到<code>LeaseManager</code>的管理中</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/03_create_function.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/03_create_function.png" alt></p>
 <p>在调用<code>recoverLeaseInternal</code>时，如果未能立即获取到lease，将抛出异常。</p>
 <h2 id="append"><a href="#append" class="headerlink" title="append"></a>append</h2><p>append用于追加写的方式打开一个已经存在的文件，对应逻辑与create基本类似。</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/04_append_function.png" alt=""></p>
-<h2 id="truncate"><a href="#truncate" class="headerlink" title="truncate"></a>truncate</h2><p>truncate与create/append不太一样，详细说明可参考：<a href="https://issues.apache.org/jira/browse/HDFS-3107" target="_blank" rel="external">HDFS truncate(HDFS-3107)</a>。NameNode在处理Truncate动作时，会根据实际truncate边界进行不同的处理，如果truncate的边界，正好在一个block的尾巴上(两个block的连接处)，不需要对某个block进行截断裁剪的话。则此时要做的事情，就是直接截断，更新block信息。但如果不是在边界上，需要对block中的数据进行截取，则会由NameNode发起一个BlockRecovery过程(<code>initializeBlockRecovery</code>)，根据truncate的设置，对block进行再定长，完成所有副本的truncate操作。</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/04_append_function.png" alt></p>
+<h2 id="truncate"><a href="#truncate" class="headerlink" title="truncate"></a>truncate</h2><p>truncate与create/append不太一样，详细说明可参考：<a href="https://issues.apache.org/jira/browse/HDFS-3107" target="_blank" rel="noopener">HDFS truncate(HDFS-3107)</a>。NameNode在处理Truncate动作时，会根据实际truncate边界进行不同的处理，如果truncate的边界，正好在一个block的尾巴上(两个block的连接处)，不需要对某个block进行截断裁剪的话。则此时要做的事情，就是直接截断，更新block信息。但如果不是在边界上，需要对block中的数据进行截取，则会由NameNode发起一个BlockRecovery过程(<code>initializeBlockRecovery</code>)，根据truncate的设置，对block进行再定长，完成所有副本的truncate操作。</p>
 <p>两种场景，对应了truncate的两个返回值:</p>
 <ol>
 <li><p>return true。如果裁剪在边界上， truncate能够直接完成，并不会去获取lease信息，只确保能够拿到lease就ok，因为在truncate返回之后，truncate实际已经执行完成，无需持有lease。</p>
@@ -369,10 +368,10 @@
 <p>When the truncate operation returns to the client the file <font color="#0000FF">may or may not be immediately available for write. <strong>If the newLength happened to be on the block boundary, then the file can be opened for append immediately. Otherwise clients should wait for the truncate recovery to complete.</strong></font> During the recovery an attempt to append will result in <font color="#FF0000">RecoveryInProgressException</font>.</p>
 </blockquote>
 <p>对于第1种情况：</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/05_truncate_function_01.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/05_truncate_function_01.png" alt></p>
 <p>对于第2中场景：</p>
 <p>由于需要在执行block recovery过程中，确保没有其他用户的持有lease，因此，需要添加lease操作:</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/06_truncate_function_02.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/06_truncate_function_02.png" alt></p>
 <p>如上图所示，如果truncate在block中间，则会由NameNode发起block recovery过程，在发起block recovery之前，会在<code>prepareFileForTruncate</code>中首先申请添加Lease。Block Recovery任务会随着DataNode的心跳响应异步的下发至DataNode，并执行。在DataNode完成Block Recovery之后，会向NameNode汇报结果(<code>commitBlockSynchronization</code>)，NameNode在此完成File的数据更新，并最终关闭文件，将Lease释放。(<em><font color="#0000FF">具体的Block Recovery流程，可参见后续2.4.2章节描述。</font></em>)</p>
 <h2 id="recoverLeaseInternal"><a href="#recoverLeaseInternal" class="headerlink" title="recoverLeaseInternal"></a>recoverLeaseInternal</h2><p><code>recoverLeaseInternal</code>在整个Lease管理中的作用非常重要，他用于判断是否可以接管lease。</p>
 <ol>
@@ -467,7 +466,7 @@
 <p><strong><em><font color="#FF0000">从Lease续签的动作我们可以看出，续签是以Lease，也就是以client为单位的，不涉及对其中某个文件的续租，而是整体的续租。具体续租了哪些文件，这完全由NameNode(LeaseManager)中，该Lease对应的文件信息来决定。如果，通过其他调用，修改了NameNode上，该Lease对应的文件信息，例如移除了其中的某个文件file1。那么，即使该Client端还在不断的续租，而实际上，Client对file1的写权限，已经没有了。</font></em></strong></p>
 <h1 id="Lease的主动释放"><a href="#Lease的主动释放" class="headerlink" title="Lease的主动释放"></a>Lease的主动释放</h1><p>对于申请了lease的三个接口：create/append/truncate，都需要有与之对应的Lease主动释放。其中，从上面truncate的逻辑描述我们可以看出，如果truncate在block边界。实际并未申请Lease，因此也不需要释放Lease。而如果truncate在block中间，从上面的流程我们也可以看到，当DataNode完成Block Recovery之后，会有NameNode完成Lease的释放(<code>finalizeINodeFileUnderConstruction</code>中)。</p>
 <p>而对于调用了create/append的用户，则需要主动的调用DFSOutputStream::close/abort，在close/abort时，会调用<strong><font color="#0000FF">complete</font></strong> RPC接口，完成Lease的释放</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/07_complete_rpc.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/07_complete_rpc.png" alt></p>
 <h1 id="结束Lease续签"><a href="#结束Lease续签" class="headerlink" title="结束Lease续签"></a>结束Lease续签</h1><p><code>LeaseRenewer</code>会记录每个DFSClient究竟打开了哪些文件，当<code>DFSOutputStream::close</code>时，会将打开的文件一并从<code>LeaseRenewer</code>中移除(<code>endFileLease</code>)，因此。当<code>LeaseRenewer</code>发现DFSClient上没有打开的文件时(<code>dfsc.isFilesBeingWrittenEmpty()</code>)，将不再对DFSClient发起Lease续签(<code>dfsclients.remove(dfsc)</code>)</p>
 <h1 id="Lease的校验"><a href="#Lease的校验" class="headerlink" title="Lease的校验"></a>Lease的校验</h1><p>当用户通过create/append发起对文件的写入后，在持续不断的写入block过程中，涉及到若干RPC调用，其中与NameNode交互，涉及到元数据变更的调用都将执行Lease的校验，其包括：</p>
 <ul>
@@ -488,7 +487,7 @@
 </ul>
 </li>
 </ol>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/08_addBlock_rpc.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/08_addBlock_rpc.png" alt></p>
 <p>在上述校验过程中出现失败，意味着对应的File已经进入了Block Recovery状态，由其他人接管了该文件。而在Block Recovery状态时，DN已经停止了之前的数据写入，并在停止写入之后，对Block进行了定长判断。定长被认的数据，就是”真实”写入的数据，定长被丢掉的数据，就是未写入的数据。数据长度的判定，并不发生在原client <code>checkLease</code>失败的地方，而是发生在接管，BlockRecovery执行的过程中。<code>checkLease</code>的失败，只是最终结果，实际上，数据传输已在Block Recovery的时候被停止掉。</p>
 <h1 id="Lease的抢占-SoftLimit超时"><a href="#Lease的抢占-SoftLimit超时" class="headerlink" title="Lease的抢占(SoftLimit超时)"></a>Lease的抢占(SoftLimit超时)</h1><p>当clientA对他注册在NameNode上的Lease超过2s没有续租时，其他用户(ClientB)就可以对其中的file lease进行抢占。抢占的过程，就发生在create/append/truncate调用时，由<code>recoverLeaseInternal</code>负责执行，其具体过程参考<strong><em><font color="#0000FF">2.4.1 recoverLeaseInternal章节的说明</font></em></strong>。抢占可以直接完成，此时clientB直接拥有了对file的写权限，继续自己的后续写入。抢占也可能不直接完成，此时<code>recoverLeaseInternal</code>会触发block recovery。而block recovery完成之后，文件处于close状态， clientB可再次尝试申请Lease。</p>
 <h1 id="Lease的超期清理-HardLimit超时"><a href="#Lease的超期清理-HardLimit超时" class="headerlink" title="Lease的超期清理(HardLimit超时)"></a>Lease的超期清理(HardLimit超时)</h1><p><code>LeaseManager</code>还有一个<code>HardLimit(1h)</code>，<code>LeaseManager</code>中的monitor线程，会每隔2s启动一次，判断NameNode上的Lease是否有超过<code>HardLimit(checkLeases())</code>，如果有，则执行超期清理工作。</p>
@@ -504,7 +503,7 @@
 <li>执行recoverLease调用</li>
 </ol>
 <h2 id="删除文件-或者目录"><a href="#删除文件-或者目录" class="headerlink" title="删除文件(或者目录)"></a>删除文件(或者目录)</h2><p>当文件被删除时，该文件对应的Lease将强制被删除掉。当有目录被删除时，该目录上所有文件的Lease都将一并删除掉(<code>removeLeaseWithPrefixPath</code>)</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/09_delete_function.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/09_delete_function.png" alt></p>
 <h2 id="强制释放Lease"><a href="#强制释放Lease" class="headerlink" title="强制释放Lease"></a>强制释放Lease</h2><p><strong><font color="#FF0000">NameNode提供了recoverLease RPC调用来强制释放一个client持有某个file的Lease，无论这个Lease是否在效期内(SoftLimit, 2s)。</font></strong>recoverLease达到的效果：</p>
 <ol>
 <li>return true，直接完成lease释放，文件已进入close状态</li>
@@ -512,9 +511,9 @@
 <li>抛出异常，强制释放都出现问题@.@…</li>
 </ol>
 <p><strong><em><font color="#0000FF">调用recoverLease并不意味着立马完成close，如果返回true是立马完成， 如果返回false，还得等待，知道block recovery异步完成，文件close。</font></em></strong></p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/10_recoverLease.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/10_recoverLease.png" alt></p>
 <h1 id="Lease的变更"><a href="#Lease的变更" class="headerlink" title="Lease的变更"></a>Lease的变更</h1><p>rename不会丢失Lease，他会一并对rename涉及的所有文件的Lease做统一调整(<code>changeLease</code>)，<code>changeLease</code>会将原始前缀为src的所有file找出来(<code>findLeaseWithPrefixPath</code>)，并将这些目标file的Lease调整变更为指定dst前缀。</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/11_rename_function.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/11_rename_function.png" alt></p>
 <h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ol>
 <li>Lease是client对某些文件是否具有可写权限的凭着，Lease是针对某个client的，一个Lease包含该client所有可写文件的信息。</li>
 <li>Lease的管理及校验(文件可写权限校验）只发生在client与NameNode之间，与DataNode无关联</li>

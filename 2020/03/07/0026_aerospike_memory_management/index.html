@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-Hans">
-<head>
+<head><meta name="generator" content="Hexo 3.9.0">
 
     <!--[if lt IE 9]>
         <style>body {display: none; background: none !important} </style>
@@ -8,19 +8,21 @@
     <![endif]-->
 
 <meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1" />
+<meta http-equiv="X-UA-Compatible" content="IE=edge, chrome=1">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<meta name="format-detection" content="telephone=no" />
-<meta name="author" content="lday" />
+<meta name="format-detection" content="telephone=no">
+<meta name="author" content="lday">
 
 
 
 <meta name="description" content="Aerospike使用jemalloc进行内存分配和管理。利用了jemalloc提供的扩展特性来更细力度的进行内存控制。">
+<meta name="keywords" content="Aerospike,NoSQL,Memory,Jemalloc">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Aerospike的内存管理">
 <meta property="og:url" content="http://lday.me/2020/03/07/0026_aerospike_memory_management/index.html">
 <meta property="og:site_name" content="lday的博客">
 <meta property="og:description" content="Aerospike使用jemalloc进行内存分配和管理。利用了jemalloc提供的扩展特性来更细力度的进行内存控制。">
+<meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/01_aerospike_use_jemalloc.png">
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/02_aerospike_alloc_arena.png">
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/03_aerospike_namespace_arena.png">
@@ -35,7 +37,7 @@
 <meta name="twitter:description" content="Aerospike使用jemalloc进行内存分配和管理。利用了jemalloc提供的扩展特性来更细力度的进行内存控制。">
 <meta name="twitter:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/01_aerospike_use_jemalloc.png">
 
-<link rel="apple-touch-icon" href= "/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
 
     <link rel="alternate" href="/atom.xml" title="lday的博客" type="application/atom+xml">
@@ -97,7 +99,7 @@
 
 
 
-</head>
+</head></html>
 <body>
   <div id="container">
     <div class="left-col">
@@ -309,7 +311,7 @@
     <div class="article-entry" itemprop="articleBody">
       
           
-        <p><a href="https://github.com/aerospike" target="_blank" rel="external">Aerospike</a>使用<a href="http://jemalloc.net" target="_blank" rel="external">jemalloc</a>进行内存分配和管理。利用了<a href="http://jemalloc.net" target="_blank" rel="external">jemalloc</a>提供的扩展特性来更细力度的进行内存控制。</p>
+        <p><a href="https://github.com/aerospike" target="_blank" rel="noopener">Aerospike</a>使用<a href="http://jemalloc.net" target="_blank" rel="noopener">jemalloc</a>进行内存分配和管理。利用了<a href="http://jemalloc.net" target="_blank" rel="noopener">jemalloc</a>提供的扩展特性来更细力度的进行内存控制。</p>
 <a id="more"></a>
 <h1 id="jemalloc的扩展能力"><a href="#jemalloc的扩展能力" class="headerlink" title="jemalloc的扩展能力"></a>jemalloc的扩展能力</h1><ol>
 <li><p>jemalloc提供扩展接口来创建独立内存管理单元<code>arena</code>。可基于该<code>arena</code>进行内存申请和释放，arena之间的内存管理无任何冲突。</p>
@@ -332,15 +334,15 @@
 </li>
 </ol>
 <h1 id="Aerospike如何使用jemalloc"><a href="#Aerospike如何使用jemalloc" class="headerlink" title="Aerospike如何使用jemalloc"></a>Aerospike如何使用jemalloc</h1><p>下图为Aerospike使用jemalloc的大致关系：</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/01_aerospike_use_jemalloc.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/01_aerospike_use_jemalloc.png" alt></p>
 <ol>
-<li><p>Aerospike启动时，创建了150个<code>arena</code>(<code>#define N_ARENAS 150</code>)，线程在使用jemalloc进行内存分配时，会在第一次调用时，以round-robin的方式attach到其中一个<code>arena</code>上，后续的内存管理动作均基于该<code>arena</code>完成。<br><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/02_aerospike_alloc_arena.png" alt=""></p>
+<li><p>Aerospike启动时，创建了150个<code>arena</code>(<code>#define N_ARENAS 150</code>)，线程在使用jemalloc进行内存分配时，会在第一次调用时，以round-robin的方式attach到其中一个<code>arena</code>上，后续的内存管理动作均基于该<code>arena</code>完成。<br><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/02_aerospike_alloc_arena.png" alt></p>
 </li>
-<li><p>Aerospike为每一个对应的<code>namespace</code>创建了一个指定的<code>arena</code>。当<code>namespace</code>指定了<code>data-in-memory</code>参数时(record数据将在内存中保留一份)，此时该<code>namespace</code>的record内容，都将关联到该arena上来完成内存分配。<br><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/03_aerospike_namespace_arena.png" alt=""></p>
+<li><p>Aerospike为每一个对应的<code>namespace</code>创建了一个指定的<code>arena</code>。当<code>namespace</code>指定了<code>data-in-memory</code>参数时(record数据将在内存中保留一份)，此时该<code>namespace</code>的record内容，都将关联到该arena上来完成内存分配。<br><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/03_aerospike_namespace_arena.png" alt></p>
 </li>
 </ol>
 <p>在具有一个<code>namespace</code>的实验环境下，我们可以看到，server总共分配出151(150+1)个<code>arena</code>，通过<code>mallctl(&quot;arenas.narenas&quot;,...)</code>进行统计，结果如下：</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/04_aerospike_jemalloc_arena_count.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/04_aerospike_jemalloc_arena_count.png" alt></p>
 <h2 id="使用jemalloc的心得"><a href="#使用jemalloc的心得" class="headerlink" title="使用jemalloc的心得"></a>使用jemalloc的心得</h2><p>之所以Aerospike以上述形式进行内存管理，是根据Aerospike研发自身的经验总结：</p>
 <ol>
 <li><p>对于大多数在内存处理任务来说，per thread <code>arena</code>已经非常好了，因为大多数内存会在当前线程中申请，并在当前线程中释放( <em><font color="#0000FF">This works well with a purely-transactional model where the data is allocated and relatively quickly freed on the same thread.</font></em> )</p>
@@ -348,11 +350,10 @@
 <li><p>但是对于数据存储而言，由于数据访问的存储周期会跨多个线程，基于<code>namespace</code>的内存管理(以<code>namespace</code>为单位来构建<code>arena</code>，并基于该<code>arena</code>来管理内存）会更加有效( <em><font color="#0000FF">The main database object store, however, follows entirely different allocation patterns. These objects are usually persistent, potentially much larger, and may be accessed over time by many different threads (and sometimes are even accessed concurrently.) Therefore, the best pattern we have found is to have objects with the same general characteristics (i.e., those within the same Aerospike namespace, which roughly corresponds to a database</font></em> )</p>
 </li>
 </ol>
-<p>Aerospike在使用jemalloc的总结可参考：<a href="http://highscalability.com/blog/2015/3/17/in-memory-computing-at-aerospike-scale-when-to-choose-and-ho.html" target="_blank" rel="external">In-Memory Computing At Aerospike Scale: When To Choose And How To Effectively Use JEMalloc</a>。从文章数据来看，Aerospike改用jemalloc之后，内存使用效率变高，更加稳定：</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/05_aerospike_jemalloc_result.png" alt=""></p>
+<p>Aerospike在使用jemalloc的总结可参考：<a href="http://highscalability.com/blog/2015/3/17/in-memory-computing-at-aerospike-scale-when-to-choose-and-ho.html" target="_blank" rel="noopener">In-Memory Computing At Aerospike Scale: When To Choose And How To Effectively Use JEMalloc</a>。从文章数据来看，Aerospike改用jemalloc之后，内存使用效率变高，更加稳定：</p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/05_aerospike_jemalloc_result.png" alt></p>
 <blockquote>
 <font color="#0000FF">After selecting a better dynamic memory allocator and changing the server to use the allocator effectively in a multi-threaded context, the system memory use per node quickly “flatlines” on the right side (with some residual “bouncing” as memory as additional memory is transiently allocated and given back to the system.) </font>
-
 </blockquote>
 <p>同时，Aerospike还利用了jemalloc扩展接口，来统计进程的内容使用情况<code>alloc.c::cf_alloc_heap_stats()</code>:</p>
 <ul>
@@ -361,11 +362,11 @@
 <li><code>mallctl(&quot;stats.mapped&quot;,...)</code></li>
 </ul>
 <p>Aerospike后台会定时输出该类信息：</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/06_aerospike_memory_info_output.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/06_aerospike_memory_info_output.png" alt></p>
 <p>通过asinfo命令也可以直接获取该信息:</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/07_aerospike_asinfo_memory_info.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/07_aerospike_asinfo_memory_info.png" alt></p>
 <h1 id="Aerospike自身的内存管理结构arenax"><a href="#Aerospike自身的内存管理结构arenax" class="headerlink" title="Aerospike自身的内存管理结构arenax"></a>Aerospike自身的内存管理结构arenax</h1><p>上面我们提到，Aerospike会为每个<code>namespace</code>创建一个对应的<code>arena</code>。在设置了<code>data-in-memory</code>时，这个<code>arena</code>用于管理该<code>namespace</code>的所有record的内存。请注意，这个<code>arena</code><strong>只负责管理record部分，也就是value部分的内存</strong>。而无论是否设置<code>data-in-memory</code>，用于组织key的<code>sprig</code>(红黑树索引结构），并没有使用jemalloc提供的arena来管理。由于<code>sprig</code>的树节点(<code>as_index</code>)结构为定长的64byte，Aerospike使用了自己设计的<code>arenax</code>结构来管理该定长数据。</p>
-<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/08_aerospike_spig_arenax.png" alt=""></p>
+<p><img src="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0026_aerospike_memory_management/img/08_aerospike_spig_arenax.png" alt></p>
 <p>上图为<code>arenax</code>的组织结构。<code>arenax</code>为两层内存分配方式结构：</p>
 <ul>
 <li>第一层为<code>stage</code>，总共有256个<code>stage</code>，每个<code>stage</code>指向一块定长的内存区域（1G)。</li>
