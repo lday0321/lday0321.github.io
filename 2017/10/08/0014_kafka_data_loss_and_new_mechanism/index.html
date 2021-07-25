@@ -31,7 +31,7 @@
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0014_kafka_data_loss_and_new_mechanism/img/07_leader_fetchResponse_OutOfRange.png">
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0014_kafka_data_loss_and_new_mechanism/img/08_follower_fetch_response_OutOfRange.png">
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0014_kafka_data_loss_and_new_mechanism/img/03_leaderHW_fetchResponse.png">
-<meta property="og:updated_time" content="2018-12-29T15:25:00.962Z">
+<meta property="og:updated_time" content="2021-07-25T02:06:56.392Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Kafka数据丢失及最新改进策略">
 <meta name="twitter:description" content="上周在测试环境，无意间连续把两台kafka的磁盘打爆，导致broker相继挂掉。当我清理完磁盘，重启两台broker后，发现很有意思的现象：kafka数据丢失！从我们的处理日志上， 我们观察到有向一个topic的两个partition，分别写入了3条和7条，共计10条消息。但是，当我们恢复两台broker后，通过命令查看，发现这时该topic两个partition消息数量竟然都是0，而从zk上co">
@@ -426,7 +426,7 @@
         <p><span>本文标题:</span><a href="/2017/10/08/0014_kafka_data_loss_and_new_mechanism/">Kafka数据丢失及最新改进策略</a></p>
         <p><span>文章作者:</span><a href="/" title="回到主页">lday</a></p>
         <p><span>发布时间:</span>2017-10-08, 22:46:14</p>
-        <p><span>最后更新:</span>2018-12-29, 23:25:00</p>
+        <p><span>最后更新:</span>2021-07-25, 10:06:56</p>
         <p>
             <span>原始链接:</span><a class="post-url" href="/2017/10/08/0014_kafka_data_loss_and_new_mechanism/" title="Kafka数据丢失及最新改进策略">http://lday.me/2017/10/08/0014_kafka_data_loss_and_new_mechanism/</a>
             <span class="copy-path" data-clipboard-text="原文: http://lday.me/2017/10/08/0014_kafka_data_loss_and_new_mechanism/　　作者: lday" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>

@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://lday.me/"/>
-  <updated>2020-03-07T09:14:07.694Z</updated>
+  <updated>2021-07-25T02:06:56.424Z</updated>
   <id>http://lday.me/</id>
   
   <author>
@@ -21,7 +21,7 @@
     <link href="http://lday.me/2020/03/07/0026_aerospike_memory_management/"/>
     <id>http://lday.me/2020/03/07/0026_aerospike_memory_management/</id>
     <published>2020-03-07T13:56:14.000Z</published>
-    <updated>2020-03-07T09:14:07.694Z</updated>
+    <updated>2021-07-25T02:06:56.424Z</updated>
     
     <summary type="html">
     
@@ -45,7 +45,7 @@
     <link href="http://lday.me/2020/02/15/0025_aerospike_internal_put_key/"/>
     <id>http://lday.me/2020/02/15/0025_aerospike_internal_put_key/</id>
     <published>2020-02-15T13:56:14.000Z</published>
-    <updated>2020-03-07T08:59:34.765Z</updated>
+    <updated>2021-07-25T02:06:56.422Z</updated>
     
     <summary type="html">
     
@@ -65,7 +65,7 @@
     <link href="http://lday.me/2020/01/28/0024_hdfs_lease_internal/"/>
     <id>http://lday.me/2020/01/28/0024_hdfs_lease_internal/</id>
     <published>2020-01-28T15:55:14.000Z</published>
-    <updated>2020-01-28T15:35:29.355Z</updated>
+    <updated>2021-07-25T02:06:56.419Z</updated>
     
     <summary type="html">
     
@@ -88,7 +88,7 @@
     <link href="http://lday.me/2019/09/09/0023_linux_page_cache_and_buffer_cache/"/>
     <id>http://lday.me/2019/09/09/0023_linux_page_cache_and_buffer_cache/</id>
     <published>2019-09-08T16:55:14.000Z</published>
-    <updated>2019-09-08T17:22:10.146Z</updated>
+    <updated>2021-07-25T02:06:56.416Z</updated>
     
     <summary type="html">
     
@@ -114,7 +114,7 @@
     <link href="http://lday.me/2018/11/18/0022_how_to_do_distributed_lock/"/>
     <id>http://lday.me/2018/11/18/0022_how_to_do_distributed_lock/</id>
     <published>2018-11-18T12:58:14.000Z</published>
-    <updated>2018-12-02T07:07:42.856Z</updated>
+    <updated>2021-07-25T02:06:56.413Z</updated>
     
     <summary type="html">
     
@@ -134,7 +134,7 @@
     <link href="http://lday.me/2018/11/06/0021_apache_kafka_firefighter/"/>
     <id>http://lday.me/2018/11/06/0021_apache_kafka_firefighter/</id>
     <published>2018-11-06T14:52:14.000Z</published>
-    <updated>2018-11-18T06:50:17.674Z</updated>
+    <updated>2021-07-25T02:06:56.410Z</updated>
     
     <summary type="html">
     
@@ -158,7 +158,7 @@
     <link href="http://lday.me/2018/02/21/0020_b_tree_summary/"/>
     <id>http://lday.me/2018/02/21/0020_b_tree_summary/</id>
     <published>2018-02-21T06:04:14.000Z</published>
-    <updated>2018-02-24T15:09:11.738Z</updated>
+    <updated>2021-07-25T02:06:56.408Z</updated>
     
     <summary type="html">
     
@@ -180,7 +180,7 @@
     <link href="http://lday.me/2017/12/17/0019_boost_share_memory_ipc/"/>
     <id>http://lday.me/2017/12/17/0019_boost_share_memory_ipc/</id>
     <published>2017-12-17T15:08:14.000Z</published>
-    <updated>2017-12-17T15:53:47.943Z</updated>
+    <updated>2021-07-25T02:06:56.406Z</updated>
     
     <summary type="html">
     
@@ -204,7 +204,7 @@
     <link href="http://lday.me/2017/12/02/0018_cpp_atomic_summary/"/>
     <id>http://lday.me/2017/12/02/0018_cpp_atomic_summary/</id>
     <published>2017-12-02T07:09:14.000Z</published>
-    <updated>2019-01-24T15:25:16.541Z</updated>
+    <updated>2021-07-25T02:06:56.403Z</updated>
     
     <summary type="html">
     
@@ -226,7 +226,7 @@
     <link href="http://lday.me/2017/11/19/0017_condition_variable_and_mutex_together/"/>
     <id>http://lday.me/2017/11/19/0017_condition_variable_and_mutex_together/</id>
     <published>2017-11-19T06:04:14.000Z</published>
-    <updated>2017-11-19T06:34:51.816Z</updated>
+    <updated>2021-07-25T02:06:56.401Z</updated>
     
     <summary type="html">
     
@@ -246,7 +246,7 @@
     <link href="http://lday.me/2017/11/04/0016_what_is_memory_barriers/"/>
     <id>http://lday.me/2017/11/04/0016_what_is_memory_barriers/</id>
     <published>2017-11-04T11:25:14.000Z</published>
-    <updated>2019-01-24T15:06:14.488Z</updated>
+    <updated>2021-07-25T02:06:56.398Z</updated>
     
     <summary type="html">
     
@@ -265,7 +265,7 @@
     <link href="http://lday.me/2017/10/22/0015_How_we_use_gRPC_to_build_a_client_server_system_in_Go/"/>
     <id>http://lday.me/2017/10/22/0015_How_we_use_gRPC_to_build_a_client_server_system_in_Go/</id>
     <published>2017-10-22T15:14:14.000Z</published>
-    <updated>2017-10-22T15:37:39.994Z</updated>
+    <updated>2021-07-25T02:06:56.395Z</updated>
     
     <summary type="html">
     
@@ -285,7 +285,7 @@
     <link href="http://lday.me/2017/10/08/0014_kafka_data_loss_and_new_mechanism/"/>
     <id>http://lday.me/2017/10/08/0014_kafka_data_loss_and_new_mechanism/</id>
     <published>2017-10-08T14:46:14.000Z</published>
-    <updated>2018-12-29T15:25:00.962Z</updated>
+    <updated>2021-07-25T02:06:56.392Z</updated>
     
     <summary type="html">
     
@@ -303,7 +303,7 @@
     <link href="http://lday.me/2017/09/13/0013_a_latency_identification_procedure/"/>
     <id>http://lday.me/2017/09/13/0013_a_latency_identification_procedure/</id>
     <published>2017-09-13T14:27:14.000Z</published>
-    <updated>2020-11-22T01:43:58.757Z</updated>
+    <updated>2021-07-25T02:06:56.389Z</updated>
     
     <summary type="html">
     
@@ -321,7 +321,7 @@
     <link href="http://lday.me/2017/09/02/0012_a_memory_leak_detection_procedure/"/>
     <id>http://lday.me/2017/09/02/0012_a_memory_leak_detection_procedure/</id>
     <published>2017-09-01T18:49:14.000Z</published>
-    <updated>2020-11-22T01:51:16.764Z</updated>
+    <updated>2021-07-25T02:06:56.386Z</updated>
     
     <summary type="html">
     
@@ -339,7 +339,7 @@
     <link href="http://lday.me/2017/07/24/0011_kafka_consumer_rebalance_evolution/"/>
     <id>http://lday.me/2017/07/24/0011_kafka_consumer_rebalance_evolution/</id>
     <published>2017-07-24T15:25:14.000Z</published>
-    <updated>2017-07-24T15:25:11.742Z</updated>
+    <updated>2021-07-25T02:06:56.384Z</updated>
     
     <summary type="html">
     
@@ -358,7 +358,7 @@
     <link href="http://lday.me/2017/07/15/0010_kafka_producer_analysis_01/"/>
     <id>http://lday.me/2017/07/15/0010_kafka_producer_analysis_01/</id>
     <published>2017-07-15T06:05:05.000Z</published>
-    <updated>2017-07-15T06:05:31.209Z</updated>
+    <updated>2021-07-25T02:06:56.381Z</updated>
     
     <summary type="html">
     
@@ -376,7 +376,7 @@
     <link href="http://lday.me/2017/07/11/0009_why_not_413/"/>
     <id>http://lday.me/2017/07/11/0009_why_not_413/</id>
     <published>2017-07-11T13:21:21.000Z</published>
-    <updated>2017-07-11T13:33:00.443Z</updated>
+    <updated>2021-07-25T02:06:56.378Z</updated>
     
     <summary type="html">
     
@@ -401,7 +401,7 @@
     <link href="http://lday.me/2017/06/27/0008_kafka_vs_tranditional_mq/"/>
     <id>http://lday.me/2017/06/27/0008_kafka_vs_tranditional_mq/</id>
     <published>2017-06-27T14:21:21.000Z</published>
-    <updated>2017-06-27T14:21:59.839Z</updated>
+    <updated>2021-07-25T02:06:56.376Z</updated>
     
     <summary type="html">
     
@@ -419,7 +419,7 @@
     <link href="http://lday.me/2017/06/22/0007_elasticsearch_summary/"/>
     <id>http://lday.me/2017/06/22/0007_elasticsearch_summary/</id>
     <published>2017-06-22T14:03:18.000Z</published>
-    <updated>2017-06-22T14:54:20.775Z</updated>
+    <updated>2021-07-25T02:06:56.373Z</updated>
     
     <summary type="html">
     

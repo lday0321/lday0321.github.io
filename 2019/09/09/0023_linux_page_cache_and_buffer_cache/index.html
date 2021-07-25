@@ -52,7 +52,7 @@
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/22_linux-2.4.0-create_buffers.png">
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/23_linux-2.4.0-set_bh_page.png">
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0023_linux_page_cache_and_buffer_cache/img/17_linux-2.4.0_file_block_page_cache.png">
-<meta property="og:updated_time" content="2019-09-08T17:22:10.146Z">
+<meta property="og:updated_time" content="2021-07-25T02:06:56.416Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Linux内核Page Cache和Buffer Cache关系及演化历史">
 <meta name="twitter:description" content="在我们进行数据持久化，对文件内容进行落盘处理时，我们时常会使用fsync操作，该操作会将文件关联的脏页(dirty page)数据(实际文件内容及元数据信息)一同写回磁盘。这里提到的脏页(dirty page)即为页缓存(page cache)。 块缓存(buffer cache)，则是内核为了加速对底层存储介质的访问速度，而构建的一层缓存。他缓存部分磁盘数据，当有磁盘读取请求时，会首先查看块缓存">
@@ -435,7 +435,7 @@
         <p><span>本文标题:</span><a href="/2019/09/09/0023_linux_page_cache_and_buffer_cache/">Linux内核Page Cache和Buffer Cache关系及演化历史</a></p>
         <p><span>文章作者:</span><a href="/" title="回到主页">lday</a></p>
         <p><span>发布时间:</span>2019-09-09, 00:55:14</p>
-        <p><span>最后更新:</span>2019-09-09, 01:22:10</p>
+        <p><span>最后更新:</span>2021-07-25, 10:06:56</p>
         <p>
             <span>原始链接:</span><a class="post-url" href="/2019/09/09/0023_linux_page_cache_and_buffer_cache/" title="Linux内核Page Cache和Buffer Cache关系及演化历史">http://lday.me/2019/09/09/0023_linux_page_cache_and_buffer_cache/</a>
             <span class="copy-path" data-clipboard-text="原文: http://lday.me/2019/09/09/0023_linux_page_cache_and_buffer_cache/　　作者: lday" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>

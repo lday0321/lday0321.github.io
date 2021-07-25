@@ -34,7 +34,7 @@
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/09_delete_function.png">
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/10_recoverLease.png">
 <meta property="og:image" content="https://lday-me-1257906058.cos.ap-shanghai.myqcloud.com/0024_hdfs_lease_internal/img/11_rename_function.png">
-<meta property="og:updated_time" content="2020-01-28T15:35:29.355Z">
+<meta property="og:updated_time" content="2021-07-25T02:06:56.419Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="HDFS Lease(租约)逻辑">
 <meta name="twitter:description" content="HDFS对于同一个文件支持一写多读（write-once-read-many）。为了保持数据一致性，当一个客户端往HDFS某个文件写数据时， 其他客户端不允许同时写入。HDFS引入Lease(租约)机制来实现“独写”控制。  本文基于hadoop-2.7.2版本对HDFS的租约机制进行整理分析">
@@ -532,7 +532,7 @@
         <p><span>本文标题:</span><a href="/2020/01/28/0024_hdfs_lease_internal/">HDFS Lease(租约)逻辑</a></p>
         <p><span>文章作者:</span><a href="/" title="回到主页">lday</a></p>
         <p><span>发布时间:</span>2020-01-28, 23:55:14</p>
-        <p><span>最后更新:</span>2020-01-28, 23:35:29</p>
+        <p><span>最后更新:</span>2021-07-25, 10:06:56</p>
         <p>
             <span>原始链接:</span><a class="post-url" href="/2020/01/28/0024_hdfs_lease_internal/" title="HDFS Lease(租约)逻辑">http://lday.me/2020/01/28/0024_hdfs_lease_internal/</a>
             <span class="copy-path" data-clipboard-text="原文: http://lday.me/2020/01/28/0024_hdfs_lease_internal/　　作者: lday" title="点击复制文章链接"><i class="fa fa-clipboard"></i></span>
